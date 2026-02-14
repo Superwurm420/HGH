@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b5cff" />
+  <meta name="description" content="HTG Hildesheim – Stundenplan, Links & Instagram als PWA" />
+
+  <title>HTG Hildesheim</title>
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Zum Inhalt springen</a>
+
+  <header class="topbar">
+    <div class="brand" aria-label="App Titel">
+      <div class="logo" aria-hidden="true">HTG</div>
+      <div class="brandText">
+        <div class="brandTitle">Holztechnik Hildesheim</div>
+        <div class="brandSub">Fachschule Holztechnik & Gestaltung</div>
+      </div>
+    </div>
+
+    <div class="topActions">
+      <button id="darkToggle" class="iconBtn" type="button" aria-label="Dark Mode umschalten" title="Dark Mode">
+        <span class="icon" aria-hidden="true">◐</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="Hauptnavigation">
+    <button class="navItem" data-route="home" aria-current="page">
+      <span class="navIcon" aria-hidden="true">⌂</span>
+      <span>Home</span>
+    </button>
+    <button class="navItem" data-route="timetable">
+      <span class="navIcon" aria-hidden="true">▦</span>
+      <span>Stundenplan</span>
+    </button>
+    <button class="navItem" data-route="links">
+      <span class="navIcon" aria-hidden="true">⛓</span>
+      <span>Links</span>
+    </button>
+    <button class="navItem" data-route="instagram">
+      <span class="navIcon" aria-hidden="true">◎</span>
+      <span>Instagram</span>
+    </button>
+  </nav>
+
+  <main id="main" class="main">
+    <!-- HOME -->
+    <section class="view" data-view="home">
+      <div class="card hero">
+        <div class="heroLeft">
+          <h1>HTG Hildesheim</h1>
+          <p class="muted">
+            Schnellzugriff auf Stundenplan, Links und Instagram – offlinefähig als PWA.
+          </p>
+
+          <div class="chips" aria-label="Schnellinfos">
+            <span class="chip">Mobile-first</span>
+            <span class="chip">Offline Cache</span>
+            <span class="chip">Dark Mode</span>
+          </div>
+
+          <div class="ctaRow">
+            <button class="btn" data-route-jump="timetable" type="button">Zum Stundenplan</button>
+            <a class="btn secondary" href="https://holztechnik-hildesheim.de/" target="_blank" rel="noopener">Schul-Website</a>
+          </div>
+        </div>
+
+        <div class="heroRight" aria-hidden="true">
+          <div class="glassBlob"></div>
+          <div class="stats">
+            <div class="stat">
+              <div class="statNum">7</div>
+              <div class="statLabel">Klassen</div>
+            </div>
+            <div class="stat">
+              <div class="statNum">Mo–Fr</div>
+              <div class="statLabel">Tagesansicht</div>
+            </div>
+            <div class="stat">
+              <div class="statNum">PWA</div>
+              <div class="statLabel">Installierbar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Heute</h2>
+          <p class="muted" id="todayLabel">—</p>
+          <div id="todayPreview" class="list" aria-label="Heutiger Stundenplan (Vorschau)"></div>
+          <div class="small muted">Tipp: In „Stundenplan“ Klasse auswählen.</div>
+        </div>
+
+        <div class="card">
+          <h2>Installieren</h2>
+          <p class="muted">Diese Seite ist eine Progressive Web App.</p>
+          <ul class="bullets">
+            <li>Android/Chrome: Menü → „App installieren“</li>
+            <li>iOS/Safari: Teilen → „Zum Home-Bildschirm“</li>
+          </ul>
+          <div id="installHint" class="hint" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMETABLE -->
+    <section class="view" data-view="timetable" hidden>
+      <div class="card">
+        <div class="row wrap">
+          <div>
+            <h2>Stundenplan</h2>
+            <p class="muted">Klasse auswählen und Tag ansehen.</p>
+          </div>
+
+          <div class="controls">
+            <label class="control">
+              <span class="controlLabel">Klasse</span>
+              <select id="classSelect" class="select" aria-label="Klasse auswählen"></select>
+            </label>
+
+            <label class="control">
+              <span class="controlLabel">Tag</span>
+              <select id="daySelect" class="select" aria-label="Tag auswählen"></select>
+            </label>
+
+            <button id="todayBtn" class="btn secondary" type="button">Heute</button>
+          </div>
+        </div>
+
+        <div class="timetable" aria-label="Stundenplan Tabelle">
+          <div class="timetableHeader">
+            <div class="th">Zeit</div>
+            <div class="th">Fach</div>
+            <div class="th">Lehrkraft / Raum</div>
+          </div>
+          <div id="timetableBody" class="timetableBody"></div>
+        </div>
+
+        <div class="small muted" style="margin-top:12px;">
+          Hinweis: Aktuell sind Beispiel-Daten hinterlegt. Sobald die PDF-Daten vorliegen, kann der Plan 1:1 eingepflegt werden.
+        </div>
+      </div>
+    </section>
+
+    <!-- LINKS -->
+    <section class="view" data-view="links" hidden>
+      <div class="card">
+        <h2>Links</h2>
+        <p class="muted">Wichtige Schnellzugriffe.</p>
+
+        <div class="linkCards">
+          <a class="linkCard" href="https://holztechnik-hildesheim.de/" target="_blank" rel="noopener">
+            <div class="linkTitle">Schul-Website</div>
+            <div class="linkUrl">holztechnik-hildesheim.de</div>
+          </a>
+
+          <a class="linkCard" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener">
+            <div class="linkTitle">Instagram (HGH)</div>
+            <div class="linkUrl">@hgh.hildesheim</div>
+          </a>
+
+          <div class="linkCard disabled" aria-disabled="true">
+            <div class="linkTitle">Instagram (Platzhalter)</div>
+            <div class="linkUrl">später: Account 2</div>
+          </div>
+
+          <div class="linkCard disabled" aria-disabled="true">
+            <div class="linkTitle">Instagram (Platzhalter)</div>
+            <div class="linkUrl">später: Account 3</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTAGRAM -->
+    <section class="view" data-view="instagram" hidden>
+      <div class="card">
+        <h2>Instagram</h2>
+        <p class="muted">
+          Embed ist oft durch Tracking/Cookies/CORS eingeschränkt. Daher bieten wir standardmäßig den direkten Link.
+        </p>
+
+        <div class="igBox">
+          <div class="igHandle">@hgh.hildesheim</div>
+          <a class="btn" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener">Profil öffnen</a>
+          <div class="small muted">Optional kann später ein Embed per „Instagram oEmbed“ ergänzt werden.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="small muted">© <span id="year"></span> HTG Hildesheim · Offline-fähige PWA</div>
+      <div class="small muted" id="swStatus" aria-live="polite"></div>
+    </footer>
+  </main>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
