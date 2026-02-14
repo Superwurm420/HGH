@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b5cff" />
-  <meta name="description" content="HTG Hildesheim – Stundenplan, Links & Instagram als PWA" />
+  <meta name="description" content="HGH Hildesheim – Stundenplan, Links & Instagram als PWA" />
 
-  <title>HTG Hildesheim</title>
+  <title>HGH Hildesheim</title>
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
@@ -19,10 +19,10 @@
 
   <header class="topbar">
     <div class="brand" aria-label="App Titel">
-      <div class="logo" aria-hidden="true">HTG</div>
+      <div class="logo" aria-hidden="true">HGH</div>
       <div class="brandText">
-        <div class="brandTitle">Holztechnik Hildesheim</div>
-        <div class="brandSub">Fachschule Holztechnik & Gestaltung</div>
+        <div class="brandTitle">Holztechnik und Gestaltung Hildesheim</div>
+        <div class="brandSub">Fachschule</div>
       </div>
     </div>
 
@@ -57,7 +57,7 @@
     <section class="view" data-view="home">
       <div class="card hero">
         <div class="heroLeft">
-          <h1>HTG Hildesheim</h1>
+          <h1>HGH Hildesheim</h1>
           <p class="muted">
             Schnellzugriff auf Stundenplan, Links und Instagram – offlinefähig als PWA.
           </p>
@@ -190,16 +190,58 @@
           Embed ist oft durch Tracking/Cookies/CORS eingeschränkt. Daher bieten wir standardmäßig den direkten Link.
         </p>
 
-        <div class="igBox">
-          <div class="igHandle">@hgh.hildesheim</div>
-          <a class="btn" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener">Profil öffnen</a>
-          <div class="small muted">Optional kann später ein Embed per „Instagram oEmbed“ ergänzt werden.</div>
+        <div class="igGrid" id="igGrid" aria-label="Instagram Vorschau (öffentlich)">
+          <a class="igTile" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram Profil öffnen">
+            <div class="igTileTop">
+              <div class="igAvatar" aria-hidden="true">HGH</div>
+              <div>
+                <div class="igHandle">@hgh.hildesheim</div>
+                <div class="small muted">Profil öffnen</div>
+              </div>
+            </div>
+            <div class="igHover">Öffentliches Grid ist ohne API oft blockiert (CORS/Cookies). Tippe hier, um das Profil zu öffnen.</div>
+          </a>
+
+          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
+            <div class="igTileCenter">
+              <div class="igPlus">+</div>
+              <div class="small muted">Bilder via RSS/Embed
+                <br/>optional nachrüstbar</div>
+            </div>
+            <div class="igHover">Wenn wir später einen öffentlichen RSS/Embed-Endpunkt nutzen, kann hier ein echtes Grid erscheinen.</div>
+          </a>
+
+          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
+            <div class="igTileCenter">
+              <div class="igPlus">+</div>
+              <div class="small muted">Platzhalter</div>
+            </div>
+            <div class="igHover">Platzhalter</div>
+          </a>
+
+          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
+            <div class="igTileCenter">
+              <div class="igPlus">+</div>
+              <div class="small muted">Platzhalter</div>
+            </div>
+            <div class="igHover">Platzhalter</div>
+          </a>
+        </div>
+
+        <div class="igBox" style="margin-top:14px;">
+          <div class="row wrap" style="align-items:center; justify-content:space-between; gap:12px;">
+            <div>
+              <div class="igHandle">@hgh.hildesheim</div>
+              <div class="small muted">Ohne offizielle API zeigen wir standardmäßig nur eine Vorschau + Link.</div>
+            </div>
+            <a class="btn" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener">Profil öffnen</a>
+          </div>
         </div>
       </div>
     </section>
 
     <footer class="footer">
-      <div class="small muted">© <span id="year"></span> HTG Hildesheim · Offline-fähige PWA</div>
+      <div class="small muted">© <span id="year"></span> HGH Hildesheim · Offline-fähige PWA</div>
       <div class="small muted" id="swStatus" aria-live="polite"></div>
     </footer>
   </main>

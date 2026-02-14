@@ -1,7 +1,7 @@
 /* Service Worker – offline-first for app shell */
 
 const VERSION = 'v1.0.0';
-const CACHE = `htg-school-pwa-${VERSION}`;
+const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
   './',
@@ -9,6 +9,7 @@ const ASSETS = [
   './styles.css',
   './app.js',
   './manifest.webmanifest',
+  './data/timetable.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png'

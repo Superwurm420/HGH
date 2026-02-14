@@ -239,6 +239,56 @@ body{
 }
 .igHandle{font-weight:800}
 
+.igGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:12px;
+}
+
+.igTile{
+  position:relative;
+  display:block;
+  text-decoration:none;
+  color:inherit;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+  min-height:140px;
+  background: radial-gradient(1200px 280px at -20% -10%, rgba(255,0,122,0.18), transparent 40%),
+              radial-gradient(800px 280px at 120% 110%, rgba(255,214,0,0.18), transparent 40%),
+              rgba(255,255,255,.06);
+  overflow:hidden;
+}
+
+.igTile.placeholder{background:rgba(255,255,255,.06)}
+
+.igTileTop{display:flex; gap:12px; align-items:center}
+
+.igAvatar{
+  width:44px; height:44px;
+  border-radius:14px;
+  display:grid; place-items:center;
+  font-weight:900; letter-spacing:.5px;
+  background: linear-gradient(135deg, rgba(255,0,122,0.35), rgba(11,92,255,0.35));
+  border:1px solid rgba(255,255,255,.12);
+}
+
+.igTileCenter{height:100%; display:grid; place-items:center; text-align:center; gap:6px; padding-top:6px}
+.igPlus{font-size:34px; font-weight:900; opacity:.75}
+
+.igHover{
+  position:absolute;
+  inset:auto 0 0 0;
+  padding:10px 12px;
+  font-size:12px;
+  color:rgba(255,255,255,.88);
+  background: linear-gradient(180deg, rgba(7,11,20,0), rgba(7,11,20,0.92));
+  transform:translateY(100%);
+  transition: transform 180ms ease;
+}
+.igTile:hover .igHover,
+.igTile:focus-visible .igHover{transform:translateY(0)}
+
 .footer{margin-top:14px; padding: 0 2px; display:flex; gap:10px; justify-content:space-between; flex-wrap:wrap}
 .small{font-size:12px}
 

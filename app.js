@@ -1,11 +1,11 @@
-/* HTG Hildesheim PWA – vanilla JS */
+/* HGH Schüler-PWA – vanilla JS */
 
 const APP = {
-  name: 'HTG Hildesheim',
+  name: 'HGH Hildesheim',
   storageKeys: {
-    theme: 'htg_theme',
-    classId: 'htg_class',
-    dayId: 'htg_day'
+    theme: 'hgh_theme',
+    classId: 'hgh_class',
+    dayId: 'hgh_day'
   }
 };
 
@@ -27,7 +27,7 @@ const DAYS = [
   { id: 'fr', label: 'Freitag' }
 ];
 
-const TIMESLOTS = [
+let TIMESLOTS = [
   { id: '1', time: '08:00–08:45' },
   { id: '2', time: '08:45–09:30' },
   { id: '3', time: '09:50–10:35' },
@@ -39,90 +39,47 @@ const TIMESLOTS = [
   { id: '9', time: '14:55–15:40' }
 ];
 
-// Beispiel-Stundenplan (Platzhalter). Struktur ist final – kann 1:1 mit PDF-Daten gefüllt werden.
-// timetable[classId][dayId] = Array<{slotId, subject, teacherRoom}>
-const TIMETABLE = buildPlaceholderTimetable();
+let TIMETABLE = null;
 
-function buildPlaceholderTimetable(){
-  const template = {
-    mo: [
-      row('1','Materialkunde','M. Becker'),
-      row('2','Deutsch','F. Krüger'),
-      row('3','MEL','T. Hansen'),
-      row('4','Modul: Konstruktion','S. Weber'),
-      row('5','Englisch','A. Meyer'),
-      row('6','Projekt','Team'),
-      row('7','—',''),
-      row('8','Werkstatt','W. Schulz'),
-      row('9','Werkstatt','W. Schulz')
-    ],
-    di: [
-      row('1','Mathematik','R. König'),
-      row('2','Materialkunde','M. Becker'),
-      row('3','CAD','S. Weber'),
-      row('4','CAD','S. Weber'),
-      row('5','Deutsch','F. Krüger'),
-      row('6','Sport / Bewegung','—'),
-      row('7','—',''),
-      row('8','Projekt','Team'),
-      row('9','Projekt','Team')
-    ],
-    mi: [
-      row('1','Englisch','A. Meyer'),
-      row('2','Englisch','A. Meyer'),
-      row('3','Technologie','T. Hansen'),
-      row('4','Technologie','T. Hansen'),
-      row('5','Modul: Gestaltung','L. Fischer'),
-      row('6','Modul: Gestaltung','L. Fischer'),
-      row('7','—',''),
-      row('8','Freiarbeit','—'),
-      row('9','Freiarbeit','—')
-    ],
-    do: [
-      row('1','Projekt','Team'),
-      row('2','Projekt','Team'),
-      row('3','Wirtschaft','J. Wolf'),
-      row('4','Wirtschaft','J. Wolf'),
-      row('5','Materialkunde','M. Becker'),
-      row('6','MEL','T. Hansen'),
-      row('7','—',''),
-      row('8','Werkstatt','W. Schulz'),
-      row('9','Werkstatt','W. Schulz')
-    ],
-    fr: [
-      row('1','Deutsch','F. Krüger'),
-      row('2','Mathematik','R. König'),
-      row('3','Modul: Konstruktion','S. Weber'),
-      row('4','Modul: Konstruktion','S. Weber'),
-      row('5','Klassenteam / Orga','—'),
-      row('6','Lernzeit','—'),
-      row('7','—',''),
-      row('8','—',''),
-      row('9','—','')
-    ]
-  };
+async function loadTimetable(){
+  const url = './data/timetable.json';
+  try{
+    const res = await fetch(url, { cache: 'no-cache' });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-  const table = {};
-  for(const c of CLASSES){
-    // leichte Variation pro Klasse (nur Demo)
-    table[c.id] = {};
-    for(const d of DAYS){
-      table[c.id][d.id] = template[d.id].map(r => ({...r}));
+    // allow override of timeslots
+    if(Array.isArray(data?.timeslots) && data.timeslots.length){
+      TIMESLOTS = data.timeslots;
+    }
+
+    // classes structure
+    TIMETABLE = data?.classes || {};
+
+    // persist a last-known-good cache for offline usage
+    localStorage.setItem('hgh_timetable_cache_v1', JSON.stringify(data));
+    localStorage.setItem('hgh_timetable_cache_ts', new Date().toISOString());
+  } catch(err){
+    // fallback to last cached timetable
+    try{
+      const cached = localStorage.getItem('hgh_timetable_cache_v1');
+      if(cached){
+        const data = JSON.parse(cached);
+        if(Array.isArray(data?.timeslots) && data.timeslots.length){
+          TIMESLOTS = data.timeslots;
+        }
+        TIMETABLE = data?.classes || {};
+      }
+    } catch {}
+
+    // ultimate fallback: empty structure
+    if(!TIMETABLE){
+      TIMETABLE = {};
+      for(const c of CLASSES){
+        TIMETABLE[c.id] = { mo: [], di: [], mi: [], do: [], fr: [] };
+      }
     }
   }
-  // Beispiel: GT01 mehr Gestaltung
-  if(table.GT01){
-    table.GT01.mi = template.mi.map(r => ({...r}));
-    table.GT01.mi = table.GT01.mi.map((r) => {
-      if(r.slotId === '5' || r.slotId === '6') return {...r, subject:'Gestaltung / Design', teacherRoom:'L. Fischer'};
-      return r;
-    });
-  }
-  return table;
-}
-
-function row(slotId, subject, teacherRoom){
-  return { slotId, subject, teacherRoom };
 }
 
 function qs(sel, root=document){return root.querySelector(sel)}
@@ -343,13 +300,16 @@ function initDarkToggle(){
   });
 }
 
-function boot(){
+async function boot(){
   initTheme();
   initDarkToggle();
   initNav();
   initSelects();
+
+  await loadTimetable();
   renderTimetable();
   renderTodayPreview();
+
   initInstallHint();
   initServiceWorker();
   initFooter();

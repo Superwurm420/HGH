@@ -1,7 +1,7 @@
 {
-  "name": "Holztechnik Hildesheim",
-  "short_name": "HTG",
-  "description": "Stundenplan, Links & Instagram – HTG Hildesheim (PWA)",
+  "name": "Holztechnik und Gestaltung Hildesheim (Fachschule)",
+  "short_name": "HGH",
+  "description": "Stundenplan, Links & Instagram – HGH Hildesheim (PWA)",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
