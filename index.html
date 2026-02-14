@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b5cff" />
   <meta name="description" content="HGH Hildesheim – Stundenplan, Links & Instagram als PWA" />
+  <meta name="color-scheme" content="dark light" />
 
   <title>HGH Hildesheim</title>
 
@@ -18,7 +19,7 @@
   <a class="skip" href="#main">Zum Inhalt springen</a>
 
   <header class="topbar">
-    <div class="brand" aria-label="App Titel">
+    <div class="brand">
       <div class="logo" aria-hidden="true">HGH</div>
       <div class="brandText">
         <div class="brandTitle">Holztechnik und Gestaltung Hildesheim</div>
@@ -27,26 +28,26 @@
     </div>
 
     <div class="topActions">
-      <button id="darkToggle" class="iconBtn" type="button" aria-label="Dark Mode umschalten" title="Dark Mode">
+      <button id="darkToggle" class="iconBtn surface" type="button" aria-label="Farbschema umschalten" title="Theme">
         <span class="icon" aria-hidden="true">◐</span>
       </button>
     </div>
   </header>
 
   <nav class="nav" aria-label="Hauptnavigation">
-    <button class="navItem" data-route="home" aria-current="page">
+    <button class="navItem surface" data-route="home" aria-current="page">
       <span class="navIcon" aria-hidden="true">⌂</span>
       <span>Home</span>
     </button>
-    <button class="navItem" data-route="timetable">
+    <button class="navItem surface" data-route="timetable">
       <span class="navIcon" aria-hidden="true">▦</span>
       <span>Stundenplan</span>
     </button>
-    <button class="navItem" data-route="links">
+    <button class="navItem surface" data-route="links">
       <span class="navIcon" aria-hidden="true">⛓</span>
       <span>Links</span>
     </button>
-    <button class="navItem" data-route="instagram">
+    <button class="navItem surface" data-route="instagram">
       <span class="navIcon" aria-hidden="true">◎</span>
       <span>Instagram</span>
     </button>
@@ -55,17 +56,17 @@
   <main id="main" class="main">
     <!-- HOME -->
     <section class="view" data-view="home">
-      <div class="card hero">
+      <div class="card hero surface">
         <div class="heroLeft">
           <h1>HGH Hildesheim</h1>
           <p class="muted">
             Schnellzugriff auf Stundenplan, Links und Instagram – offlinefähig als PWA.
           </p>
 
-          <div class="chips" aria-label="Schnellinfos">
-            <span class="chip">Mobile-first</span>
-            <span class="chip">Offline Cache</span>
-            <span class="chip">Dark Mode</span>
+          <div class="chips" aria-label="Schnellinfos" role="list">
+            <span class="chip" role="listitem">Mobile-first</span>
+            <span class="chip" role="listitem">Offline Cache</span>
+            <span class="chip" role="listitem">Dark Mode</span>
           </div>
 
           <div class="ctaRow">
@@ -94,14 +95,14 @@
       </div>
 
       <div class="grid2">
-        <div class="card">
+        <div class="card surface">
           <h2>Heute</h2>
           <p class="muted" id="todayLabel">—</p>
           <div id="todayPreview" class="list" aria-label="Heutiger Stundenplan (Vorschau)"></div>
           <div class="small muted">Tipp: In „Stundenplan“ Klasse auswählen.</div>
         </div>
 
-        <div class="card">
+        <div class="card surface">
           <h2>Installieren</h2>
           <p class="muted">Diese Seite ist eine Progressive Web App.</p>
           <ul class="bullets">
@@ -115,7 +116,7 @@
 
     <!-- TIMETABLE -->
     <section class="view" data-view="timetable" hidden>
-      <div class="card">
+      <div class="card surface">
         <div class="row wrap">
           <div>
             <h2>Stundenplan</h2>
@@ -137,13 +138,13 @@
           </div>
         </div>
 
-        <div class="timetable" aria-label="Stundenplan Tabelle">
-          <div class="timetableHeader">
-            <div class="th">Zeit</div>
-            <div class="th">Fach</div>
-            <div class="th">Lehrkraft / Raum</div>
+        <div class="timetable" role="table" aria-label="Stundenplan">
+          <div class="timetableHeader" role="row">
+            <div class="th" role="columnheader">Zeit</div>
+            <div class="th" role="columnheader">Fach</div>
+            <div class="th" role="columnheader">Lehrkraft / Raum</div>
           </div>
-          <div id="timetableBody" class="timetableBody"></div>
+          <div id="timetableBody" class="timetableBody" role="rowgroup"></div>
         </div>
 
         <div class="small muted" style="margin-top:12px;">
@@ -154,7 +155,7 @@
 
     <!-- LINKS -->
     <section class="view" data-view="links" hidden>
-      <div class="card">
+      <div class="card surface">
         <h2>Links</h2>
         <p class="muted">Wichtige Schnellzugriffe.</p>
 
@@ -184,14 +185,14 @@
 
     <!-- INSTAGRAM -->
     <section class="view" data-view="instagram" hidden>
-      <div class="card">
+      <div class="card surface">
         <h2>Instagram</h2>
         <p class="muted">
           Embed ist oft durch Tracking/Cookies/CORS eingeschränkt. Daher bieten wir standardmäßig den direkten Link.
         </p>
 
-        <div class="igGrid" id="igGrid" aria-label="Instagram Vorschau (öffentlich)">
-          <a class="igTile" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram Profil öffnen">
+        <div class="igGrid" id="igGrid" aria-label="Instagram Vorschau" role="list">
+          <a class="igTile igCTA" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram-Profil @hgh.hildesheim öffnen" role="listitem">
             <div class="igTileTop">
               <div class="igAvatar" aria-hidden="true">HGH</div>
               <div>
@@ -199,36 +200,20 @@
                 <div class="small muted">Profil öffnen</div>
               </div>
             </div>
-            <div class="igHover">Öffentliches Grid ist ohne API oft blockiert (CORS/Cookies). Tippe hier, um das Profil zu öffnen.</div>
+            <div class="igHover">Tippe hier, um das Profil zu öffnen.</div>
           </a>
 
-          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
+          <div class="igTile igInfo" role="listitem" aria-label="Hinweis: Vorschau ohne API">
             <div class="igTileCenter">
-              <div class="igPlus">+</div>
-              <div class="small muted">Bilder via RSS/Embed
-                <br/>optional nachrüstbar</div>
+              <div class="small muted">
+                Aus Datenschutz-/CORS-Gründen wird kein öffentliches Grid geladen.
+                <br/>Nutze den Button „Profil öffnen“.
+              </div>
             </div>
-            <div class="igHover">Wenn wir später einen öffentlichen RSS/Embed-Endpunkt nutzen, kann hier ein echtes Grid erscheinen.</div>
-          </a>
-
-          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
-            <div class="igTileCenter">
-              <div class="igPlus">+</div>
-              <div class="small muted">Platzhalter</div>
-            </div>
-            <div class="igHover">Platzhalter</div>
-          </a>
-
-          <a class="igTile placeholder" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener" aria-label="Instagram öffnen">
-            <div class="igTileCenter">
-              <div class="igPlus">+</div>
-              <div class="small muted">Platzhalter</div>
-            </div>
-            <div class="igHover">Platzhalter</div>
-          </a>
+          </div>
         </div>
 
-        <div class="igBox" style="margin-top:14px;">
+        <div class="igBox">
           <div class="row wrap" style="align-items:center; justify-content:space-between; gap:12px;">
             <div>
               <div class="igHandle">@hgh.hildesheim</div>
