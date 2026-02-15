@@ -43,6 +43,10 @@
       <span class="navIcon" aria-hidden="true">▦</span>
       <span>Stundenplan</span>
     </button>
+    <button class="navItem surface" data-route="week">
+      <span class="navIcon" aria-hidden="true">☷</span>
+      <span>Woche</span>
+    </button>
     <button class="navItem surface" data-route="links">
       <span class="navIcon" aria-hidden="true">⛓</span>
       <span>Links</span>
@@ -97,6 +101,19 @@
       <div class="grid2">
         <div class="card surface">
           <h2>Heute</h2>
+          <div class="netRow" aria-label="Netzwerkstatus">
+            <span id="netIndicator" class="netIndicator" data-status="unknown" aria-hidden="true"></span>
+            <span id="netLabel" class="small muted">—</span>
+          </div>
+
+          <div class="countdown" aria-label="Countdown zur nächsten Stunde">
+            <div class="countdownTop">
+              <div class="small muted">Aktuelle Uhrzeit</div>
+              <div id="nowTime" class="nowTime">—</div>
+            </div>
+            <div id="countdownText" class="countdownText">—</div>
+          </div>
+
           <p class="muted" id="todayLabel">—</p>
           <div id="todayPreview" class="list" aria-label="Heutiger Stundenplan (Vorschau)"></div>
           <div class="small muted">Tipp: In „Stundenplan“ Klasse auswählen.</div>
@@ -111,6 +128,27 @@
           </ul>
           <div id="installHint" class="hint" role="status" aria-live="polite"></div>
         </div>
+      </div>
+    </section>
+
+    <!-- WEEK -->
+    <section class="view" data-view="week" hidden>
+      <div class="card surface">
+        <div class="row wrap">
+          <div>
+            <h2>Wochenübersicht</h2>
+            <p class="muted">Schnell-Überblick Mo–Fr.</p>
+          </div>
+
+          <div class="controls">
+            <label class="control">
+              <span class="controlLabel">Klasse</span>
+              <select id="weekClassSelect" class="select" aria-label="Klasse für Wochenübersicht auswählen"></select>
+            </label>
+          </div>
+        </div>
+
+        <div id="weekGrid" class="weekGrid" role="table" aria-label="Wochenübersicht"></div>
       </div>
     </section>
 
@@ -147,6 +185,14 @@
           <div id="timetableBody" class="timetableBody" role="rowgroup"></div>
         </div>
 
+        <div id="ttError" class="errorBox" hidden>
+          <div class="errorTitle">Stundenplan konnte nicht geladen werden.</div>
+          <div id="ttErrorMsg" class="small muted">—</div>
+          <div class="errorActions">
+            <button id="retryBtn" class="btn" type="button">Erneut versuchen</button>
+          </div>
+        </div>
+
         <div class="small muted" style="margin-top:12px;">
           Hinweis: Aktuell sind Beispiel-Daten hinterlegt. Sobald die PDF-Daten vorliegen, kann der Plan 1:1 eingepflegt werden.
         </div>
@@ -170,15 +216,15 @@
             <div class="linkUrl">@hgh.hildesheim</div>
           </a>
 
-          <div class="linkCard disabled" aria-disabled="true">
-            <div class="linkTitle">Instagram (Platzhalter)</div>
-            <div class="linkUrl">später: Account 2</div>
-          </div>
+          <a class="linkCard" href="https://www.instagram.com/hgh.gestaltung" target="_blank" rel="noopener">
+            <div class="linkTitle">Instagram (Gestaltung)</div>
+            <div class="linkUrl">@hgh.gestaltung</div>
+          </a>
 
-          <div class="linkCard disabled" aria-disabled="true">
-            <div class="linkTitle">Instagram (Platzhalter)</div>
-            <div class="linkUrl">später: Account 3</div>
-          </div>
+          <a class="linkCard" href="https://www.instagram.com/hgh.holztechnik" target="_blank" rel="noopener">
+            <div class="linkTitle">Instagram (Holztechnik)</div>
+            <div class="linkUrl">@hgh.holztechnik</div>
+          </a>
         </div>
       </div>
     </section>

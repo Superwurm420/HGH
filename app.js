@@ -9,7 +9,7 @@ const APP = {
     timetableCache: 'hgh_timetable_cache_v1',
     timetableCacheTs: 'hgh_timetable_cache_ts'
   },
-  routes: ['home', 'timetable', 'links', 'instagram']
+  routes: ['home', 'timetable', 'week', 'links', 'instagram']
 };
 
 // --- Data ---------------------------------------------------------------
@@ -121,19 +121,29 @@ function applyTimetableData(data) {
   state.timetable = data?.classes || ensureEmptyTimetable();
 }
 
-async function loadTimetable() {
+async function loadTimetable({ forceNetwork = false } = {}) {
   const url = './data/timetable.json';
-  try {
-    const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+  let lastError = null;
 
-    applyTimetableData(data);
-    localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
-    localStorage.setItem(APP.storageKeys.timetableCacheTs, new Date().toISOString());
-    return;
-  } catch {
-    // ignore -> fallback below
+  // if offline and not forced, skip network early
+  if (!forceNetwork && typeof navigator !== 'undefined' && navigator.onLine === false) {
+    lastError = new Error('offline');
+  } else {
+    try {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      applyTimetableData(data);
+      localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
+      localStorage.setItem(APP.storageKeys.timetableCacheTs, new Date().toISOString());
+
+      hideTimetableError();
+      return { source: 'network' };
+    } catch (e) {
+      lastError = e;
+      // continue to fallback
+    }
   }
 
   // fallback to last cached timetable
@@ -142,13 +152,19 @@ async function loadTimetable() {
     if (cached) {
       const data = JSON.parse(cached);
       applyTimetableData(data);
-      return;
+      showTimetableError(
+        'Offline-Fallback aktiv (Cache aus localStorage).',
+        lastError?.message === 'offline' ? 'offline' : 'cache'
+      );
+      return { source: 'cache' };
     }
   } catch {
     // ignore
   }
 
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
+  showTimetableError('Keine Cache-Daten vorhanden. Bitte später erneut versuchen.', 'empty');
+  return { source: 'empty' };
 }
 
 // --- Navigation ---------------------------------------------------------
@@ -187,6 +203,7 @@ function initNav() {
 function render() {
   renderTimetable();
   renderTodayPreview();
+  renderWeek();
 }
 
 function renderTimetable() {
@@ -273,6 +290,8 @@ function initSelects() {
 
   classSelect.addEventListener('change', () => {
     localStorage.setItem(APP.storageKeys.classId, classSelect.value);
+    // keep week view in sync
+    if (state.els.weekClassSelect) state.els.weekClassSelect.value = classSelect.value;
     render();
   });
 
@@ -287,6 +306,207 @@ function initSelects() {
     localStorage.setItem(APP.storageKeys.dayId, today);
     renderTimetable();
   });
+}
+
+// --- Countdown (Home) ---------------------------------------------------
+
+function parseSlotRangeToDates(range, baseDate = new Date()) {
+  // range like "08:00–08:45" or "08:00-08:45"; ignores "Mittagspause"
+  const m = String(range).match(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/);
+  if (!m) return null;
+  const [_, startStr, endStr] = m;
+
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+
+  const start = new Date(baseDate);
+  start.setHours(sh, sm, 0, 0);
+
+  const end = new Date(baseDate);
+  end.setHours(eh, em, 0, 0);
+
+  return { start, end };
+}
+
+function diffMinutesCeil(a, b) {
+  return Math.max(0, Math.ceil((b.getTime() - a.getTime()) / 60000));
+}
+
+function getDayScheduleRanges(dayId, baseDate = new Date()) {
+  // derive lesson ranges from timeslots (excluding breaks like slotId 7)
+  const ranges = [];
+  for (const s of state.timeslots) {
+    if (String(s.id) === '7') continue;
+    const r = parseSlotRangeToDates(s.time, baseDate);
+    if (r) ranges.push({ slotId: String(s.id), ...r });
+  }
+  ranges.sort((a, b) => a.start - b.start);
+  return ranges;
+}
+
+function updateCountdown() {
+  const nowEl = state.els.nowTime;
+  const textEl = state.els.countdownText;
+  if (!nowEl || !textEl) return;
+
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  nowEl.textContent = `${hh}:${mm}`;
+
+  const dayId = getTodayId();
+  const isWeekend = !['mo', 'di', 'mi', 'do', 'fr'].includes(dayId);
+  if (isWeekend) {
+    textEl.textContent = 'Schuljahr beendet - siehe morgen';
+    return;
+  }
+
+  const ranges = getDayScheduleRanges(dayId, now);
+  if (!ranges.length) {
+    textEl.textContent = 'Schuljahr beendet - siehe morgen';
+    return;
+  }
+
+  const lastEnd = ranges[ranges.length - 1].end;
+  if (now >= lastEnd) {
+    textEl.textContent = 'Schuljahr beendet - siehe morgen';
+    return;
+  }
+
+  // within lesson?
+  const current = ranges.find((r) => now >= r.start && now < r.end);
+  if (current) {
+    const mins = diffMinutesCeil(now, current.end);
+    textEl.textContent = `Stunde endet in ${mins} Min`;
+    return;
+  }
+
+  // else: break before next lesson
+  const next = ranges.find((r) => now < r.start);
+  if (next) {
+    const mins = diffMinutesCeil(now, next.start);
+    textEl.textContent = `Nächste Stunde in ${mins} Min`;
+    return;
+  }
+
+  textEl.textContent = 'Schuljahr beendet - siehe morgen';
+}
+
+function initCountdown() {
+  updateCountdown();
+  window.setInterval(updateCountdown, 1000 * 15);
+}
+
+// --- Network / offline UI ----------------------------------------------
+
+function updateNetworkIndicator() {
+  const ind = state.els.netIndicator;
+  const label = state.els.netLabel;
+  if (!ind || !label) return;
+
+  const online = navigator.onLine;
+  ind.dataset.status = online ? 'online' : 'offline';
+  label.textContent = online ? 'Online' : 'Offline';
+}
+
+function initNetworkIndicator() {
+  updateNetworkIndicator();
+  window.addEventListener('online', () => updateNetworkIndicator());
+  window.addEventListener('offline', () => updateNetworkIndicator());
+}
+
+function showTimetableError(message, mode = 'generic') {
+  const box = state.els.ttError;
+  const msg = state.els.ttErrorMsg;
+  if (!box || !msg) return;
+
+  msg.textContent = message;
+  box.hidden = false;
+
+  // show retry always, but hint when offline
+  if (state.els.retryBtn) {
+    state.els.retryBtn.disabled = mode === 'offline' && navigator.onLine === false;
+  }
+}
+
+function hideTimetableError() {
+  if (state.els.ttError) state.els.ttError.hidden = true;
+}
+
+function initRetry() {
+  state.els.retryBtn?.addEventListener('click', async () => {
+    await loadTimetable({ forceNetwork: true });
+    render();
+  });
+}
+
+// --- Week view ----------------------------------------------------------
+
+function initWeekSelect() {
+  const sel = state.els.weekClassSelect;
+  if (!sel) return;
+
+  sel.innerHTML = CLASSES.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
+  const savedClass = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
+  sel.value = CLASSES.some((c) => c.id === savedClass) ? savedClass : 'HT11';
+
+  sel.addEventListener('change', () => {
+    localStorage.setItem(APP.storageKeys.classId, sel.value);
+    if (state.els.classSelect) state.els.classSelect.value = sel.value;
+    render();
+  });
+}
+
+function renderWeek() {
+  const grid = state.els.weekGrid;
+  const sel = state.els.weekClassSelect;
+  if (!grid || !sel) return;
+
+  const classId = sel.value || 'HT11';
+
+  // header
+  const header = `
+    <div class="weekRow weekHeader" role="row">
+      <div class="weekCell weekCorner" role="columnheader">Stunde</div>
+      ${DAYS.map((d) => `<div class="weekCell" role="columnheader">${escapeHtml(d.label.slice(0,2))}</div>`).join('')}
+    </div>
+  `;
+
+  const slotLabel = (slot) => {
+    const t = String(slot.time);
+    if (!t.match(/\d{2}:\d{2}/)) return t;
+    return t.replace('–', '–');
+  };
+
+  const body = state.timeslots
+    .filter((s) => String(s.id) !== '7')
+    .map((slot) => {
+      const rowCells = DAYS.map((d) => {
+        const rows = state.timetable?.[classId]?.[d.id] || [];
+        const r = rows.find((x) => String(x.slotId) === String(slot.id));
+        const subject = r?.subject || '—';
+        const tr = r?.teacherRoom || '';
+        return `
+          <div class="weekCell" role="cell">
+            <div class="weekSubject">${escapeHtml(subject)}</div>
+            ${tr ? `<div class="weekMeta">${escapeHtml(tr)}</div>` : `<div class="weekMeta muted">&nbsp;</div>`}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="weekRow" role="row" aria-label="Stunde ${escapeHtml(slot.id)}">
+          <div class="weekCell weekSlot" role="rowheader">
+            <div class="weekSlotNum">${escapeHtml(slot.id)}</div>
+            <div class="weekSlotTime">${escapeHtml(slotLabel(slot))}</div>
+          </div>
+          ${rowCells}
+        </div>
+      `;
+    })
+    .join('');
+
+  grid.innerHTML = `<div class="weekTable" role="rowgroup">${header}${body}</div>`;
 }
 
 // --- Install hint -------------------------------------------------------
@@ -353,6 +573,21 @@ function cacheEls() {
     todayLabel: qs('#todayLabel'),
     todayPreview: qs('#todayPreview'),
 
+    // Home extras
+    nowTime: qs('#nowTime'),
+    countdownText: qs('#countdownText'),
+    netIndicator: qs('#netIndicator'),
+    netLabel: qs('#netLabel'),
+
+    // Week view
+    weekClassSelect: qs('#weekClassSelect'),
+    weekGrid: qs('#weekGrid'),
+
+    // Offline / errors
+    ttError: qs('#ttError'),
+    ttErrorMsg: qs('#ttErrorMsg'),
+    retryBtn: qs('#retryBtn'),
+
     installHint: qs('#installHint'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
@@ -368,10 +603,14 @@ async function boot() {
   initThemeToggle();
   initNav();
   initSelects();
+  initWeekSelect();
+  initNetworkIndicator();
+  initRetry();
 
   await loadTimetable();
   render();
 
+  initCountdown();
   initInstallHint();
   initServiceWorker();
   initFooter();
