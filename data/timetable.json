@@ -1,8 +1,10 @@
 {
   "meta": {
     "school": "HGH",
-    "validFrom": "2026-01-19",
-    "updatedAt": "2026-02-14T20:11:00+01:00"
+    "validFrom": "2026-02-16",
+    "updatedAt": "2026-02-15T12:02:00.000+01:00",
+    "source": "file_4---00eaf478-e325-4c48-800e-b862ca366549.pdf",
+    "notes": "Auto-extracted from PDF. Some entries contain only teacher abbreviation when PDF cell had no separate subject text; those values were placed in 'teacher' with subject=null. '#NV' ignored."
   },
   "timeslots": [
     { "id": "1", "time": "08:00–08:45" },
@@ -13,15 +15,137 @@
     { "id": "6", "time": "12:25–13:10" },
     { "id": "7", "time": "Mittagspause" },
     { "id": "8", "time": "14:10–14:55" },
-    { "id": "9", "time": "14:55–15:40" }
+    { "id": "9", "time": "14:55–15:40" },
+    { "id": "10", "time": "15:45–16:30" }
   ],
   "classes": {
-    "HT11": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "HT12": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "HT21": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "HT22": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "G11": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "G21": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] },
-    "GT01": { "mo": [], "di": [], "mi": [], "do": [], "fr": [] }
+    "HT11": {
+      "mo": [
+        { "slotId": "1", "subject": "Deutsch", "teacher": null, "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "MEL", "room": "" },
+        { "slotId": "3", "subject": "Modul1/KuSti", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "MEL", "room": "" },
+        { "slotId": "5", "subject": "Modul7/Excel", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WED", "room": "" }
+      ],
+      "di": [],
+      "mi": [],
+      "do": [],
+      "fr": []
+    },
+    "HT12": {
+      "mo": [
+        { "slotId": "3", "subject": "Modul7/Excel", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "5", "subject": "Modul2/Statik", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "HOFF", "room": "" }
+      ],
+      "di": [],
+      "mi": [],
+      "do": [],
+      "fr": []
+    },
+    "HT21": {
+      "mo": [],
+      "di": [],
+      "mi": [],
+      "do": [],
+      "fr": []
+    },
+    "HT22": {
+      "mo": [
+        { "slotId": "3", "subject": "Modul5/Betriebsplanung", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "HOG", "room": "" },
+        { "slotId": "5", "subject": "Modul5/AV", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "TAM", "room": "" }
+      ],
+      "di": [],
+      "mi": [],
+      "do": [],
+      "fr": []
+    },
+    "G11": {
+      "mo": [
+        { "slotId": "1", "subject": "Materialkunde", "teacher": null, "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "BER/WEZ", "room": "" },
+        { "slotId": "3", "subject": "Freihandzeichnen", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "5", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WEZ", "room": "" },
+        { "slotId": "7", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "8", "subject": null, "teacher": "WEZ", "room": "" }
+      ],
+      "di": [],
+      "mi": [
+        { "slotId": "3", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WEN", "room": "" }
+      ],
+      "do": [
+        { "slotId": "2", "subject": null, "teacher": "MEL", "room": "" },
+        { "slotId": "3", "subject": null, "teacher": "MEL", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "MEL", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "MEL", "room": "" }
+      ],
+      "fr": []
+    },
+    "G21": {
+      "mo": [
+        { "slotId": "1", "subject": "MöKo-Meisterstück", "teacher": null, "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "STE", "room": "" },
+        { "slotId": "3", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "BER/WEZ", "room": "" },
+        { "slotId": "5", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "BER", "room": "" }
+      ],
+      "di": [
+        { "slotId": "3", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WEZ/PET", "room": "" }
+      ],
+      "mi": [
+        { "slotId": "1", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "3", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "WED", "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WED", "room": "" }
+      ],
+      "do": [
+        { "slotId": "6", "subject": null, "teacher": "HOFF", "room": "" }
+      ],
+      "fr": []
+    },
+    "GT01": {
+      "__note": "In the PDF the column header is 'GT 01'. Stored here as key GT01." ,
+      "mo": [
+        { "slotId": "1", "subject": "Materialkunde", "teacher": null, "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "BER/WEZ", "room": "" },
+        { "slotId": "3", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "BER/WEZ", "room": "" },
+        { "slotId": "5", "subject": "Entwurf/Konstruktion", "teacher": null, "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "BER", "room": "" }
+      ],
+      "di": [
+        { "slotId": "3", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "WEZ/PET", "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WEZ/PET", "room": "" }
+      ],
+      "mi": [
+        { "slotId": "1", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "2", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "3", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "4", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "5", "subject": null, "teacher": "WEN", "room": "" },
+        { "slotId": "6", "subject": null, "teacher": "WEN", "room": "" }
+      ],
+      "do": [
+        { "slotId": "6", "subject": null, "teacher": "#NV", "room": "" }
+      ],
+      "fr": []
+    }
   }
 }
