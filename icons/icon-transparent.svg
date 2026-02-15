@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- No background - transparent -->
+  
+  <!-- Subtle grid lines -->
+  <line x1="100" y1="40" x2="100" y2="160" stroke="rgba(11,92,255,0.4)" stroke-width="2"/>
+  <line x1="40" y1="100" x2="160" y2="100" stroke="rgba(11,92,255,0.4)" stroke-width="2"/>
+  
+  <!-- 2x2 Grid containers with subtle backgrounds -->
+  <!-- Top-Left: H -->
+  <rect x="42" y="42" width="54" height="54" rx="8" fill="rgba(11,92,255,0.15)"/>
+  <text x="69" y="85" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" fill="#000000" text-anchor="middle">H</text>
+  
+  <!-- Top-Right: I -->
+  <rect x="104" y="42" width="54" height="54" rx="8" fill="rgba(11,92,255,0.25)"/>
+  <text x="131" y="85" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" fill="#0b5cff" text-anchor="middle">I</text>
+  
+  <!-- Bottom-Left: G -->
+  <rect x="42" y="104" width="54" height="54" rx="8" fill="rgba(11,92,255,0.25)"/>
+  <text x="69" y="147" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" fill="#0b5cff" text-anchor="middle">G</text>
+  
+  <!-- Bottom-Right: H -->
+  <rect x="104" y="104" width="54" height="54" rx="8" fill="rgba(11,92,255,0.15)"/>
+  <text x="131" y="147" font-family="system-ui, -apple-system, sans-serif" font-size="38" font-weight="800" fill="#000000" text-anchor="middle">H</text>
+</svg>
