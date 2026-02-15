@@ -123,10 +123,20 @@
         <div class="card surface">
           <h2>Installieren</h2>
           <p class="muted">Diese Seite ist eine Progressive Web App.</p>
+
+          <!-- Hinweis nur für Erstbesucher (wenn nicht als PWA installiert) -->
+          <div id="installBanner" class="installBanner" role="status" aria-live="polite" hidden>
+            <div class="installBannerText">
+              Installiere diese App für Offline-Zugriff: Android = Menü → 'App installieren', iOS = Teilen → 'Zum Home-Bildschirm'
+            </div>
+            <button id="installBannerClose" class="installBannerClose" type="button" aria-label="Hinweis schließen">×</button>
+          </div>
+
           <ul class="bullets">
             <li>Android/Chrome: Menü → „App installieren“</li>
             <li>iOS/Safari: Teilen → „Zum Home-Bildschirm“</li>
           </ul>
+
           <div id="installHint" class="hint" role="status" aria-live="polite"></div>
         </div>
       </div>

@@ -192,6 +192,31 @@ body{
 .bullets{margin:10px 0 0; padding-left:18px; color:var(--muted)}
 .hint{margin-top:10px; color:var(--muted); font-size:12px}
 
+.installBanner{
+  margin-top:12px;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid rgba(11,92,255,.45);
+  background: rgba(11,92,255,.10);
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+.installBannerText{font-size:12px; color:var(--text); line-height:1.35}
+.installBannerClose{
+  margin-left:auto;
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-size:18px;
+  line-height:1;
+}
+.installBannerClose:active{transform: translateY(1px)}
+
 .row{display:flex; align-items:flex-start; justify-content:space-between; gap:14px}
 .wrap{flex-wrap:wrap}
 .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}

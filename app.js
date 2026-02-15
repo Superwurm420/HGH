@@ -6,6 +6,7 @@ const APP = {
     theme: 'hgh_theme',
     classId: 'hgh_class',
     dayId: 'hgh_day',
+    installHintShown: 'hgh_install_hint_shown',
     timetableCache: 'hgh_timetable_cache_v1',
     timetableCacheTs: 'hgh_timetable_cache_ts'
   },
@@ -206,6 +207,13 @@ function render() {
   renderWeek();
 }
 
+function formatTeacherRoom(teacher, room) {
+  const parts = [];
+  if (teacher) parts.push(String(teacher));
+  if (room) parts.push(`Raum: ${room}`);
+  return parts.join(' · ');
+}
+
 function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
   const dayId = state.els.daySelect?.value || 'mo';
@@ -219,14 +227,14 @@ function renderTimetable() {
   body.innerHTML = state.timeslots
     .map((s) => {
       const r = bySlot.get(s.id);
-      const subject = r?.subject || '—';
-      const tr = r?.teacherRoom || '';
+      const subject = r?.subject || (r?.teacher ? '—' : '—');
+      const meta = formatTeacherRoom(r?.teacher, r?.room);
 
       return `
       <div class="tr" role="row" aria-label="${escapeHtml(s.time)}">
         <div class="td"><span class="time">${escapeHtml(s.time)}</span></div>
         <div class="td">${escapeHtml(subject)}</div>
-        <div class="td">${tr ? `<small>${escapeHtml(tr)}</small>` : '<small class="muted">&nbsp;</small>'}</div>
+        <div class="td">${meta ? `<small>${escapeHtml(meta)}</small>` : '<small class="muted">&nbsp;</small>'}</div>
       </div>
     `;
     })
@@ -258,17 +266,21 @@ function renderTodayPreview() {
 
   list.innerHTML = rows
     .map(
-      (r) => `
+      (r) => {
+        const subject = r?.subject ?? '—';
+        const meta = formatTeacherRoom(r?.teacher, r?.room);
+        return `
     <div class="listItem">
       <div>
         <div class="time">${escapeHtml(slotTime(r.slotId))}</div>
       </div>
       <div>
-        <div>${escapeHtml(r.subject || '—')}</div>
-        <div class="sub">${escapeHtml(r.teacherRoom || '')}</div>
+        <div>${escapeHtml(subject)}</div>
+        <div class="sub">${escapeHtml(meta || '')}</div>
       </div>
     </div>
-  `
+  `;
+      }
     )
     .join('');
 }
@@ -485,11 +497,11 @@ function renderWeek() {
         const rows = state.timetable?.[classId]?.[d.id] || [];
         const r = rows.find((x) => String(x.slotId) === String(slot.id));
         const subject = r?.subject || '—';
-        const tr = r?.teacherRoom || '';
+        const meta = formatTeacherRoom(r?.teacher, r?.room);
         return `
           <div class="weekCell" role="cell">
             <div class="weekSubject">${escapeHtml(subject)}</div>
-            ${tr ? `<div class="weekMeta">${escapeHtml(tr)}</div>` : `<div class="weekMeta muted">&nbsp;</div>`}
+            ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">&nbsp;</div>`}
           </div>
         `;
       }).join('');
@@ -511,21 +523,51 @@ function renderWeek() {
 
 // --- Install hint -------------------------------------------------------
 
+function isStandalone() {
+  return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+
 function initInstallHint() {
   const hint = state.els.installHint;
-  if (!hint) return;
+  const banner = state.els.installBanner;
+  const closeBtn = state.els.installBannerClose;
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    safeSetText(
-      hint,
-      'Installierbar: Du kannst die App über das Browser-Menü installieren.'
-    );
+  // Banner: nur wenn nicht installiert + noch nicht gesehen
+  try {
+    const seen = localStorage.getItem(APP.storageKeys.installHintShown) === '1';
+    if (!isStandalone() && !seen && banner) {
+      banner.hidden = false;
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  closeBtn?.addEventListener('click', () => {
+    if (banner) banner.hidden = true;
+    try {
+      localStorage.setItem(APP.storageKeys.installHintShown, '1');
+    } catch {
+      // ignore
+    }
   });
 
-  window.addEventListener('appinstalled', () => {
-    safeSetText(hint, 'App installiert – läuft auch offline (Basisfunktionen).');
-  });
+  // Zusatz-Hint (optional): when browser indicates installability
+  if (hint) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      safeSetText(hint, 'Installierbar: Du kannst die App über das Browser-Menü installieren.');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      safeSetText(hint, 'App installiert – läuft auch offline (Basisfunktionen).');
+      if (banner) banner.hidden = true;
+      try {
+        localStorage.setItem(APP.storageKeys.installHintShown, '1');
+      } catch {
+        // ignore
+      }
+    });
+  }
 }
 
 // --- Service worker -----------------------------------------------------
@@ -589,6 +631,8 @@ function cacheEls() {
     retryBtn: qs('#retryBtn'),
 
     installHint: qs('#installHint'),
+    installBanner: qs('#installBanner'),
+    installBannerClose: qs('#installBannerClose'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
 
