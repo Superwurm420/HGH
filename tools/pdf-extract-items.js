@@ -3,7 +3,7 @@
 // Usage: node tools/pdf-extract-items.js input.pdf out.json
 
 const fs = require('fs');
-const pdfjsLib = require('pdfjs-dist');
+const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
 
 const inPdf = process.argv[2];
 const outJson = process.argv[3] || 'tmp_pdf_items.json';
