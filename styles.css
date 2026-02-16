@@ -67,8 +67,17 @@ body{
 .logoImg{
   width:44px;
   height:44px;
+  max-width:44px;
+  max-height:44px;
   object-fit:contain;
   display:block;
+  flex-shrink:0;
+}
+
+.brand .logo{
+  flex-shrink:0;
+  min-width:44px;
+  min-height:44px;
 }
 .brandText{min-width:0}
 .brandTitle{font-weight:750; font-size:15px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
