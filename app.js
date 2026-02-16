@@ -2,7 +2,7 @@
 
 const APP = {
   name: 'HGH Hildesheim',
-  version: '1.1.0',
+  version: '1.2.0',
   storageKeys: {
     theme: 'hgh_theme',
     classId: 'hgh_class',
@@ -136,6 +136,15 @@ function isWeekday() {
  */
 function safeSetText(el, text) {
   if (el) el.textContent = text;
+}
+
+/**
+ * Prüft ob ein Timeslot eine Pause ist (kein echtes Zeitformat)
+ * @param {Object} slot - Timeslot mit id und time
+ * @returns {boolean} true wenn Pause (z.B. "Mittagspause")
+ */
+function isBreakSlot(slot) {
+  return !String(slot?.time || '').match(/\d{2}:\d{2}/);
 }
 
 /**
@@ -290,18 +299,28 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     const cached = localStorage.getItem(APP.storageKeys.timetableCache);
     if (cached) {
       const data = JSON.parse(cached);
-      
+
       // Validiere Cache-Daten
       if (!isValidTimetableData(data)) {
         throw new Error('Ungültige Cache-Daten');
       }
-      
+
+      // Prüfe Cache-Alter
+      const cacheTs = localStorage.getItem(APP.storageKeys.timetableCacheTs);
+      const cacheAge = cacheTs ? (Date.now() - new Date(cacheTs).getTime()) : Infinity;
+      const isStale = cacheAge > APP.constants.CACHE_MAX_AGE;
+
       applyTimetableData(data);
-      
-      const errorMsg = lastError?.message === 'offline' 
-        ? 'Offline-Modus: Zeige letzte gespeicherte Daten.'
-        : 'Netzwerk-Fehler: Zeige Cache-Daten.';
-      
+
+      let errorMsg;
+      if (lastError?.message === 'offline') {
+        errorMsg = 'Offline-Modus: Zeige letzte gespeicherte Daten.';
+      } else if (isStale) {
+        errorMsg = 'Netzwerk-Fehler: Zeige veraltete Cache-Daten (älter als 24h).';
+      } else {
+        errorMsg = 'Netzwerk-Fehler: Zeige Cache-Daten.';
+      }
+
       showTimetableError(errorMsg, lastError?.message === 'offline' ? 'offline' : 'cache');
       state.isLoading = false;
       return { source: 'cache' };
@@ -441,8 +460,9 @@ function renderTodayPreview() {
 
   todayLabel.textContent = `${dayName} · Klasse ${className}`;
 
+  const breakSlotIds = new Set(state.timeslots.filter(isBreakSlot).map(s => s.id));
   const rows = (state.timetable?.[classId]?.[todayId] || [])
-    .filter((r) => r.slotId !== '7') // Mittagspause ausblenden
+    .filter((r) => !breakSlotIds.has(r.slotId))
     .slice(0, 4);
 
   if (rows.length === 0) {
@@ -595,7 +615,7 @@ function diffMinutesCeil(a, b) {
 function getDayScheduleRanges(dayId, baseDate = new Date()) {
   const ranges = [];
   for (const s of state.timeslots) {
-    if (String(s.id) === '7') continue; // Mittagspause überspringen
+    if (isBreakSlot(s)) continue; // Pausen überspringen
     const r = parseSlotRangeToDates(s.time, baseDate);
     if (r) ranges.push({ slotId: String(s.id), ...r });
   }
@@ -834,7 +854,7 @@ function renderWeek() {
     return t;
   };
 
-  const slots = state.timeslots.filter((s) => String(s.id) !== '7');
+  const slots = state.timeslots.filter((s) => !isBreakSlot(s));
 
   // Doppelstunden-Merge: 1+2, 3+4, 5+6, 8+9
   const MERGE_PAIRS = [

@@ -1,6 +1,6 @@
 /* Service Worker – offline-first for app shell (optimized & improved) */
 
-const VERSION = 'v1.1.0'; // Aktualisiert mit neuer app.js
+const VERSION = 'v1.2.0'; // Fix: timetable.json network-first
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 // Assets für Offline-Funktionalität
@@ -120,6 +120,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Stundenplan-Daten: Network-first (damit Updates sofort sichtbar sind)
+  if (url.pathname.endsWith('/timetable.json')) {
+    event.respondWith(handleTimetableRequest(req));
+    return;
+  }
+
   // Statische Assets: Cache-first mit Network-Fallback
   event.respondWith(handleAssetRequest(req));
 });
@@ -200,6 +206,43 @@ async function handleNavigationRequest(req) {
         } 
       }
     );
+  }
+}
+
+/**
+ * Behandelt Stundenplan-Requests (timetable.json)
+ * Strategie: Network-first mit Cache-Fallback (damit Updates sofort sichtbar sind)
+ * @param {Request} req - Request-Objekt
+ * @returns {Promise<Response>} Response
+ */
+async function handleTimetableRequest(req) {
+  const cache = await caches.open(CACHE);
+
+  try {
+    const fresh = await fetch(req, {
+      cache: 'no-cache',
+      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+    });
+
+    if (fresh && fresh.status === 200) {
+      cache.put(req, fresh.clone());
+      log('Timetable: Fresh from network');
+      return fresh;
+    }
+
+    throw new Error(`Network response not OK: ${fresh.status}`);
+  } catch (err) {
+    log('Timetable: Falling back to cache', err.message);
+
+    const cached = await cache.match(req);
+    if (cached) {
+      return cached;
+    }
+
+    return new Response('{}', {
+      status: 504,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
