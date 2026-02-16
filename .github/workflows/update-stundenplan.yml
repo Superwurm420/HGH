@@ -1,0 +1,107 @@
+name: Update Stundenplan
+
+# Trigger: Läuft automatisch wenn PDF in /plan/ geändert wird
+on:
+  push:
+    paths:
+      - 'plan/*.pdf'
+  workflow_dispatch:  # Erlaubt manuellen Trigger
+
+jobs:
+  update-timetable:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Repository auschecken
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Vollständige History
+
+      # 2. Node.js einrichten
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Dependencies installieren
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install pdf-parse
+
+      # 4. PDF-Parser ausführen
+      - name: Parse PDF to JSON
+        run: |
+          echo "🔍 Searching for PDF files..."
+          PDF_FILE=$(find plan/ -name "*.pdf" -type f | head -n 1)
+          
+          if [ -z "$PDF_FILE" ]; then
+            echo "❌ No PDF found in /plan/"
+            exit 1
+          fi
+          
+          echo "📄 Found PDF: $PDF_FILE"
+          
+          # Datum aus Dateiname extrahieren (optional)
+          VALID_FROM=$(date +%Y-%m-%d)
+          
+          echo "🔄 Running parser..."
+          node tools/pdf-parser-specialized.js "$PDF_FILE" \
+            --out data/timetable.json \
+            --validFrom "$VALID_FROM"
+          
+          echo "✅ Parser completed"
+
+      # 5. Prüfen ob JSON erstellt wurde
+      - name: Verify output
+        run: |
+          if [ ! -f "data/timetable.json" ]; then
+            echo "❌ timetable.json was not created"
+            exit 1
+          fi
+          
+          echo "✅ timetable.json exists"
+          
+          # Zeige Statistiken
+          echo ""
+          echo "📊 Statistics:"
+          node tools/test-parser.js data/timetable.json
+
+      # 6. Änderungen committen
+      - name: Commit updated timetable
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Prüfe ob es Änderungen gibt
+          if git diff --quiet data/timetable.json; then
+            echo "ℹ️  No changes in timetable.json"
+            exit 0
+          fi
+          
+          git add data/timetable.json
+          
+          # Commit message mit PDF-Name
+          PDF_NAME=$(basename plan/*.pdf)
+          git commit -m "🔄 Auto-update: Stundenplan aus $PDF_NAME
+
+          - Parser: pdf-parser-specialized
+          - Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - Triggered by: ${{ github.event_name }}"
+          
+          echo "✅ Changes committed"
+
+      # 7. Änderungen pushen
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+
+      # 8. Deployment triggern (falls GitHub Pages genutzt wird)
+      - name: Trigger deployment
+        run: |
+          echo "✅ Stundenplan updated successfully!"
+          echo "🚀 GitHub Pages will deploy automatically"
