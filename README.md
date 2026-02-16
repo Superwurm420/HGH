@@ -1,10 +1,7 @@
-# HGH Hildesheim – Schüler-PWA (Vanilla)
+# HGH  – Schüler App (Betaversion)
 
 Schul-PWA (HTML/CSS/JS) für **Holztechnik und Gestaltung Hildesheim (Fachschule)** mit:
-- Navigation: Home, Stundenplan, Links, Instagram
-- Stundenplan: Klassen-Dropdown + Tagesauswahl (Heute/Mo–Fr)
-- Dark Mode Toggle
-- PWA: Manifest + Service Worker (Offline App-Shell)
+
 
 ## Start (lokal)
 
