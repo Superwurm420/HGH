@@ -9,7 +9,7 @@ on:
 jobs:
   update-timetable:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,47 +19,90 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install pdf-parse
-        run: |
-          echo "Installing pdf-parse..."
-          npm install pdf-parse
-          echo "Done!"
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Find PDF
+      - name: Find newest PDF
         id: find-pdf
         run: |
-          echo "Looking for PDF..."
-          PDF=$(find plan/ -name "*.pdf" -type f | head -n 1)
+          echo "Looking for newest PDF in plan/..."
+          # Neueste PDF nach Änderungszeit
+          PDF=$(ls -t plan/*.pdf 2>/dev/null | head -n 1)
           if [ -z "$PDF" ]; then
-            echo "ERROR: No PDF found!"
+            echo "ERROR: No PDF found in plan/"
             exit 1
           fi
           echo "Found: $PDF"
           echo "pdf_file=$PDF" >> $GITHUB_OUTPUT
 
+          # Alle älteren PDFs auflisten (zum späteren Löschen)
+          OLD_PDFS=$(ls -t plan/*.pdf 2>/dev/null | tail -n +2)
+          if [ -n "$OLD_PDFS" ]; then
+            echo "Old PDFs to remove:"
+            echo "$OLD_PDFS"
+            echo "has_old=true" >> $GITHUB_OUTPUT
+          else
+            echo "No old PDFs found"
+            echo "has_old=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Parser
         run: |
-          echo "Running parser..."
+          echo "Running parser on: ${{ steps.find-pdf.outputs.pdf_file }}"
           node tools/pdf-parser-specialized.js "${{ steps.find-pdf.outputs.pdf_file }}" \
             --out data/timetable.json \
             --validFrom $(date +%Y-%m-%d)
 
-      - name: Check Output
+      - name: Validate Output
         run: |
-          if [ -f "data/timetable.json" ]; then
-            echo "SUCCESS! File created"
-            ls -lh data/timetable.json
-          else
-            echo "ERROR: File not created"
+          if [ ! -f "data/timetable.json" ]; then
+            echo "ERROR: timetable.json not created"
             exit 1
           fi
+
+          # Prüfe ob JSON valide ist
+          if ! node -e "JSON.parse(require('fs').readFileSync('data/timetable.json','utf8'))"; then
+            echo "ERROR: Invalid JSON"
+            exit 1
+          fi
+
+          # Prüfe Mindestanzahl Einträge (weniger = Parser hat vermutlich nicht funktioniert)
+          ENTRIES=$(node -e "
+            const d = JSON.parse(require('fs').readFileSync('data/timetable.json','utf8'));
+            let n = 0;
+            for (const c of Object.values(d.classes || {}))
+              for (const day of Object.values(c))
+                n += Array.isArray(day) ? day.length : 0;
+            console.log(n);
+          ")
+          echo "Total entries: $ENTRIES"
+          if [ "$ENTRIES" -lt 50 ]; then
+            echo "WARNING: Only $ENTRIES entries found - parser may have failed"
+            echo "Aborting to prevent broken timetable"
+            exit 1
+          fi
+
+          echo "SUCCESS: Valid timetable with $ENTRIES entries"
+          ls -lh data/timetable.json
+
+      - name: Remove old PDFs
+        if: steps.find-pdf.outputs.has_old == 'true'
+        run: |
+          NEWEST=$(ls -t plan/*.pdf | head -n 1)
+          for f in plan/*.pdf; do
+            if [ "$f" != "$NEWEST" ]; then
+              echo "Removing old PDF: $f"
+              rm "$f"
+            fi
+          done
 
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/timetable.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update timetable"
+          git add plan/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update timetable from $(basename '${{ steps.find-pdf.outputs.pdf_file }}')"
 
       - name: Push
         uses: ad-m/github-push-action@master

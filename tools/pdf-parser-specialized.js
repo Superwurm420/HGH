@@ -35,10 +35,10 @@ const CONFIG = {
     { id: '4', time: '10:35–11:20' },
     { id: '5', time: '11:40–12:25' },
     { id: '6', time: '12:25–13:10' },
-    { id: '7', time: 'Mittagspause' },
-    { id: '8', time: '14:10–14:55' },
-    { id: '9', time: '14:55–15:40' },
-    { id: '10', time: '15:45–16:30' }
+    { id: '7', time: '14:10–14:55' },
+    { id: '8', time: '14:55–15:40' },
+    { id: '9', time: '15:45–16:30' },
+    { id: '10', time: '16:30–17:15' }
   ],
   knownTeachers: [
     'STE', 'WED', 'STI', 'BÜ', 'HOFF', 'GRO', 'TAM', 
