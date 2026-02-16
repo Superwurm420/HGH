@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint:html": "htmlhint index.html",
+    "lint:js": "jshint app.js",
+    "lint": "npm run lint:html && npm run lint:js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "htmlhint": "^1.9.1",
+    "jshint": "^2.13.6",
     "pdf-parse": "^2.4.5",
     "sharp": "^0.34.5"
   },

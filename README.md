@@ -16,6 +16,15 @@ python3 -m http.server 5173
 # dann öffnen: http://localhost:5173
 ```
 
+## Entwickeln & Linting
+
+```bash
+npm install
+npm run lint        # führt htmlhint + jshint aus
+```
+
+Optional können die Teilkommandos `npm run lint:html` bzw. `npm run lint:js` genutzt werden.
+
 ## Stundenplan-Daten
 
 Die App lädt den Stundenplan aus `data/timetable.json`.
