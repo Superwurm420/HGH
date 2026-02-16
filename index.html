@@ -4,10 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b5cff" />
-  <meta name="description" content="HGH Hildesheim – Stundenplan, Links & Instagram als PWA" />
+  <meta name="description" content="HGH Hildesheim – Stundenplan, Links & Instagram als Progressive Web App. Offline-fähig, mobile-first und mit Dark Mode." />
   <meta name="color-scheme" content="dark light" />
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="HGH Hildesheim – Schüler-PWA" />
+  <meta property="og:description" content="Stundenplan, Links & Instagram – offline-fähig als Progressive Web App" />
+  <meta property="og:url" content="https://superwurm420.github.io/HGH/" />
+  
+  <!-- PWA -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="HGH Hildesheim" />
 
-  <title>HGH Hildesheim</title>
+  <title>HGH Hildesheim – Schüler-PWA</title>
 
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
@@ -16,12 +28,22 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <!-- Skip Link für Accessibility -->
   <a class="skip" href="#main">Zum Inhalt springen</a>
 
-  <header class="topbar">
+  <!-- Header -->
+  <header class="topbar" role="banner">
     <div class="brand">
       <div class="logo" aria-hidden="true">
-        <img class="logoImg" src="./icons/logo-header.png" alt="" width="44" height="44" loading="eager" style="width:44px;height:44px;max-width:44px;max-height:44px;" />
+        <img 
+          class="logoImg" 
+          src="./icons/logo-header.png" 
+          alt="" 
+          width="44" 
+          height="44" 
+          loading="eager" 
+          style="width:44px;height:44px;max-width:44px;max-height:44px;" 
+        />
       </div>
       <div class="brandText">
         <div class="brandTitle">Holztechnik und Gestaltung Hildesheim</div>
@@ -30,37 +52,46 @@
     </div>
 
     <div class="topActions">
-      <button id="darkToggle" class="iconBtn surface" type="button" aria-label="Farbschema umschalten" title="Theme">
+      <button 
+        id="darkToggle" 
+        class="iconBtn surface" 
+        type="button" 
+        aria-label="Farbschema umschalten" 
+        title="Dark/Light Mode wechseln"
+      >
         <span class="icon" aria-hidden="true">◐</span>
       </button>
     </div>
   </header>
 
-  <nav class="nav" aria-label="Hauptnavigation">
-    <button class="navItem surface" data-route="home" aria-current="page">
+  <!-- Navigation -->
+  <nav class="nav" role="navigation" aria-label="Hauptnavigation">
+    <button class="navItem surface" data-route="home" aria-current="page" type="button">
       <span class="navIcon" aria-hidden="true">⌂</span>
       <span>Home</span>
     </button>
-    <button class="navItem surface" data-route="timetable">
+    <button class="navItem surface" data-route="timetable" type="button">
       <span class="navIcon" aria-hidden="true">▦</span>
       <span>Stundenplan</span>
     </button>
-    <button class="navItem surface" data-route="week">
+    <button class="navItem surface" data-route="week" type="button">
       <span class="navIcon" aria-hidden="true">☷</span>
       <span>Woche</span>
     </button>
-    <button class="navItem surface" data-route="links">
+    <button class="navItem surface" data-route="links" type="button">
       <span class="navIcon" aria-hidden="true">⛓</span>
       <span>Links</span>
     </button>
-    <button class="navItem surface" data-route="instagram">
+    <button class="navItem surface" data-route="instagram" type="button">
       <span class="navIcon" aria-hidden="true">◎</span>
       <span>Instagram</span>
     </button>
   </nav>
 
+  <!-- Main Content -->
   <main id="main" class="main">
-    <!-- HOME -->
+    
+    <!-- HOME VIEW -->
     <section class="view" data-view="home">
       <div class="card hero surface">
         <div class="heroLeft">
@@ -69,16 +100,38 @@
             Schnellzugriff auf Stundenplan, Links und Instagram – offlinefähig als PWA.
           </p>
 
-          <div class="chips" aria-label="Schnellinfos" role="list">
+          <div class="chips" aria-label="Features" role="list">
             <span class="chip" role="listitem">Mobile-first</span>
             <span class="chip" role="listitem">Offline Cache</span>
             <span class="chip" role="listitem">Dark Mode</span>
           </div>
 
           <div class="ctaRow">
-            <button class="btn" data-route-jump="timetable" type="button">Zum Stundenplan</button>
-            <a class="btn secondary" href="https://holztechnik-hildesheim.de/" target="_blank" rel="noopener">Schul-Website</a>
-            <a class="btn secondary" href="./plan/stundenplan.pdf" target="_blank" rel="noopener">PDF-Stundenplan</a>
+            <button 
+              class="btn" 
+              data-route-jump="timetable" 
+              type="button"
+              aria-label="Zum Stundenplan wechseln"
+            >
+              Zum Stundenplan
+            </button>
+            <a 
+              class="btn secondary" 
+              href="https://holztechnik-hildesheim.de/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              Schul-Website
+            </a>
+            <a 
+              class="btn secondary" 
+              href="./plan/stundenplan.pdf" 
+              target="_blank" 
+              rel="noopener"
+              aria-label="Stundenplan als PDF herunterladen"
+            >
+              PDF-Stundenplan
+            </a>
           </div>
         </div>
 
@@ -102,56 +155,92 @@
       </div>
 
       <div class="grid2">
+        <!-- Heute-Karte -->
         <div class="card surface">
           <h2>Heute</h2>
-          <div id="changelogBox" class="changelogBox" aria-label="Neu">
+          
+          <!-- Changelog Box -->
+          <div id="changelogBox" class="changelogBox" role="region" aria-label="Neuigkeiten">
             <div class="changelogHead">
               <div class="changelogTitle">Neu</div>
             </div>
             <ul id="changelog" class="bullets" aria-label="Letzte Updates"></ul>
           </div>
-          <div class="netRow" aria-label="Netzwerkstatus">
-            <span id="netIndicator" class="netIndicator" data-status="unknown" aria-hidden="true"></span>
+          
+          <!-- Netzwerkstatus -->
+          <div class="netRow" role="status" aria-label="Netzwerkstatus">
+            <span 
+              id="netIndicator" 
+              class="netIndicator" 
+              data-status="unknown" 
+              aria-hidden="true"
+            ></span>
             <span id="netLabel" class="small muted">—</span>
           </div>
 
-          <div class="countdown" aria-label="Countdown zur nächsten Stunde">
+          <!-- Countdown -->
+          <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
             <div class="countdownTop">
               <div class="small muted">Aktuelle Uhrzeit</div>
-              <div id="nowTime" class="nowTime">—</div>
+              <div id="nowTime" class="nowTime" aria-live="polite">—</div>
             </div>
-            <div id="countdownText" class="countdownText">—</div>
+            <div id="countdownText" class="countdownText" aria-live="polite">—</div>
             <div id="funMessage" class="funMessage" aria-live="polite">&nbsp;</div>
           </div>
 
+          <!-- Heute-Vorschau -->
           <p class="muted" id="todayLabel">—</p>
-          <div id="todayPreview" class="list" aria-label="Heutiger Stundenplan (Vorschau)"></div>
-          <div class="small muted">Tipp: In „Stundenplan“ Klasse auswählen.</div>
+          <div 
+            id="todayPreview" 
+            class="list" 
+            role="region" 
+            aria-label="Heutiger Stundenplan (Vorschau)"
+          ></div>
+          <div class="small muted">Tipp: In „Stundenplan" Klasse auswählen.</div>
         </div>
 
+        <!-- Install-Karte -->
         <div class="card surface">
           <h2>Installieren</h2>
           <p class="muted">Diese Seite ist eine Progressive Web App.</p>
 
-          <!-- Hinweis nur für Erstbesucher (wenn nicht als PWA installiert) -->
-          <div id="installBanner" class="installBanner" role="status" aria-live="polite" hidden>
+          <!-- Install-Banner (nur für Erstbesucher) -->
+          <div 
+            id="installBanner" 
+            class="installBanner" 
+            role="status" 
+            aria-live="polite" 
+            hidden
+          >
             <div class="installBannerText">
               Installiere diese App für Offline-Zugriff: Android = Menü → 'App installieren', iOS = Teilen → 'Zum Home-Bildschirm'
             </div>
-            <button id="installBannerClose" class="installBannerClose" type="button" aria-label="Hinweis schließen">×</button>
+            <button 
+              id="installBannerClose" 
+              class="installBannerClose" 
+              type="button" 
+              aria-label="Hinweis schließen"
+            >
+              ×
+            </button>
           </div>
 
           <ul class="bullets">
-            <li>Android/Chrome: Menü → „App installieren“</li>
-            <li>iOS/Safari: Teilen → „Zum Home-Bildschirm“</li>
+            <li>Android/Chrome: Menü → „App installieren"</li>
+            <li>iOS/Safari: Teilen → „Zum Home-Bildschirm"</li>
           </ul>
 
-          <div id="installHint" class="hint" role="status" aria-live="polite"></div>
+          <div 
+            id="installHint" 
+            class="hint" 
+            role="status" 
+            aria-live="polite"
+          ></div>
         </div>
       </div>
     </section>
 
-    <!-- WEEK -->
+    <!-- WEEK VIEW -->
     <section class="view" data-view="week" hidden>
       <div class="card surface">
         <div class="row wrap">
@@ -163,18 +252,35 @@
           <div class="controls">
             <label class="control">
               <span class="controlLabel">Klasse</span>
-              <select id="weekClassSelect" class="select" aria-label="Klasse für Wochenübersicht auswählen"></select>
+              <select 
+                id="weekClassSelect" 
+                class="select" 
+                aria-label="Klasse für Wochenübersicht auswählen"
+              ></select>
             </label>
 
-            <a class="btn secondary" href="./plan/stundenplan.pdf" target="_blank" rel="noopener">PDF-Stundenplan</a>
+            <a 
+              class="btn secondary" 
+              href="./plan/stundenplan.pdf" 
+              target="_blank" 
+              rel="noopener"
+              aria-label="Stundenplan als PDF öffnen"
+            >
+              PDF-Stundenplan
+            </a>
           </div>
         </div>
 
-        <div id="weekGrid" class="weekGrid" role="table" aria-label="Wochenübersicht"></div>
+        <div 
+          id="weekGrid" 
+          class="weekGrid" 
+          role="table" 
+          aria-label="Wochenübersicht aller Stunden"
+        ></div>
       </div>
     </section>
 
-    <!-- TIMETABLE -->
+    <!-- TIMETABLE VIEW -->
     <section class="view" data-view="timetable" hidden>
       <div class="card surface">
         <div class="row wrap">
@@ -184,41 +290,117 @@
           </div>
 
           <div class="controls">
+            <!-- Klassen-Auswahl -->
             <label class="control">
               <span class="controlLabel">Klasse</span>
-              <select id="classSelect" class="select" aria-label="Klasse auswählen"></select>
+              <select 
+                id="classSelect" 
+                class="select" 
+                aria-label="Klasse auswählen"
+              ></select>
             </label>
 
+            <!-- Tages-Auswahl -->
             <div class="control">
               <span class="controlLabel">Tag</span>
-              <div id="daySelectGroup" class="daySelectGroup" role="group" aria-label="Tag auswählen">
-                <button type="button" class="dayBtn" data-day="mo">Mo</button>
-                <button type="button" class="dayBtn" data-day="di">Di</button>
-                <button type="button" class="dayBtn" data-day="mi">Mi</button>
-                <button type="button" class="dayBtn" data-day="do">Do</button>
-                <button type="button" class="dayBtn" data-day="fr">Fr</button>
+              <div 
+                id="daySelectGroup" 
+                class="daySelectGroup" 
+                role="group" 
+                aria-label="Wochentag auswählen"
+              >
+                <button 
+                  type="button" 
+                  class="dayBtn" 
+                  data-day="mo"
+                  aria-label="Montag"
+                >
+                  Mo
+                </button>
+                <button 
+                  type="button" 
+                  class="dayBtn" 
+                  data-day="di"
+                  aria-label="Dienstag"
+                >
+                  Di
+                </button>
+                <button 
+                  type="button" 
+                  class="dayBtn" 
+                  data-day="mi"
+                  aria-label="Mittwoch"
+                >
+                  Mi
+                </button>
+                <button 
+                  type="button" 
+                  class="dayBtn" 
+                  data-day="do"
+                  aria-label="Donnerstag"
+                >
+                  Do
+                </button>
+                <button 
+                  type="button" 
+                  class="dayBtn" 
+                  data-day="fr"
+                  aria-label="Freitag"
+                >
+                  Fr
+                </button>
               </div>
             </div>
 
-            <button id="todayBtn" class="btn secondary" type="button">Heute</button>
+            <!-- Heute-Button -->
+            <button 
+              id="todayBtn" 
+              class="btn secondary" 
+              type="button"
+              aria-label="Zum heutigen Tag springen"
+            >
+              Heute
+            </button>
           </div>
         </div>
 
-        <div class="timetable" role="table" aria-label="Stundenplan">
+        <!-- Stundenplan-Tabelle (BUGFIX: 3 Spalten statt 4) -->
+        <div 
+          class="timetable" 
+          role="table" 
+          aria-label="Stundenplan-Tabelle"
+        >
           <div class="timetableHeader" role="row">
             <div class="th" role="columnheader">Zeit</div>
             <div class="th" role="columnheader">Fach</div>
-            <div class="th" role="columnheader">Lehrkraft</div>
-          <div class="th" role="columnheader">Raum</div>
+            <div class="th" role="columnheader">Lehrkraft / Raum</div>
           </div>
-          <div id="timetableBody" class="timetableBody" role="rowgroup"></div>
+          <div 
+            id="timetableBody" 
+            class="timetableBody" 
+            role="rowgroup"
+          ></div>
         </div>
 
-        <div id="ttError" class="errorBox" hidden>
+        <!-- Fehlerbox -->
+        <div 
+          id="ttError" 
+          class="errorBox" 
+          role="alert" 
+          aria-live="assertive"
+          hidden
+        >
           <div class="errorTitle">Stundenplan konnte nicht geladen werden.</div>
           <div id="ttErrorMsg" class="small muted">—</div>
           <div class="errorActions">
-            <button id="retryBtn" class="btn" type="button">Erneut versuchen</button>
+            <button 
+              id="retryBtn" 
+              class="btn" 
+              type="button"
+              aria-label="Stundenplan erneut laden"
+            >
+              Erneut versuchen
+            </button>
           </div>
         </div>
 
@@ -228,80 +410,148 @@
       </div>
     </section>
 
-    <!-- LINKS -->
+    <!-- LINKS VIEW -->
     <section class="view" data-view="links" hidden>
       <div class="card surface">
         <h2>Links</h2>
         <p class="muted">Wichtige Schnellzugriffe.</p>
 
-        <div class="linkCards">
-          <a class="linkCard" href="https://holztechnik-hildesheim.de/" target="_blank" rel="noopener">
+        <nav class="linkCards" aria-label="Wichtige Links">
+          <a 
+            class="linkCard" 
+            href="https://holztechnik-hildesheim.de/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
             <div class="linkTitle">Schul-Website</div>
             <div class="linkUrl">holztechnik-hildesheim.de</div>
           </a>
 
-          <a class="linkCard" href="./plan/stundenplan.pdf" target="_blank" rel="noopener">
+          <a 
+            class="linkCard" 
+            href="./plan/stundenplan.pdf" 
+            target="_blank" 
+            rel="noopener"
+          >
             <div class="linkTitle">Stundenplan (PDF)</div>
             <div class="linkUrl">PDF herunterladen</div>
           </a>
 
-          <a class="linkCard" href="https://hgh-hi.regio-box.net/" target="_blank" rel="noopener">
+          <a 
+            class="linkCard" 
+            href="https://hgh-hi.regio-box.net/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
             <div class="linkTitle">Nextcloud</div>
             <div class="linkUrl">hgh-hi.regio-box.net</div>
           </a>
-        </div>
+        </nav>
       </div>
     </section>
 
-    <!-- INSTAGRAM -->
+    <!-- INSTAGRAM VIEW -->
     <section class="view" data-view="instagram" hidden>
       <div class="card surface">
         <h2>Instagram</h2>
-        <p class="muted">Schnellzugriff auf die wichtigsten Profile (ohne Embed/Tracking).</p>
+        <p class="muted">
+          Schnellzugriff auf die wichtigsten Profile (ohne Embed/Tracking).
+        </p>
 
         <div class="linkCards" aria-label="Instagram Profile" role="list">
-          <div class="card surface" role="listitem" style="padding:14px;">
+          <!-- HT21 -->
+          <article class="card surface" role="listitem" style="padding:14px;">
             <div style="display:flex; flex-direction:column; gap:10px;">
-              <img src="./icons/logo-lunido.svg" alt="LUNIDO Logo" style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" loading="lazy" />
+              <img 
+                src="./icons/logo-lunido.svg" 
+                alt="LUNIDO Logo" 
+                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
+                loading="lazy" 
+              />
               <div>
                 <div class="linkTitle">HT21</div>
                 <div class="linkUrl">@hgh.ht21</div>
               </div>
-              <a class="btn" href="https://www.instagram.com/hgh.ht21" target="_blank" rel="noopener">Öffnen</a>
+              <a 
+                class="btn" 
+                href="https://www.instagram.com/hgh.ht21" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label="HT21 auf Instagram öffnen"
+              >
+                Öffnen
+              </a>
             </div>
-          </div>
+          </article>
 
-          <div class="card surface" role="listitem" style="padding:14px;">
+          <!-- HT22 -->
+          <article class="card surface" role="listitem" style="padding:14px;">
             <div style="display:flex; flex-direction:column; gap:10px;">
-              <img src="./icons/logo-lys.svg" alt="LYS Logo" style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" loading="lazy" />
+              <img 
+                src="./icons/logo-lys.svg" 
+                alt="LYS Logo" 
+                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
+                loading="lazy" 
+              />
               <div>
                 <div class="linkTitle">HT22</div>
                 <div class="linkUrl">@hgh.ht22</div>
               </div>
-              <a class="btn" href="https://www.instagram.com/hgh.ht22" target="_blank" rel="noopener">Öffnen</a>
+              <a 
+                class="btn" 
+                href="https://www.instagram.com/hgh.ht22" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label="HT22 auf Instagram öffnen"
+              >
+                Öffnen
+              </a>
             </div>
-          </div>
+          </article>
 
-          <div class="card surface" role="listitem" style="padding:14px;">
+          <!-- Schule -->
+          <article class="card surface" role="listitem" style="padding:14px;">
             <div style="display:flex; flex-direction:column; gap:10px;">
-              <img src="./icons/logo-hgh-grid.svg" alt="HGH Grid Logo" style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" loading="lazy" />
+              <img 
+                src="./icons/logo-hgh-grid.svg" 
+                alt="HGH Grid Logo" 
+                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
+                loading="lazy" 
+              />
               <div>
                 <div class="linkTitle">Schule</div>
                 <div class="linkUrl">@hgh.hildesheim</div>
               </div>
-              <a class="btn" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener">Öffnen</a>
+              <a 
+                class="btn" 
+                href="https://www.instagram.com/hgh.hildesheim" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                aria-label="HGH Hildesheim auf Instagram öffnen"
+              >
+                Öffnen
+              </a>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <div class="small muted">© <span id="year"></span> HGH Hildesheim · Offline-fähige PWA</div>
-      <div class="small muted" id="swStatus" aria-live="polite"></div>
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+      <div class="small muted">
+        © <span id="year"></span> HGH Hildesheim · Offline-fähige PWA
+      </div>
+      <div 
+        class="small muted" 
+        id="swStatus" 
+        role="status" 
+        aria-live="polite"
+      ></div>
     </footer>
   </main>
 
+  <!-- JavaScript -->
   <script src="./app.js" defer></script>
 </body>
 </html>
