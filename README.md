@@ -19,6 +19,7 @@ Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, C
 ⸻
 
 📄 Stundenplan per PDF aktualisieren
+
 	1.	Neue Stundenplan-PDF hochladen (bestehende Datei ersetzen).
 
 	2.	Das Upload-Script verarbeitet die PDF automatisch.
