@@ -72,6 +72,7 @@ const DEFAULT_TIMESLOTS = [
 const state = {
   timeslots: DEFAULT_TIMESLOTS,
   timetable: null,
+  selectedDayId: null,
   els: {}
 };
 
@@ -227,6 +228,7 @@ function render() {
   renderTimetable();
   renderTodayPreview();
   renderWeek();
+  renderChangelog();
 }
 
 function formatTeacherRoom(teacher, room) {
@@ -238,7 +240,7 @@ function formatTeacherRoom(teacher, room) {
 
 function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
-  const dayId = state.els.daySelect?.value || 'mo';
+  const dayId = state.selectedDayId || localStorage.getItem(APP.storageKeys.dayId) || 'mo';
 
   const rows = state.timetable?.[classId]?.[dayId] || [];
   const body = state.els.timetableBody;
@@ -309,18 +311,27 @@ function renderTodayPreview() {
 
 // --- Selects ------------------------------------------------------------
 
+function setActiveDayButton(dayId) {
+  const buttons = state.els.dayButtons || [];
+  for (const btn of buttons) {
+    const isActive = btn.dataset.day === dayId;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  }
+}
+
 function initSelects() {
-  const { classSelect, daySelect, todayBtn } = state.els;
-  if (!classSelect || !daySelect) return;
+  const { classSelect, todayBtn } = state.els;
+  if (!classSelect) return;
 
   classSelect.innerHTML = CLASSES.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
-  daySelect.innerHTML = DAYS.map((d) => `<option value="${d.id}">${d.label}</option>`).join('');
 
   const savedClass = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
   const savedDay = localStorage.getItem(APP.storageKeys.dayId) || getTodayId();
 
   classSelect.value = CLASSES.some((c) => c.id === savedClass) ? savedClass : 'HT11';
-  daySelect.value = DAYS.some((d) => d.id === savedDay) ? savedDay : 'mo';
+  state.selectedDayId = DAYS.some((d) => d.id === savedDay) ? savedDay : 'mo';
+  setActiveDayButton(state.selectedDayId);
 
   classSelect.addEventListener('change', () => {
     localStorage.setItem(APP.storageKeys.classId, classSelect.value);
@@ -329,15 +340,22 @@ function initSelects() {
     render();
   });
 
-  daySelect.addEventListener('change', () => {
-    localStorage.setItem(APP.storageKeys.dayId, daySelect.value);
-    renderTimetable();
-  });
+  for (const btn of state.els.dayButtons || []) {
+    btn.addEventListener('click', () => {
+      const dayId = btn.dataset.day;
+      if (!dayId) return;
+      state.selectedDayId = dayId;
+      localStorage.setItem(APP.storageKeys.dayId, dayId);
+      setActiveDayButton(dayId);
+      renderTimetable();
+    });
+  }
 
   todayBtn?.addEventListener('click', () => {
     const today = getTodayId();
-    daySelect.value = today;
+    state.selectedDayId = today;
     localStorage.setItem(APP.storageKeys.dayId, today);
+    setActiveDayButton(today);
     renderTimetable();
   });
 }
@@ -426,9 +444,36 @@ function updateCountdown() {
   textEl.textContent = 'Schuljahr beendet - siehe morgen';
 }
 
+function getFunMessage(now = new Date()) {
+  const day = now.getDay(); // 0 Sun ... 6 Sat
+  const hour = now.getHours();
+  const min = now.getMinutes();
+
+  // weekday specific
+  if (day === 1) return 'Montag – neue Woche, neues Glück!';
+  if (day === 5) return 'Freitag! Schnell noch durchziehen…';
+
+  // time based
+  if (hour >= 16 && hour < 17 && min >= 0) return 'Kurz nach 4? Zeit für ’ne Pause ☕';
+  if (hour >= 15) return 'Fast geschafft – gleich ist Feierabend 🎉';
+  if (hour < 8) return 'Guten Morgen – Kaffee schon am Start?';
+
+  return 'Viel Erfolg heute!';
+}
+
+function updateFunMessage() {
+  const el = state.els.funMessage;
+  if (!el) return;
+  el.textContent = getFunMessage(new Date());
+}
+
 function initCountdown() {
   updateCountdown();
-  window.setInterval(updateCountdown, 1000 * 15);
+  updateFunMessage();
+  window.setInterval(() => {
+    updateCountdown();
+    updateFunMessage();
+  }, 1000 * 15);
 }
 
 // --- Network / offline UI ----------------------------------------------
@@ -660,6 +705,20 @@ async function initServiceWorker() {
   }
 }
 
+const CHANGELOG = [
+  'Fix: Wochentags-Buttons funktionieren wieder zuverlässig',
+  'Neu: Lustige Meldung unter dem Countdown',
+  'Neu: „Neu“-Box (Changelog) auf der Startseite',
+  'UI: Größere Tages-Buttons',
+  'Branding: Schul-Logo im Header'
+];
+
+function renderChangelog() {
+  const list = state.els.changelog;
+  if (!list) return;
+  list.innerHTML = CHANGELOG.slice(0, 5).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+}
+
 function initFooter() {
   safeSetText(state.els.year, String(new Date().getFullYear()));
 }
@@ -670,7 +729,7 @@ function cacheEls() {
     views: qsa('.view'),
 
     classSelect: qs('#classSelect'),
-    daySelect: qs('#daySelect'),
+    dayButtons: qsa('#daySelectGroup .dayBtn'),
     todayBtn: qs('#todayBtn'),
 
     timetableBody: qs('#timetableBody'),
@@ -680,6 +739,8 @@ function cacheEls() {
     // Home extras
     nowTime: qs('#nowTime'),
     countdownText: qs('#countdownText'),
+    funMessage: qs('#funMessage'),
+    changelog: qs('#changelog'),
     netIndicator: qs('#netIndicator'),
     netLabel: qs('#netLabel'),
 

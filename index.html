@@ -20,7 +20,9 @@
 
   <header class="topbar">
     <div class="brand">
-      <div class="logo" aria-hidden="true">HGH</div>
+      <div class="logo" aria-hidden="true">
+        <img class="logoImg" src="./icons/logo-hgh-grid.svg" alt="" loading="eager" />
+      </div>
       <div class="brandText">
         <div class="brandTitle">Holztechnik und Gestaltung Hildesheim</div>
         <div class="brandSub">Fachschule</div>
@@ -102,6 +104,12 @@
       <div class="grid2">
         <div class="card surface">
           <h2>Heute</h2>
+          <div id="changelogBox" class="changelogBox" aria-label="Neu">
+            <div class="changelogHead">
+              <div class="changelogTitle">Neu</div>
+            </div>
+            <ul id="changelog" class="bullets" aria-label="Letzte Updates"></ul>
+          </div>
           <div class="netRow" aria-label="Netzwerkstatus">
             <span id="netIndicator" class="netIndicator" data-status="unknown" aria-hidden="true"></span>
             <span id="netLabel" class="small muted">—</span>
@@ -113,6 +121,7 @@
               <div id="nowTime" class="nowTime">—</div>
             </div>
             <div id="countdownText" class="countdownText">—</div>
+            <div id="funMessage" class="funMessage" aria-live="polite">&nbsp;</div>
           </div>
 
           <p class="muted" id="todayLabel">—</p>

@@ -231,6 +231,31 @@ body{
   color:var(--text);
 }
 
+.daySelectGroup{display:flex; gap:8px; flex-wrap:wrap}
+.dayBtn{
+  appearance:none;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  border-radius:14px;
+  padding:10px 14px;
+  font-weight:800;
+  font-size:14px;
+  min-width:48px;
+}
+.dayBtn[aria-pressed="true"],
+.dayBtn.active{
+  border-color: rgba(11,92,255,.55);
+  box-shadow: 0 0 0 4px rgba(11,92,255,.15);
+  background: rgba(11,92,255,.18);
+}
+.dayBtn:active{transform: translateY(1px)}
+
+.funMessage{font-size:12px; color:var(--muted)}
+.changelogBox{margin-top:12px; padding:12px; border-radius:16px; border:1px solid var(--line); background:rgba(255,255,255,.04)}
+.changelogHead{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+.changelogTitle{font-weight:900}
+
 .timetable{margin-top:14px; border-radius:16px; overflow:hidden; border:1px solid var(--line)}
 
 .weekGrid{margin-top:14px; border-radius:16px; overflow:auto; border:1px solid var(--line); background:rgba(255,255,255,.04)}
