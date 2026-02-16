@@ -59,11 +59,16 @@ body{
   width:44px; height:44px;
   border-radius:14px;
   display:grid; place-items:center;
-  font-weight:800;
-  letter-spacing:.5px;
-  color:white;
+  overflow:hidden;
   background:linear-gradient(135deg, var(--accent), var(--accent2));
   box-shadow:0 10px 30px rgba(11,92,255,.35);
+}
+
+.logoImg{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
 }
 .brandText{min-width:0}
 .brandTitle{font-weight:750; font-size:15px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
