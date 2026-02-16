@@ -1,60 +1,26 @@
-# HGH  – Schüler App (Betaversion)
+HGH – Schüler App (Beta)
 
-Schul-PWA (HTML/CSS/JS) für **Holztechnik und Gestaltung Hildesheim (Fachschule)** mit:
+Progressive Web App (PWA) für die Holztechnik und Gestaltung Hildesheim.
 
+Die App richtet sich an Schüler*innen der Fachschule und bündelt zentrale Informationen wie Stundenplan, Offline-Zugriff und zukünftige Erweiterungen in einer schlanken Web-Anwendung.
 
-## Start (lokal)
+⸻
 
-Service Worker funktioniert nur über HTTP(S) – nicht via `file://`.
+🎯 Ziel der App
 
-```bash
-cd /data/.openclaw/workspace/HGH
-python3 -m http.server 5173
-# dann öffnen: http://localhost:5173
-```
+Die HGH Schüler App soll:
+	•	den aktuellen Stundenplan digital und mobil verfügbar machen
+	•	auch offline funktionieren
+	•	schnell, leichtgewichtig und ohne Login nutzbar sein
+	•	als Grundlage für zukünftige Schul-Features dienen
 
-## Entwickeln & Linting
+Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, CSS und JavaScript (keine Framework-Abhängigkeiten).
 
-```bash
-npm install
-npm run lint        # führt htmlhint + jshint aus
-```
+⸻
 
-Optional können die Teilkommandos `npm run lint:html` bzw. `npm run lint:js` genutzt werden.
-
-## Stundenplan-Daten
-
-Die App lädt den Stundenplan aus `data/timetable.json`.
-
-Struktur (Auszug):
-
-```json
-{
-  "meta": { "school": "HGH", "validFrom": "2026-01-19", "updatedAt": "..." },
-  "timeslots": [ { "id": "1", "time": "08:00–08:45" } ],
-  "classes": {
-    "HT11": {
-      "mo": [ { "slotId": "1", "subject": "Deutsch", "teacher": "Ho", "room": "6" } ]
-    }
-  }
-}
-```
-
-### Offline-Fallback
-
-Beim erfolgreichen Laden wird `timetable.json` zusätzlich in `localStorage` als *last-known-good* gespeichert und bei Offline/Fehlern verwendet.
-
-## PDF Parser (Scaffold)
-
-`tools/pdf-parser.js` ist ein Node-Script als Grundlage, um aus einer Stundenplan-PDF ein `data/timetable.json` zu generieren.
-
-```bash
-npm i -D pdf-parse
-node tools/pdf-parser.js plan/stundenplan.pdf --out data/timetable.json --validFrom 2026-01-19
-```
-
-> Hinweis: PDFs sind layout-spezifisch – die eigentliche Zuordnung Klasse/Tag/Slot muss ggf. je nach PDF angepasst werden.
-
-## Icons
-
-Icons liegen in `icons/` (192/512 + maskable).
+🚀 Features (Beta)
+	•	📅 Dynamischer Stundenplan (JSON-basiert)
+	•	🔄 Offline-Fallback mit last-known-good-Speicherung
+	•	📱 Installierbar als Progressive Web App
+	•	🧰 PDF-Parser-Scaffold zur automatischen Generierung der Stundenplan-Daten
+	•	🧪 Linting für sauberen Code (htmlhint + jshint)
