@@ -18,6 +18,17 @@ Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, C
 
 ⸻
 
+📄 Stundenplan per PDF aktualisieren
+	1.	Neue Stundenplan-PDF hochladen (bestehende Datei ersetzen).
+	2.	Das Upload-Script verarbeitet die PDF automatisch.
+	3.	Die Datei data/timetable.json wird dabei automatisch neu generiert.
+	4.	App neu laden – der aktualisierte Stundenplan wird angezeigt.
+
+Es ist kein manueller Befehl notwendig.
+Die Umwandlung von PDF → JSON erfolgt automatisch nach dem Upload.
+
+⸻
+
 🚀 Features (Beta)
 	•	📅 Dynamischer Stundenplan (JSON-basiert)
 	•	🔄 Offline-Fallback mit last-known-good-Speicherung
