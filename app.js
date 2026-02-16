@@ -512,16 +512,56 @@ function renderWeek() {
     return t.replace('–', '–');
   };
 
-  const body = state.timeslots
-    .filter((s) => String(s.id) !== '7')
+  const slots = state.timeslots.filter((s) => String(s.id) !== '7');
+
+  // Double lessons: merge 1+2, 3+4, 5+6, 8+9 if subject+teacher+room match.
+  // We render a CSS grid and use `grid-row: span 2` to simulate rowspan.
+  const MERGE_PAIRS = [
+    ['1', '2'],
+    ['3', '4'],
+    ['5', '6'],
+    ['8', '9']
+  ];
+
+  const canMerge = (a, b) => {
+    if (!a || !b) return false;
+    return (a.subject || '') === (b.subject || '') && (a.teacher || '') === (b.teacher || '') && (a.room || '') === (b.room || '');
+  };
+
+  // Precompute which cells to skip + which to span
+  const spanByDaySlot = {}; // key `${dayId}:${slotId}` -> 2
+  const skipByDaySlot = {}; // key `${dayId}:${slotId}` -> true
+
+  for (const d of DAYS) {
+    const rows = state.timetable?.[classId]?.[d.id] || [];
+    const bySlot = new Map(rows.map((r) => [String(r.slotId), r]));
+
+    for (const [aId, bId] of MERGE_PAIRS) {
+      const a = bySlot.get(String(aId));
+      const b = bySlot.get(String(bId));
+      if (canMerge(a, b)) {
+        spanByDaySlot[`${d.id}:${aId}`] = 2;
+        skipByDaySlot[`${d.id}:${bId}`] = true;
+      }
+    }
+  }
+
+  const body = slots
     .map((slot) => {
       const rowCells = DAYS.map((d) => {
+        const key = `${d.id}:${slot.id}`;
+        if (skipByDaySlot[key]) return '';
+
         const rows = state.timetable?.[classId]?.[d.id] || [];
         const r = rows.find((x) => String(x.slotId) === String(slot.id));
         const subject = r?.subject || '—';
         const meta = formatTeacherRoom(r?.teacher, r?.room);
+
+        const span = spanByDaySlot[key] || 1;
+        const style = span > 1 ? ` style="grid-row: span ${span};"` : '';
+
         return `
-          <div class="weekCell" role="cell">
+          <div class="weekCell" role="cell"${style}>
             <div class="weekSubject">${escapeHtml(subject)}</div>
             ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">&nbsp;</div>`}
           </div>

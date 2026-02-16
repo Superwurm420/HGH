@@ -12,5 +12,8 @@
   "devDependencies": {
     "pdf-parse": "^2.4.5",
     "sharp": "^0.34.5"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.10.38"
   }
 }
