@@ -180,10 +180,16 @@
               <select id="classSelect" class="select" aria-label="Klasse auswählen"></select>
             </label>
 
-            <label class="control">
+            <div class="control">
               <span class="controlLabel">Tag</span>
-              <select id="daySelect" class="select" aria-label="Tag auswählen"></select>
-            </label>
+              <div id="daySelectGroup" class="daySelectGroup" role="group" aria-label="Tag auswählen">
+                <button type="button" class="dayBtn" data-day="mo">Mo</button>
+                <button type="button" class="dayBtn" data-day="di">Di</button>
+                <button type="button" class="dayBtn" data-day="mi">Mi</button>
+                <button type="button" class="dayBtn" data-day="do">Do</button>
+                <button type="button" class="dayBtn" data-day="fr">Fr</button>
+              </div>
+            </div>
 
             <button id="todayBtn" class="btn secondary" type="button">Heute</button>
           </div>
