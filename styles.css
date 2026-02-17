@@ -651,13 +651,17 @@ select:focus-visible{
 .timetableHeader,
 .tr{
   display:grid;
-  grid-template-columns:110px 1fr 1fr; /* 3 Spalten: Zeit, Fach, Lehrkraft/Raum */
+  grid-template-columns:120px 1fr 1fr; /* 3 Spalten: Zeit, Fach, Lehrkraft/Raum */
 }
 
 .th,
 .td{
   padding:10px 12px;
   border-bottom:1px solid var(--line);
+  overflow:hidden;
+  min-width:0;
+  overflow-wrap:break-word;
+  word-break:break-word;
 }
 
 .timetableHeader{
@@ -699,9 +703,11 @@ select:focus-visible{
 }
 
 .weekCell{
-  padding:10px 12px;
+  padding:10px 8px;
   border-bottom:1px solid var(--line);
   border-right:1px solid var(--line);
+  overflow:hidden;
+  min-width:0;
 }
 
 .weekRow .weekCell:last-child{
@@ -743,10 +749,14 @@ select:focus-visible{
 
 .weekSubject{
   font-weight:800;
+  font-size:12px;
+  overflow-wrap:break-word;
+  word-break:break-word;
+  hyphens:auto;
 }
 
 .weekMeta{
-  font-size:12px;
+  font-size:11px;
   margin-top:2px;
   color:var(--muted);
 }
@@ -829,7 +839,7 @@ select:focus-visible{
 @media (max-width:360px){
   .timetableHeader,
   .tr{
-    grid-template-columns:90px 1fr 1fr;
+    grid-template-columns:100px 1fr 1fr;
   }
   
   .brandTitle{
