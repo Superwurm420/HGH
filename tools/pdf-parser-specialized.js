@@ -27,9 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const pdfjsLib = require('pdfjs-dist');
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // === Configuration ===
 const CLASS_IDS = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
@@ -84,7 +82,7 @@ function log(...msgs) { if (args.debug) console.log('[DEBUG]', ...msgs); }
 // === PDF Item Extraction ===
 async function extractItems(pdfPath) {
   const data = new Uint8Array(fs.readFileSync(pdfPath));
-  const doc = await pdfjsLib.getDocument({ data }).promise;
+  const doc = await getDocument({ data, useSystemFonts: true }).promise;
   const page = await doc.getPage(1);
   const content = await page.getTextContent();
   return content.items
