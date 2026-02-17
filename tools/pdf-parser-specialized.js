@@ -315,6 +315,136 @@ function buildEmptyStructure() {
   return structure;
 }
 
+// === Post-process: Clean up misclassified entries ===
+// Some items get misclassified (class names as teacher, project fragments, etc.)
+function cleanupEntries(classes) {
+  const classNames = new Set(CONFIG.classes);
+
+  for (const classId of CONFIG.classes) {
+    for (const day of Object.values(CONFIG.dayMapping)) {
+      const entries = classes[classId][day];
+      if (!entries) continue;
+
+      for (const entry of entries) {
+        // Remove class names from teacher/subject
+        if (entry.teacher && classNames.has(entry.teacher)) {
+          entry.teacher = null;
+        }
+        if (entry.subject && classNames.has(entry.subject)) {
+          entry.subject = null;
+        }
+
+        // Fix teacher field: if it's not a real teacher, move to subject
+        if (entry.teacher && !isTeacher(entry.teacher) && !isNA(entry.teacher)) {
+          if (!entry.subject) {
+            entry.subject = entry.teacher;
+          }
+          entry.teacher = null;
+        }
+
+        // Clean up quotes from subject names ("LUNIDO" → LUNIDO)
+        if (entry.subject) {
+          entry.subject = entry.subject.replace(/[""„"«»]/g, '').trim();
+        }
+
+        // Remove entries that are entirely empty after cleanup
+        if (!entry.subject && !entry.teacher && !entry.room) {
+          entry._remove = true;
+        }
+      }
+
+      // Remove marked entries
+      classes[classId][day] = entries.filter(e => !e._remove);
+    }
+  }
+
+  return classes;
+}
+
+// === Post-process: Merge multi-line text fragments ===
+// In the PDF, project names like "UNTERNEHMENS-PROJEKT" are split across rows.
+// Detect continuation patterns (text ending with "-") and merge them.
+function mergeTextFragments(classes) {
+  for (const classId of CONFIG.classes) {
+    for (const day of Object.values(CONFIG.dayMapping)) {
+      const entries = classes[classId][day];
+      if (!entries || entries.length < 2) continue;
+
+      // Check if ALL entries for this day have no teacher/room (project day)
+      const allNoTeacher = entries.every(e => !e.teacher && !e.room);
+      if (!allNoTeacher) continue;
+
+      // Check for continuation lines (subjects ending with "-")
+      const hasFragments = entries.some(e => e.subject?.endsWith('-'));
+      if (!hasFragments) continue;
+
+      // Merge all subjects into one text
+      const merged = entries
+        .filter(e => e.subject)
+        .map(e => e.subject)
+        .reduce((acc, s) => {
+          if (acc.endsWith('-')) return acc + s;
+          return acc ? acc + ' / ' + s : s;
+        }, '');
+
+      if (merged) {
+        // Apply merged text to all slots, keep original slot IDs
+        for (const entry of entries) {
+          entry.subject = merged;
+        }
+        log(`Merged fragments for ${classId}/${day}: "${merged}"`);
+      }
+    }
+  }
+
+  return classes;
+}
+
+// === Post-process: Duplicate entries for both slots of Doppelstunden ===
+// The parser merges subject+teacher onto the first slot (1,3,5,7,9).
+// For proper display, duplicate entries to cover both slots (1+2, 3+4, etc.).
+function expandDoppelstunden(classes) {
+  const PAIRS = [['1','2'],['3','4'],['5','6'],['7','8'],['9','10']];
+
+  for (const classId of CONFIG.classes) {
+    for (const day of Object.values(CONFIG.dayMapping)) {
+      const entries = classes[classId][day];
+      if (!entries) continue;
+
+      const bySlot = new Map(entries.map(e => [e.slotId, e]));
+      const expanded = [];
+
+      for (const [first, second] of PAIRS) {
+        const a = bySlot.get(first);
+        const b = bySlot.get(second);
+
+        if (a) {
+          expanded.push({ ...a, slotId: first });
+          // Only duplicate to second slot if no separate entry exists there
+          if (!b) {
+            expanded.push({ ...a, slotId: second });
+          } else {
+            // Merge: prefer a's subject if b has none
+            expanded.push({
+              slotId: second,
+              subject: b.subject || a.subject,
+              teacher: b.teacher || a.teacher,
+              room: b.room || a.room
+            });
+          }
+        } else if (b) {
+          expanded.push({ ...b, slotId: first });
+          expanded.push({ ...b, slotId: second });
+        }
+      }
+
+      classes[classId][day] = expanded;
+    }
+  }
+
+  return classes;
+}
+
 // === Statistics ===
 function generateStats(classes) {
   const stats = { totalEntries: 0, byClass: {}, teachers: new Set(), rooms: new Set(), subjects: new Set() };
@@ -359,6 +489,15 @@ function generateStats(classes) {
 
     // Parse timetable
     const classes = parseItems(items, columns);
+
+    // Clean up misclassified entries
+    cleanupEntries(classes);
+
+    // Merge multi-line text fragments (e.g., project names split across rows)
+    mergeTextFragments(classes);
+
+    // Expand Doppelstunden: duplicate entries for both slots
+    expandDoppelstunden(classes);
 
     // Generate statistics
     const stats = generateStats(classes);

@@ -55,7 +55,9 @@ const TEACHER_MAP = {
   'WEZ': 'Wenzel',
   'HOG': 'Hogendorn',
   'BER': 'A. Berenfeld',
-  'BER/WEZ': 'Berenfeld/Wenzel'
+  'PET': 'Pet',
+  'BER/WEZ': 'Berenfeld/Wenzel',
+  'WEZ/PET': 'Wenzel/Pet'
 };
 
 /**
@@ -63,8 +65,29 @@ const TEACHER_MAP = {
  * @param {string} teacher - Lehrerkürzel
  * @returns {string} Formatierter Name
  */
+/**
+ * Prüft ob ein Wert ein ungültiger Platzhalter ist (#NV, #N/A)
+ * @param {any} val - Zu prüfender Wert
+ * @returns {boolean} true wenn ungültig
+ */
+function isPlaceholder(val) {
+  if (!val) return false;
+  const s = String(val).trim().toUpperCase();
+  return s === '#NV' || s === '#N/A' || s === 'N.V.';
+}
+
+/**
+ * Bereinigt einen Wert: gibt null zurück wenn Platzhalter
+ * @param {any} val - Zu bereinigender Wert
+ * @returns {string|null} Bereinigter Wert oder null
+ */
+function cleanValue(val) {
+  if (!val || isPlaceholder(val)) return null;
+  return String(val).trim();
+}
+
 function formatTeacherName(teacher) {
-  if (!teacher) return '—';
+  if (!teacher || isPlaceholder(teacher)) return '—';
   return TEACHER_MAP[teacher] || teacher;
 }
 
@@ -411,7 +434,7 @@ function render() {
  */
 function formatTeacherRoom(teacher, room) {
   const parts = [];
-  if (teacher) parts.push(String(teacher));
+  if (teacher) parts.push(formatTeacherName(teacher));
   if (room) parts.push(String(room));
   return parts.join(' / ');
 }
@@ -432,8 +455,8 @@ function renderTimetable() {
   body.innerHTML = state.timeslots
     .map((s) => {
       const r = bySlot.get(s.id);
-      const subject = r?.subject || '—';
-      const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const subject = cleanValue(r?.subject) || '—';
+      const meta = formatTeacherRoom(cleanValue(r?.teacher), cleanValue(r?.room));
 
       return `
       <div class="tr" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
@@ -475,8 +498,8 @@ function renderTodayPreview() {
 
   list.innerHTML = rows
     .map((r) => {
-      const subject = r?.subject ?? '—';
-      const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const subject = cleanValue(r?.subject) || '—';
+      const meta = formatTeacherRoom(cleanValue(r?.teacher), cleanValue(r?.room));
       return `
     <div class="listItem">
       <div>
@@ -905,8 +928,8 @@ function renderWeek() {
 
         const rows = state.timetable?.[classId]?.[d.id] || [];
         const r = rows.find((x) => String(x.slotId) === String(slot.id));
-        const subject = r?.subject || '—';
-        const meta = formatTeacherRoom(r?.teacher, r?.room);
+        const subject = cleanValue(r?.subject) || '—';
+        const meta = formatTeacherRoom(cleanValue(r?.teacher), cleanValue(r?.room));
 
         const span = spanByDaySlot[key] || 1;
         const style = span > 1 ? ` style="grid-row: span ${span};"` : '';
