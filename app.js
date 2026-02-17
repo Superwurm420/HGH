@@ -231,8 +231,16 @@ function applyTimetableData(data) {
   } else {
     state.timeslots = DEFAULT_TIMESLOTS;
   }
-  
+
   state.timetable = data?.classes || ensureEmptyTimetable();
+
+  // Update PDF links to match actual file name from meta.source
+  if (data?.meta?.source) {
+    const pdfHref = `./plan/${data.meta.source}`;
+    for (const link of qsa('a[href*="plan/"]')) {
+      link.href = pdfHref;
+    }
+  }
 }
 
 /**
@@ -396,8 +404,11 @@ function formatTeacherRoom(teacher, room) {
   return parts.join(' / ');
 }
 
+// Doppelstunden-Paare: erste Stunde → zweite Stunde
+const DOUBLE_LESSON_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
+
 /**
- * Rendert Stundenplan-Tabelle
+ * Rendert Stundenplan-Tabelle mit zusammengefassten Doppelstunden
  */
 function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
@@ -408,10 +419,35 @@ function renderTimetable() {
   if (!body) return;
 
   const bySlot = new Map(rows.map((r) => [r.slotId, r]));
+  const skip = new Set(); // zweite Stunden die schon zusammengefasst wurden
 
   body.innerHTML = state.timeslots
     .map((s) => {
+      if (skip.has(s.id)) return '';
+
       const r = bySlot.get(s.id);
+      const secondId = DOUBLE_LESSON_PAIRS[s.id];
+      const secondSlot = secondId ? state.timeslots.find((t) => t.id === secondId) : null;
+
+      // Doppelstunde: Zeitspanne zusammenfassen
+      if (secondSlot) {
+        skip.add(secondId);
+        const timeFrom = s.time.split('–')[0];
+        const timeTo = secondSlot.time.split('–')[1];
+        const combinedTime = `${timeFrom}–${timeTo}`;
+        const subject = r?.subject || '—';
+        const meta = formatTeacherRoom(r?.teacher, r?.room);
+
+        return `
+        <div class="tr" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}: ${escapeHtml(combinedTime)}">
+          <div class="td"><span class="time">${escapeHtml(combinedTime)}</span></div>
+          <div class="td">${escapeHtml(subject)}</div>
+          <div class="td">${meta ? `<small>${escapeHtml(meta)}</small>` : '<small class="muted">—</small>'}</div>
+        </div>
+      `;
+      }
+
+      // Einzelstunde (z.B. Mittagspause Slot 7)
       const subject = r?.subject || '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
 
@@ -441,25 +477,37 @@ function renderTodayPreview() {
 
   todayLabel.textContent = `${dayName} · Klasse ${className}`;
 
-  const rows = (state.timetable?.[classId]?.[todayId] || [])
-    .filter((r) => r.slotId !== '7') // Mittagspause ausblenden
-    .slice(0, 4);
+  const allRows = (state.timetable?.[classId]?.[todayId] || [])
+    .filter((r) => r.slotId !== '7'); // Mittagspause ausblenden
 
-  if (rows.length === 0) {
+  // Doppelstunden zusammenfassen: nur erste Stunde jedes Paares behalten
+  const secondSlots = new Set(Object.values(DOUBLE_LESSON_PAIRS));
+  const mergedRows = allRows.filter((r) => !secondSlots.has(r.slotId)).slice(0, 4);
+
+  if (mergedRows.length === 0) {
     list.innerHTML = `<div class="small muted">Keine Daten verfügbar.</div>`;
     return;
   }
 
   const slotTime = (slotId) => state.timeslots.find((s) => s.id === slotId)?.time || '';
 
-  list.innerHTML = rows
+  list.innerHTML = mergedRows
     .map((r) => {
       const subject = r?.subject ?? '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
+      let time;
+      if (secondId) {
+        const timeFrom = slotTime(r.slotId).split('–')[0];
+        const timeTo = slotTime(secondId).split('–')[1];
+        time = `${timeFrom}–${timeTo}`;
+      } else {
+        time = slotTime(r.slotId);
+      }
       return `
     <div class="listItem">
       <div>
-        <div class="time">${escapeHtml(slotTime(r.slotId))}</div>
+        <div class="time">${escapeHtml(time)}</div>
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
