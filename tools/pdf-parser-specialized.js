@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 /**
- * HGH Stundenplan PDF Parser - Spezialisiert für Tabellen-Layout
- * 
- * Versteht die spezifische Struktur:
- * - Header: HT11 HT12 HT21 HT22 G11 G21 GT01
- * - Pro Tag (MO, DI, MI, DO, FR): 10 Slots
- * - Pro Slot: Zeit | Fach (Zeile 1) + Lehrkraft (Zeile 2) | Raum
- * 
+ * HGH Stundenplan PDF Parser v2 – Positionsbasiert via pdfjs-dist
+ *
+ * Nutzt X/Y-Koordinaten der PDF-Textitems, um die Tabellenstruktur
+ * exakt zu rekonstruieren (Fach, Lehrer, Raum pro Klasse und Slot).
+ *
  * Usage:
  *   node tools/pdf-parser-specialized.js <input.pdf> [options]
- * 
+ *
  * Options:
  *   --out <path>         Output JSON file (default: data/timetable.json)
  *   --validFrom <date>   Valid from date (default: today)
  *   --debug              Show debug output
- *   --save-text          Save extracted text to file
  */
 
 import fs from 'node:fs';
@@ -24,10 +21,7 @@ import path from 'node:path';
 const CONFIG = {
   classes: ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'],
   days: ['MO', 'DI', 'MI', 'DO', 'FR'],
-  dayMapping: {
-    'MO': 'mo', 'DI': 'di', 'MI': 'mi', 
-    'DO': 'do', 'FR': 'fr'
-  },
+  dayMapping: { 'MO': 'mo', 'DI': 'di', 'MI': 'mi', 'DO': 'do', 'FR': 'fr' },
   timeslots: [
     { id: '1', time: '08:00–08:45' },
     { id: '2', time: '08:45–09:30' },
@@ -40,9 +34,13 @@ const CONFIG = {
     { id: '9', time: '15:45–16:30' },
     { id: '10', time: '16:30–17:15' }
   ],
+  // Slot-Nummern, die Fächer tragen (ungerade = Fach-Zeile der Doppelstunde)
+  subjectSlots: ['1', '3', '5', '7', '9'],
+  // Slot-Nummern, die Lehrer tragen (gerade = Lehrer-Zeile der Doppelstunde)
+  teacherSlots: ['2', '4', '6', '8', '10'],
   knownTeachers: [
-    'STE', 'WED', 'STI', 'BÜ', 'HOFF', 'GRO', 'TAM', 
-    'WEN', 'MEL', 'WEZ', 'HOG', 'BER'
+    'STE', 'WED', 'STI', 'BÜ', 'HOFF', 'GRO', 'TAM',
+    'WEN', 'MEL', 'WEZ', 'HOG', 'BER', 'PET'
   ]
 };
 
@@ -51,8 +49,7 @@ const args = {
   input: process.argv[2],
   out: getArg('--out') || 'data/timetable.json',
   validFrom: getArg('--validFrom') || new Date().toISOString().split('T')[0],
-  debug: process.argv.includes('--debug'),
-  saveText: process.argv.includes('--save-text')
+  debug: process.argv.includes('--debug')
 };
 
 function getArg(flag) {
@@ -61,7 +58,7 @@ function getArg(flag) {
 }
 
 if (!args.input) {
-  console.error('❌ Usage: node pdf-parser-specialized.js <input.pdf> [options]');
+  console.error('Usage: node pdf-parser-specialized.js <input.pdf> [options]');
   process.exit(1);
 }
 
@@ -70,243 +67,257 @@ function log(...msgs) {
   if (args.debug) console.log('[DEBUG]', ...msgs);
 }
 
-function info(...msgs) {
-  console.log('ℹ️ ', ...msgs);
+// === PDF Extraction via pdfjs-dist ===
+async function extractPdfItems(pdfPath) {
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const buffer = fs.readFileSync(pdfPath);
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const page = await doc.getPage(1);
+  const content = await page.getTextContent();
+
+  const items = content.items
+    .filter(i => i.str?.trim())
+    .map(i => ({
+      text: i.str.trim(),
+      x: Math.round(i.transform[4]),
+      y: Math.round(i.transform[5]),
+    }));
+
+  await doc.destroy();
+  return items;
 }
 
-function success(...msgs) {
-  console.log('✅', ...msgs);
-}
+// === Column Detection ===
+// Die Tabellenstruktur ist: [Fach-Spalte][Raum-Spalte] pro Klasse.
+// Die Raum-Spalte ("R"-Header) markiert die Grenze: Items LINKS davon = Fach/Lehrer,
+// Items AM R-Header (±8px) = Raumnummer, Items RECHTS = nächste Klasse.
+const ROOM_HALF_WIDTH = 8;
 
-function warn(...msgs) {
-  console.warn('⚠️ ', ...msgs);
-}
-
-function error(...msgs) {
-  console.error('❌', ...msgs);
-}
-
-// === PDF Text Extraction ===
-async function extractPdfText(pdfPath) {
-  let pdfParse;
-  try {
-    const mod = await import('pdf-parse');
-    pdfParse = mod.default || mod;
-  } catch {
-    throw new Error('pdf-parse not installed. Run: npm install pdf-parse');
+function detectColumns(items) {
+  const classPositions = {};
+  for (const cls of CONFIG.classes) {
+    const match = items.find(i =>
+      i.text === cls || (i.text === 'GT 01' && cls === 'GT01')
+    );
+    if (match) classPositions[cls] = match.x;
   }
 
-  const buffer = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buffer);
-  
-  log(`Extracted ${data.text.length} characters from PDF`);
-  return data.text;
+  log('Class header positions:', classPositions);
+
+  const tagItem = items.find(i => i.text === 'TAG');
+  if (!tagItem) throw new Error('TAG header not found');
+
+  const roomHeaders = items
+    .filter(i => i.text === 'R' && Math.abs(i.y - tagItem.y) < 3)
+    .sort((a, b) => a.x - b.x);
+
+  log('Room header positions:', roomHeaders.map(r => r.x));
+
+  const sortedClasses = CONFIG.classes
+    .filter(c => classPositions[c] !== undefined)
+    .sort((a, b) => classPositions[a] - classPositions[b]);
+
+  if (roomHeaders.length !== sortedClasses.length) {
+    console.warn(`Warning: ${roomHeaders.length} room headers for ${sortedClasses.length} classes`);
+  }
+
+  const columns = [];
+  for (let i = 0; i < sortedClasses.length; i++) {
+    const cls = sortedClasses[i];
+    const roomX = roomHeaders[i]?.x || classPositions[cls] + 60;
+    const prevRoomX = i > 0 ? roomHeaders[i - 1].x : 77; // after time columns
+
+    // Subject area: from after prev room to before this room
+    const subjectMin = prevRoomX + ROOM_HALF_WIDTH;
+    const subjectMax = roomX - ROOM_HALF_WIDTH;
+    // Room area: ±ROOM_HALF_WIDTH around roomX
+    const roomMin = roomX - ROOM_HALF_WIDTH;
+    const roomMax = roomX + ROOM_HALF_WIDTH;
+
+    columns.push({ classId: cls, subjectMin, subjectMax, roomX, roomMin, roomMax });
+  }
+
+  log('Columns:', columns.map(c =>
+    `${c.classId}: subj=${c.subjectMin}-${c.subjectMax}, room=${c.roomMin}-${c.roomMax}`
+  ));
+  return columns;
 }
 
-// === Token Recognition ===
-function isTeacher(token) {
-  const clean = token.trim().toUpperCase();
-  
-  // Known teachers
-  if (CONFIG.knownTeachers.includes(clean)) return true;
-  
-  // Combined teachers (e.g., "WEZ/BER")
-  if (clean.includes('/')) {
-    return clean.split('/').every(t => 
-      CONFIG.knownTeachers.includes(t) || /^[A-ZÄÖÜ]{2,4}$/.test(t)
+// === Row Detection ===
+// Gruppiert Items nach Y-Position (mit Toleranz)
+function groupByRow(items, tolerance = 3) {
+  const sorted = [...items].sort((a, b) => b.y - a.y); // top to bottom
+  const rows = [];
+  let currentRow = null;
+
+  for (const item of sorted) {
+    if (!currentRow || Math.abs(currentRow.y - item.y) > tolerance) {
+      currentRow = { y: item.y, items: [] };
+      rows.push(currentRow);
+    }
+    currentRow.items.push(item);
+  }
+
+  // Sort items within each row left to right
+  for (const row of rows) {
+    row.items.sort((a, b) => a.x - b.x);
+  }
+
+  return rows;
+}
+
+// === Slot Detection ===
+// Erkennt Zeilen die mit "1.", "2.", etc. beginnen
+function isSlotRow(row) {
+  const first = row.items[0];
+  if (!first) return null;
+  const match = first.text.match(/^(\d{1,2})\.$/);
+  return match ? match[1] : null;
+}
+
+// === Day Detection ===
+function isDayRow(row) {
+  for (const item of row.items) {
+    if (CONFIG.days.includes(item.text) && item.x < 30) {
+      return item.text;
+    }
+  }
+  return null;
+}
+
+// === Not Available Check ===
+function isNA(text) {
+  const t = text.toUpperCase().trim();
+  return t === '#NV' || t === '#N/A' || t === 'N.V.';
+}
+
+// === Teacher Check ===
+function isTeacher(text) {
+  const t = text.trim();
+  if (CONFIG.knownTeachers.includes(t)) return true;
+  if (t.includes('/')) {
+    return t.split('/').every(p =>
+      CONFIG.knownTeachers.includes(p) || /^[A-ZÄÖÜ]{2,4}$/.test(p)
     );
   }
-  
-  // Pattern: 2-4 uppercase letters
-  return /^[A-ZÄÖÜ]{2,4}$/.test(clean);
+  return /^[A-ZÄÖÜ]{2,5}$/.test(t);
 }
 
-function isRoom(token) {
-  const clean = token.trim();
-  
-  // Numeric rooms: 1, 2, 3, etc.
-  if (/^\d{1,2}$/.test(clean)) return true;
-  
-  // Special rooms: T1, BS, HS, USF
-  if (/^(T\d|BS|HS|USF)$/.test(clean)) return true;
-  
-  // Alphanumeric: A12, R6, etc.
-  if (/^[A-Z]\d{1,3}$/.test(clean)) return true;
-  
-  return false;
-}
+// === Main Parser ===
+function parseItems(items, columns) {
+  const rows = groupByRow(items);
+  const result = buildEmptyStructure();
 
-function isNotAvailable(token) {
-  const clean = token.trim().toUpperCase();
-  return clean === '#NV' || clean === '#N/A' || clean === 'N.V.';
-}
+  let currentDay = null;
 
-function isSlotNumber(token) {
-  return /^\d{1,2}\.$/.test(token.trim());
-}
+  for (const row of rows) {
+    // Day markers can share a row with slot data (y within tolerance).
+    // Don't skip the row, just note the day marker.
+    isDayRow(row); // logged for debug
 
-function isDayMarker(token) {
-  const clean = token.trim().toUpperCase();
-  return CONFIG.days.includes(clean);
-}
-
-// === Text Cleaning ===
-function cleanText(text) {
-  return text
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\t/g, ' ')
-    .trim();
-}
-
-function normalizeSpaces(text) {
-  return text.replace(/\s+/g, ' ').trim();
-}
-
-// === Line-based Parser ===
-class LineParser {
-  constructor(text) {
-    this.lines = cleanText(text).split('\n').map(l => l.trim()).filter(Boolean);
-    this.currentIndex = 0;
-    this.currentDay = null;
-    this.result = this.buildEmptyStructure();
-  }
-
-  buildEmptyStructure() {
-    const structure = {};
-    for (const classId of CONFIG.classes) {
-      structure[classId] = {};
-      for (const day of CONFIG.days) {
-        structure[classId][CONFIG.dayMapping[day]] = [];
-      }
+    // Detect slot row (first item must be "N.")
+    // If day marker is on same row, the slot number may not be first item.
+    // Check all items for a slot number pattern.
+    let slotId = isSlotRow(row);
+    if (!slotId) {
+      // Maybe the slot number isn't the first item (day marker is first)
+      const slotItem = row.items.find(i => /^\d{1,2}\.$/.test(i.text) && i.x >= 30 && i.x <= 45);
+      if (slotItem) slotId = slotItem.text.replace('.', '');
     }
-    return structure;
-  }
+    if (!slotId) continue;
 
-  parse() {
-    while (this.currentIndex < this.lines.length) {
-      const line = this.lines[this.currentIndex];
-      
-      // Check for day marker
-      const dayMatch = CONFIG.days.find(d => line.includes(d));
-      if (dayMatch) {
-        this.currentDay = CONFIG.dayMapping[dayMatch];
-        log(`Found day: ${dayMatch} → ${this.currentDay}`);
-        this.currentIndex++;
-        continue;
-      }
-
-      // Check for slot
-      const slotMatch = line.match(/^(\d{1,2})\./);
-      if (slotMatch && this.currentDay) {
-        const slotId = slotMatch[1];
-        this.parseSlot(slotId);
-      }
-
-      this.currentIndex++;
+    // Track day transitions: slot "1" means next day
+    if (slotId === '1') {
+      currentDay = currentDay === null ? 0 : currentDay + 1;
+      if (currentDay >= CONFIG.days.length) break;
+      log(`=== Day ${CONFIG.days[currentDay]} ===`);
     }
 
-    return this.result;
-  }
+    if (currentDay === null || currentDay >= CONFIG.days.length) continue;
 
-  parseSlot(slotId) {
-    log(`Parsing slot ${slotId} for day ${this.currentDay}`);
-    
-    // Collect next few lines (contains subjects and teachers)
-    const dataLines = [];
-    let tempIndex = this.currentIndex + 1;
-    
-    while (tempIndex < this.lines.length && dataLines.length < 3) {
-      const line = this.lines[tempIndex];
-      
-      // Stop at next slot or day
-      if (isSlotNumber(line) || CONFIG.days.some(d => line.includes(d))) {
-        break;
-      }
-      
-      if (line.trim().length > 0) {
-        dataLines.push(line);
-      }
-      
-      tempIndex++;
-    }
+    const dayId = CONFIG.dayMapping[CONFIG.days[currentDay]];
 
-    if (dataLines.length === 0) return;
+    // Subject line (1,3,5,7,9) or teacher line (2,4,6,8,10)?
+    const isSubjectLine = CONFIG.subjectSlots.includes(slotId);
+    // Paired slot for double lessons: 1+2→1, 3+4→3, etc.
+    const pairedSlotId = isSubjectLine ? slotId : String(Number(slotId) - 1);
 
-    // Extract data for each class
-    this.extractSlotData(slotId, dataLines);
-  }
+    // Data items (exclude slot number and time columns at x < 85)
+    const dataItems = row.items.filter(i => i.x > 85);
 
-  extractSlotData(slotId, dataLines) {
-    // Combine all data lines
-    const combinedText = dataLines.join(' ');
-    const tokens = combinedText.split(/\s+/).filter(Boolean);
-    
-    log(`  Tokens (${tokens.length}):`, tokens.slice(0, 20).join(' '), '...');
+    // Room row: separate Y-level ~3-5px below subject line with room numbers
+    const roomRow = isSubjectLine ? findRoomRow(rows, row.y) : null;
 
-    // Try to extract data for each class
-    // This is heuristic-based - we need to split tokens among 7 classes
-    const tokensPerClass = Math.ceil(tokens.length / CONFIG.classes.length);
-    
-    CONFIG.classes.forEach((classId, index) => {
-      const start = index * tokensPerClass;
-      const end = Math.min((index + 1) * tokensPerClass, tokens.length);
-      const classTokens = tokens.slice(start, end);
-      
-      const entry = this.extractEntry(classTokens);
-      
-      if (entry.subject || entry.teacher || entry.room) {
-        this.result[classId][this.currentDay].push({
-          slotId,
-          ...entry
+    for (const col of columns) {
+      // Subject/Teacher items: in this class's subject range
+      const contentItems = dataItems.filter(i =>
+        i.x >= col.subjectMin && i.x <= col.subjectMax
+      );
+      // Room items: near this class's room header
+      const roomItems = roomRow
+        ? roomRow.items.filter(i => i.x >= col.roomMin && i.x <= col.roomMax)
+        : dataItems.filter(i => i.x >= col.roomMin && i.x <= col.roomMax);
+
+      if (contentItems.length === 0 && roomItems.length === 0) continue;
+
+      const text = contentItems.map(i => i.text).join(' ').trim();
+      const roomText = roomItems.map(i => i.text).join('').trim();
+
+      // Skip empty or #NV entries
+      if ((!text || isNA(text)) && (!roomText || isNA(roomText))) continue;
+
+      if (isSubjectLine) {
+        result[col.classId][dayId].push({
+          slotId: pairedSlotId,
+          subject: (text && !isNA(text)) ? text : null,
+          teacher: null,
+          room: (roomText && !isNA(roomText)) ? roomText : null
         });
-        
-        log(`    ${classId}: ${entry.subject || '—'} | ${entry.teacher || '—'} | ${entry.room || '—'}`);
-      }
-    });
-  }
-
-  extractEntry(tokens) {
-    const entry = {
-      subject: null,
-      teacher: null,
-      room: null
-    };
-
-    const teachers = [];
-    const rooms = [];
-    const subjectParts = [];
-
-    for (const token of tokens) {
-      if (isNotAvailable(token)) {
-        continue;
-      } else if (isTeacher(token)) {
-        teachers.push(token);
-      } else if (isRoom(token)) {
-        rooms.push(token);
+        log(`  ${col.classId} slot ${pairedSlotId}: subject="${text}" room="${roomText}"`);
       } else {
-        // Assume it's part of subject
-        subjectParts.push(token);
+        // Teacher line: update existing entry from subject line
+        const existing = result[col.classId][dayId].find(e => e.slotId === pairedSlotId);
+        if (existing) {
+          if (text && !isNA(text)) existing.teacher = text;
+          if (roomText && !isNA(roomText) && !existing.room) existing.room = roomText;
+        } else if (text && !isNA(text)) {
+          result[col.classId][dayId].push({
+            slotId: pairedSlotId,
+            subject: null,
+            teacher: text,
+            room: (roomText && !isNA(roomText)) ? roomText : null
+          });
+        }
+        log(`  ${col.classId} slot ${pairedSlotId}: teacher="${text}" room="${roomText}"`);
       }
     }
-
-    entry.teacher = teachers[0] || null;
-    entry.room = rooms[0] || null;
-    entry.subject = subjectParts.length > 0 ? subjectParts.join(' ') : null;
-
-    return entry;
   }
+
+  return result;
+}
+
+// Find room number rows (they sit 3-6px below subject lines)
+function findRoomRow(allRows, subjectY) {
+  return allRows.find(r =>
+    r.y < subjectY && r.y > subjectY - 8 &&
+    r.items.some(i => /^\d{1,2}$/.test(i.text) || /^(BS|USF|HS|\d\/\d)$/.test(i.text))
+  );
+}
+
+function buildEmptyStructure() {
+  const structure = {};
+  for (const classId of CONFIG.classes) {
+    structure[classId] = {};
+    for (const day of CONFIG.days) {
+      structure[classId][CONFIG.dayMapping[day]] = [];
+    }
+  }
+  return structure;
 }
 
 // === Statistics ===
 function generateStats(classes) {
-  const stats = {
-    totalEntries: 0,
-    byClass: {},
-    teachers: new Set(),
-    rooms: new Set(),
-    subjects: new Set()
-  };
+  const stats = { totalEntries: 0, byClass: {}, teachers: new Set(), rooms: new Set(), subjects: new Set() };
 
   for (const classId of CONFIG.classes) {
     let count = 0;
@@ -314,7 +325,6 @@ function generateStats(classes) {
       const entries = classes[classId][dayId];
       count += entries.length;
       stats.totalEntries += entries.length;
-
       entries.forEach(e => {
         if (e.teacher) stats.teachers.add(e.teacher);
         if (e.room) stats.rooms.add(e.room);
@@ -336,22 +346,19 @@ function generateStats(classes) {
 // === Main ===
 (async () => {
   try {
-    info(`HGH PDF Parser - Specialized`);
-    info(`Input: ${path.basename(args.input)}`);
+    console.log(`HGH PDF Parser v2 - Position-based`);
+    console.log(`Input: ${path.basename(args.input)}`);
     console.log('');
 
-    // Extract text
-    const text = await extractPdfText(args.input);
-    
-    if (args.saveText) {
-      const textFile = 'debug-pdf-text.txt';
-      fs.writeFileSync(textFile, text, 'utf8');
-      info(`Saved extracted text to: ${textFile}`);
-    }
+    // Extract positioned text items
+    const items = await extractPdfItems(args.input);
+    log(`Extracted ${items.length} text items from PDF`);
 
-    // Parse
-    const parser = new LineParser(text);
-    const classes = parser.parse();
+    // Detect column structure
+    const columns = detectColumns(items);
+
+    // Parse timetable
+    const classes = parseItems(items, columns);
 
     // Generate statistics
     const stats = generateStats(classes);
@@ -363,14 +370,7 @@ function generateStats(classes) {
         validFrom: args.validFrom,
         updatedAt: new Date().toISOString(),
         source: path.basename(args.input),
-        parser: 'specialized-v1.0',
-        stats: {
-          totalEntries: stats.totalEntries,
-          entriesByClass: stats.byClass,
-          teachersFound: stats.teachers.length,
-          roomsFound: stats.rooms.length,
-          subjectsFound: stats.subjects.length
-        }
+        parser: 'specialized-v2.0'
       },
       timeslots: CONFIG.timeslots,
       classes
@@ -380,34 +380,29 @@ function generateStats(classes) {
     fs.mkdirSync(path.dirname(args.out), { recursive: true });
     fs.writeFileSync(args.out, JSON.stringify(output, null, 2) + '\n', 'utf8');
 
+    console.log('Parsing complete!');
     console.log('');
-    success('Parsing complete!');
+    console.log('Statistics:');
+    console.log(`  Total entries: ${stats.totalEntries}`);
+    console.log(`  Teachers: ${stats.teachers.length} (${stats.teachers.slice(0, 10).join(', ')}${stats.teachers.length > 10 ? '...' : ''})`);
+    console.log(`  Rooms: ${stats.rooms.length} (${stats.rooms.join(', ')})`);
+    console.log(`  Subjects: ${stats.subjects.length}`);
     console.log('');
-    console.log('📊 Statistics:');
-    console.log(`   Total entries: ${stats.totalEntries}`);
-    console.log(`   Teachers: ${stats.teachers.length} (${stats.teachers.slice(0, 10).join(', ')}${stats.teachers.length > 10 ? '...' : ''})`);
-    console.log(`   Rooms: ${stats.rooms.length} (${stats.rooms.join(', ')})`);
-    console.log(`   Subjects: ${stats.subjects.length}`);
-    console.log('');
-    console.log(`   By class:`);
     Object.entries(stats.byClass).forEach(([cls, count]) => {
-      console.log(`     ${cls}: ${count} entries`);
+      console.log(`  ${cls}: ${count} entries`);
     });
     console.log('');
-    info(`Output: ${args.out}`);
+    console.log(`Output: ${args.out}`);
 
     if (stats.totalEntries < 50) {
       console.log('');
-      warn('Low entry count detected!');
-      warn('The parser may not have recognized the PDF structure correctly.');
-      warn('Try running with --debug and --save-text to inspect the extracted text.');
+      console.warn('WARNING: Low entry count! Parser may not have recognized the PDF correctly.');
+      console.warn('Try running with --debug to inspect.');
     }
 
   } catch (err) {
-    error('Parsing failed:', err.message);
-    if (args.debug) {
-      console.error(err);
-    }
+    console.error('Parsing failed:', err.message);
+    if (args.debug) console.error(err);
     process.exit(1);
   }
 })();
