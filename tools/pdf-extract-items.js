@@ -3,9 +3,7 @@
 // Usage: node tools/pdf-extract-items.js input.pdf out.json
 
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const pdfjsLib = require('pdfjs-dist');
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const inPdf = process.argv[2];
 const outJson = process.argv[3] || 'tmp_pdf_items.json';
@@ -20,7 +18,7 @@ function norm(s){
 
 (async ()=>{
   const data = new Uint8Array(fs.readFileSync(inPdf));
-  const doc = await pdfjsLib.getDocument({data}).promise;
+  const doc = await getDocument({ data, useSystemFonts: true }).promise;
   const page = await doc.getPage(1);
   const content = await page.getTextContent();
   const items = content.items

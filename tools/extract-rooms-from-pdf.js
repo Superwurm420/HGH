@@ -11,9 +11,7 @@
 */
 
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const pdfjsLib = require('pdfjs-dist');
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const inPdf = process.argv[2];
 if (!inPdf) {
@@ -48,7 +46,7 @@ function roundY(y) {
 
 (async () => {
   const data = new Uint8Array(fs.readFileSync(inPdf));
-  const doc = await pdfjsLib.getDocument({ data }).promise;
+  const doc = await getDocument({ data, useSystemFonts: true }).promise;
 
   // The provided PDF is a single-page overview timetable.
   const page = await doc.getPage(1);

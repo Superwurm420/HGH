@@ -16,9 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const pdfjsLib = require('pdfjs-dist');
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const DAYS = [
   { id: 'mo', label: 'MO' },
@@ -69,7 +67,7 @@ function groupLines(items){
 
 async function extractItems(pdfPath){
   const data = new Uint8Array(fs.readFileSync(pdfPath));
-  const doc = await pdfjsLib.getDocument({data}).promise;
+  const doc = await getDocument({ data, useSystemFonts: true }).promise;
   const page = await doc.getPage(1);
   const content = await page.getTextContent();
   return content.items

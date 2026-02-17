@@ -31,7 +31,9 @@ jobs:
           echo "Looking for PDF..."
           PDF=$(find plan/ -name "*.pdf" -type f | head -n 1)
           if [ -z "$PDF" ]; then
-            echo "ERROR: No PDF found!"
+            echo "ERROR: No PDF found in plan/ directory!"
+            echo "Contents of plan/:"
+            ls -la plan/ || echo "plan/ directory does not exist"
             exit 1
           fi
           echo "Found: $PDF"
@@ -42,22 +44,17 @@ jobs:
           echo "Running parser..."
           node tools/pdf-parser-specialized.js "${{ steps.find-pdf.outputs.pdf_file }}" \
             --out data/timetable.json \
-            --validFrom $(date +%Y-%m-%d)
-
-      - name: Check Output
-        run: |
-          if [ -f "data/timetable.json" ]; then
-            echo "SUCCESS! File created"
-            ls -lh data/timetable.json
-          else
-            echo "ERROR: File not created"
-            exit 1
-          fi
+            --validFrom $(date +%Y-%m-%d) \
+            --debug
 
       - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/timetable.json
-          git diff --staged --quiet || git commit -m "Update timetable from PDF"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes to timetable.json"
+          else
+            git commit -m "Update timetable from PDF"
+            git push
+          fi
