@@ -33,17 +33,23 @@ if(!input){
 async function extractText(pdfPath){
   // Lazy import: pdf-parse is common in Node.
   // If not installed, give a helpful error.
-  let pdfParse;
+  let PDFParse;
   try{
     const mod = await import('pdf-parse');
-    pdfParse = mod.default || mod;
+    PDFParse = mod.PDFParse || mod.default;
   } catch {
     throw new Error('Dependency missing: pdf-parse. Install with: npm i -D pdf-parse');
   }
 
+  if (typeof PDFParse !== 'function') {
+    throw new Error('pdf-parse module could not be loaded correctly. Check version compatibility.');
+  }
+
   const buf = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buf);
-  return data.text || '';
+  const uint8 = new Uint8Array(buf);
+  const pdf = new PDFParse(uint8, {});
+  const result = await pdf.getText();
+  return result.pages.map(p => p.text).join('\n') || '';
 }
 
 function isTeacherToken(tok){

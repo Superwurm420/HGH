@@ -90,60 +90,31 @@ function cleanToken(token) {
 
 // --- PDF Text Extraction ---
 async function extractText(pdfPath) {
-  let pdfParse;
+  let PDFParse;
   try {
     const mod = await import('pdf-parse');
-    pdfParse = mod.default || mod;
+    PDFParse = mod.PDFParse || mod.default;
   } catch {
     throw new Error('❌ Dependency missing: pdf-parse\nInstall with: npm install pdf-parse');
   }
 
+  if (typeof PDFParse !== 'function') {
+    throw new Error('pdf-parse module could not be loaded correctly. Check version compatibility.');
+  }
+
   const buf = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buf);
-  return data.text || '';
+  const uint8 = new Uint8Array(buf);
+  const pdf = new PDFParse(uint8, {});
+  const result = await pdf.getText();
+  return result.pages.map(p => p.text).join('\n') || '';
 }
 
-// --- Advanced PDF Parsing ---
+// --- Advanced PDF Parsing (layout-aware) ---
 async function extractWithLayout(pdfPath) {
+  // pdf-parse v2 does not support custom page renderers.
+  // Use basic getText() which already preserves line structure.
   try {
-    const mod = await import('pdf-parse');
-    const pdfParse = mod.default || mod;
-    
-    const buf = fs.readFileSync(pdfPath);
-    const options = {
-      // Custom page renderer to get layout info
-      pagerender: (pageData) => {
-        return pageData.getTextContent().then((textContent) => {
-          let lastY = null;
-          let lines = [];
-          let currentLine = [];
-          
-          textContent.items.forEach((item) => {
-            const y = item.transform[5];
-            
-            // Neue Zeile wenn Y-Position sich ändert
-            if (lastY !== null && Math.abs(y - lastY) > 2) {
-              if (currentLine.length > 0) {
-                lines.push(currentLine.join(' '));
-                currentLine = [];
-              }
-            }
-            
-            currentLine.push(item.str);
-            lastY = y;
-          });
-          
-          if (currentLine.length > 0) {
-            lines.push(currentLine.join(' '));
-          }
-          
-          return lines.join('\n');
-        });
-      }
-    };
-    
-    const data = await pdfParse(buf, options);
-    return data.text;
+    return await extractText(pdfPath);
   } catch (err) {
     log('Layout extraction failed, falling back to basic extraction:', err.message);
     return null;
