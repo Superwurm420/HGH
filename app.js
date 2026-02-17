@@ -231,8 +231,16 @@ function applyTimetableData(data) {
   } else {
     state.timeslots = DEFAULT_TIMESLOTS;
   }
-  
+
   state.timetable = data?.classes || ensureEmptyTimetable();
+
+  // Update PDF links to match actual file name from meta.source
+  if (data?.meta?.source) {
+    const pdfHref = `./plan/${data.meta.source}`;
+    for (const link of qsa('a[data-pdf-link]')) {
+      link.href = pdfHref;
+    }
+  }
 }
 
 /**
@@ -396,8 +404,11 @@ function formatTeacherRoom(teacher, room) {
   return parts.join(' / ');
 }
 
+// Doppelstunden-Paare: erste Stunde → zweite Stunde
+const DOUBLE_LESSON_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
+
 /**
- * Rendert Stundenplan-Tabelle
+ * Rendert Stundenplan-Tabelle mit zusammengefassten Doppelstunden
  */
 function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
@@ -408,10 +419,35 @@ function renderTimetable() {
   if (!body) return;
 
   const bySlot = new Map(rows.map((r) => [r.slotId, r]));
+  const skip = new Set(); // zweite Stunden die schon zusammengefasst wurden
 
   body.innerHTML = state.timeslots
     .map((s) => {
+      if (skip.has(s.id)) return '';
+
       const r = bySlot.get(s.id);
+      const secondId = DOUBLE_LESSON_PAIRS[s.id];
+      const secondSlot = secondId ? state.timeslots.find((t) => t.id === secondId) : null;
+
+      // Doppelstunde: Zeitspanne zusammenfassen
+      if (secondSlot) {
+        skip.add(secondId);
+        const timeFrom = s.time.split('–')[0];
+        const timeTo = secondSlot.time.split('–')[1];
+        const combinedTime = `${timeFrom}–${timeTo}`;
+        const subject = r?.subject || '—';
+        const meta = formatTeacherRoom(r?.teacher, r?.room);
+
+        return `
+        <div class="tr" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}: ${escapeHtml(combinedTime)}">
+          <div class="td"><span class="time">${escapeHtml(combinedTime)}</span></div>
+          <div class="td">${escapeHtml(subject)}</div>
+          <div class="td">${meta ? `<small>${escapeHtml(meta)}</small>` : '<small class="muted">—</small>'}</div>
+        </div>
+      `;
+      }
+
+      // Einzelstunde (z.B. Mittagspause Slot 7)
       const subject = r?.subject || '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
 
@@ -441,25 +477,37 @@ function renderTodayPreview() {
 
   todayLabel.textContent = `${dayName} · Klasse ${className}`;
 
-  const rows = (state.timetable?.[classId]?.[todayId] || [])
-    .filter((r) => r.slotId !== '7') // Mittagspause ausblenden
-    .slice(0, 4);
+  const allRows = (state.timetable?.[classId]?.[todayId] || [])
+    .filter((r) => r.slotId !== '7'); // Mittagspause ausblenden
 
-  if (rows.length === 0) {
+  // Doppelstunden zusammenfassen: nur erste Stunde jedes Paares behalten
+  const secondSlots = new Set(Object.values(DOUBLE_LESSON_PAIRS));
+  const mergedRows = allRows.filter((r) => !secondSlots.has(r.slotId)).slice(0, 4);
+
+  if (mergedRows.length === 0) {
     list.innerHTML = `<div class="small muted">Keine Daten verfügbar.</div>`;
     return;
   }
 
   const slotTime = (slotId) => state.timeslots.find((s) => s.id === slotId)?.time || '';
 
-  list.innerHTML = rows
+  list.innerHTML = mergedRows
     .map((r) => {
       const subject = r?.subject ?? '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
+      let time;
+      if (secondId) {
+        const timeFrom = slotTime(r.slotId).split('–')[0];
+        const timeTo = slotTime(secondId).split('–')[1];
+        time = `${timeFrom}–${timeTo}`;
+      } else {
+        time = slotTime(r.slotId);
+      }
       return `
     <div class="listItem">
       <div>
-        <div class="time">${escapeHtml(slotTime(r.slotId))}</div>
+        <div class="time">${escapeHtml(time)}</div>
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
@@ -821,76 +869,39 @@ function renderWeek() {
   // Header
   const header = `
     <div class="weekRow weekHeader" role="row">
-      <div class="weekCell weekCorner" role="columnheader">Stunde</div>
-      ${DAYS.map((d) => 
+      <div class="weekCell weekCorner" role="columnheader">Zeit</div>
+      ${DAYS.map((d) =>
         `<div class="weekCell" role="columnheader">${escapeHtml(d.label.slice(0, 2))}</div>`
       ).join('')}
     </div>
   `;
 
-  const slotLabel = (slot) => {
-    const t = String(slot.time);
-    if (!t.match(/\d{2}:\d{2}/)) return t;
-    return t;
-  };
-
-  const slots = state.timeslots.filter((s) => String(s.id) !== '7');
-
-  // Doppelstunden-Merge: 1+2, 3+4, 5+6, 8+9
-  const MERGE_PAIRS = [
-    ['1', '2'],
-    ['3', '4'],
-    ['5', '6'],
-    ['8', '9']
+  // Doppelstunden-Zeilen: 1+2, 3+4, 5+6, 8+9
+  const WEEK_PAIRS = [
+    { firstId: '1', secondId: '2' },
+    { firstId: '3', secondId: '4' },
+    { firstId: '5', secondId: '6' },
+    { firstId: '8', secondId: '9' }
   ];
 
-  /**
-   * Prüft ob zwei Stunden zusammengelegt werden können
-   * @param {Object} a - Stunde A
-   * @param {Object} b - Stunde B
-   * @returns {boolean} true wenn mergebar
-   */
-  const canMerge = (a, b) => {
-    if (!a || !b) return false;
-    return (a.subject || '') === (b.subject || '') && 
-           (a.teacher || '') === (b.teacher || '') && 
-           (a.room || '') === (b.room || '');
-  };
+  const body = WEEK_PAIRS
+    .map((pair) => {
+      const firstSlot = state.timeslots.find((s) => s.id === pair.firstId);
+      const secondSlot = state.timeslots.find((s) => s.id === pair.secondId);
+      if (!firstSlot || !secondSlot) return '';
 
-  // Precompute welche Zellen übersprungen/gespannt werden
-  const spanByDaySlot = {}; // key `${dayId}:${slotId}` -> 2
-  const skipByDaySlot = {}; // key `${dayId}:${slotId}` -> true
+      const timeFrom = firstSlot.time.split('–')[0];
+      const timeTo = secondSlot.time.split('–')[1];
+      const combinedTime = `${timeFrom}–${timeTo}`;
 
-  for (const d of DAYS) {
-    const rows = state.timetable?.[classId]?.[d.id] || [];
-    const bySlot = new Map(rows.map((r) => [String(r.slotId), r]));
-
-    for (const [aId, bId] of MERGE_PAIRS) {
-      const a = bySlot.get(String(aId));
-      const b = bySlot.get(String(bId));
-      if (canMerge(a, b)) {
-        spanByDaySlot[`${d.id}:${aId}`] = 2;
-        skipByDaySlot[`${d.id}:${bId}`] = true;
-      }
-    }
-  }
-
-  const body = slots
-    .map((slot) => {
-      const rowCells = DAYS.map((d) => {
-        const key = `${d.id}:${slot.id}`;
-        if (skipByDaySlot[key]) return '';
-
+      const dayCells = DAYS.map((d) => {
         const rows = state.timetable?.[classId]?.[d.id] || [];
-        const r = rows.find((x) => String(x.slotId) === String(slot.id));
+        const r = rows.find((x) => String(x.slotId) === pair.firstId);
         const subject = r?.subject || '—';
         const meta = formatTeacherRoom(r?.teacher, r?.room);
 
-        const span = spanByDaySlot[key] || 1;
-        const style = span > 1 ? ` style="grid-row: span ${span};"` : '';
-
         return `
-          <div class="weekCell" role="cell"${style}>
+          <div class="weekCell" role="cell">
             <div class="weekSubject">${escapeHtml(subject)}</div>
             ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">—</div>`}
           </div>
@@ -898,12 +909,12 @@ function renderWeek() {
       }).join('');
 
       return `
-        <div class="weekRow" role="row" aria-label="Stunde ${escapeHtml(slot.id)}">
+        <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.firstId)}+${escapeHtml(pair.secondId)}">
           <div class="weekCell weekSlot" role="rowheader">
-            <div class="weekSlotNum">${escapeHtml(slot.id)}</div>
-            <div class="weekSlotTime">${escapeHtml(slotLabel(slot))}</div>
+            <div class="weekSlotNum">${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</div>
+            <div class="weekSlotTime">${escapeHtml(combinedTime)}</div>
           </div>
-          ${rowCells}
+          ${dayCells}
         </div>
       `;
     })
