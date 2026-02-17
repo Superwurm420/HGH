@@ -237,7 +237,7 @@ function applyTimetableData(data) {
   // Update PDF links to match actual file name from meta.source
   if (data?.meta?.source) {
     const pdfHref = `./plan/${data.meta.source}`;
-    for (const link of qsa('a[href*="plan/"]')) {
+    for (const link of qsa('a[data-pdf-link]')) {
       link.href = pdfHref;
     }
   }
@@ -869,76 +869,39 @@ function renderWeek() {
   // Header
   const header = `
     <div class="weekRow weekHeader" role="row">
-      <div class="weekCell weekCorner" role="columnheader">Stunde</div>
-      ${DAYS.map((d) => 
+      <div class="weekCell weekCorner" role="columnheader">Zeit</div>
+      ${DAYS.map((d) =>
         `<div class="weekCell" role="columnheader">${escapeHtml(d.label.slice(0, 2))}</div>`
       ).join('')}
     </div>
   `;
 
-  const slotLabel = (slot) => {
-    const t = String(slot.time);
-    if (!t.match(/\d{2}:\d{2}/)) return t;
-    return t;
-  };
-
-  const slots = state.timeslots.filter((s) => String(s.id) !== '7');
-
-  // Doppelstunden-Merge: 1+2, 3+4, 5+6, 8+9
-  const MERGE_PAIRS = [
-    ['1', '2'],
-    ['3', '4'],
-    ['5', '6'],
-    ['8', '9']
+  // Doppelstunden-Zeilen: 1+2, 3+4, 5+6, 8+9
+  const WEEK_PAIRS = [
+    { firstId: '1', secondId: '2' },
+    { firstId: '3', secondId: '4' },
+    { firstId: '5', secondId: '6' },
+    { firstId: '8', secondId: '9' }
   ];
 
-  /**
-   * Prüft ob zwei Stunden zusammengelegt werden können
-   * @param {Object} a - Stunde A
-   * @param {Object} b - Stunde B
-   * @returns {boolean} true wenn mergebar
-   */
-  const canMerge = (a, b) => {
-    if (!a || !b) return false;
-    return (a.subject || '') === (b.subject || '') && 
-           (a.teacher || '') === (b.teacher || '') && 
-           (a.room || '') === (b.room || '');
-  };
+  const body = WEEK_PAIRS
+    .map((pair) => {
+      const firstSlot = state.timeslots.find((s) => s.id === pair.firstId);
+      const secondSlot = state.timeslots.find((s) => s.id === pair.secondId);
+      if (!firstSlot || !secondSlot) return '';
 
-  // Precompute welche Zellen übersprungen/gespannt werden
-  const spanByDaySlot = {}; // key `${dayId}:${slotId}` -> 2
-  const skipByDaySlot = {}; // key `${dayId}:${slotId}` -> true
+      const timeFrom = firstSlot.time.split('–')[0];
+      const timeTo = secondSlot.time.split('–')[1];
+      const combinedTime = `${timeFrom}–${timeTo}`;
 
-  for (const d of DAYS) {
-    const rows = state.timetable?.[classId]?.[d.id] || [];
-    const bySlot = new Map(rows.map((r) => [String(r.slotId), r]));
-
-    for (const [aId, bId] of MERGE_PAIRS) {
-      const a = bySlot.get(String(aId));
-      const b = bySlot.get(String(bId));
-      if (canMerge(a, b)) {
-        spanByDaySlot[`${d.id}:${aId}`] = 2;
-        skipByDaySlot[`${d.id}:${bId}`] = true;
-      }
-    }
-  }
-
-  const body = slots
-    .map((slot) => {
-      const rowCells = DAYS.map((d) => {
-        const key = `${d.id}:${slot.id}`;
-        if (skipByDaySlot[key]) return '';
-
+      const dayCells = DAYS.map((d) => {
         const rows = state.timetable?.[classId]?.[d.id] || [];
-        const r = rows.find((x) => String(x.slotId) === String(slot.id));
+        const r = rows.find((x) => String(x.slotId) === pair.firstId);
         const subject = r?.subject || '—';
         const meta = formatTeacherRoom(r?.teacher, r?.room);
 
-        const span = spanByDaySlot[key] || 1;
-        const style = span > 1 ? ` style="grid-row: span ${span};"` : '';
-
         return `
-          <div class="weekCell" role="cell"${style}>
+          <div class="weekCell" role="cell">
             <div class="weekSubject">${escapeHtml(subject)}</div>
             ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">—</div>`}
           </div>
@@ -946,12 +909,12 @@ function renderWeek() {
       }).join('');
 
       return `
-        <div class="weekRow" role="row" aria-label="Stunde ${escapeHtml(slot.id)}">
+        <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.firstId)}+${escapeHtml(pair.secondId)}">
           <div class="weekCell weekSlot" role="rowheader">
-            <div class="weekSlotNum">${escapeHtml(slot.id)}</div>
-            <div class="weekSlotTime">${escapeHtml(slotLabel(slot))}</div>
+            <div class="weekSlotNum">${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</div>
+            <div class="weekSlotTime">${escapeHtml(combinedTime)}</div>
           </div>
-          ${rowCells}
+          ${dayCells}
         </div>
       `;
     })
