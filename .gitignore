@@ -3,3 +3,4 @@ archive/
 *.log
 .DS_Store
 .env
+debug-pdf-text.txt
