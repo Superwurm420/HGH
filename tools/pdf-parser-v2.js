@@ -97,61 +97,19 @@ async function extractText(pdfPath) {
   } catch {
     throw new Error('Dependency missing: pdf-parse\nInstall with: npm install pdf-parse');
   }
-  if (typeof PDFParse !== 'function') {
-    throw new Error('pdf-parse: PDFParse export not found. Use pdf-parser-specialized.js instead.');
-  }
 
   const buf = fs.readFileSync(pdfPath);
-  const data = await PDFParse(buf);
-  return data.text || '';
+  const data = new Uint8Array(buf);
+  const parser = new PDFParse(data);
+  const result = await parser.getText();
+  return result.text || '';
 }
 
 // --- Advanced PDF Parsing ---
 async function extractWithLayout(pdfPath) {
-  try {
-    const mod = await import('pdf-parse');
-    const PDFParse = mod.PDFParse || mod.default;
-    if (typeof PDFParse !== 'function') return null;
-
-    const buf = fs.readFileSync(pdfPath);
-    const options = {
-      // Custom page renderer to get layout info
-      pagerender: (pageData) => {
-        return pageData.getTextContent().then((textContent) => {
-          let lastY = null;
-          let lines = [];
-          let currentLine = [];
-
-          textContent.items.forEach((item) => {
-            const y = item.transform[5];
-
-            // Neue Zeile wenn Y-Position sich ändert
-            if (lastY !== null && Math.abs(y - lastY) > 2) {
-              if (currentLine.length > 0) {
-                lines.push(currentLine.join(' '));
-                currentLine = [];
-              }
-            }
-
-            currentLine.push(item.str);
-            lastY = y;
-          });
-
-          if (currentLine.length > 0) {
-            lines.push(currentLine.join(' '));
-          }
-
-          return lines.join('\n');
-        });
-      }
-    };
-
-    const data = await PDFParse(buf, options);
-    return data.text;
-  } catch (err) {
-    log('Layout extraction failed, falling back to basic extraction:', err.message);
-    return null;
-  }
+  // pdf-parse v2 no longer supports custom pagerender options.
+  // Fall back to basic extraction.
+  return null;
 }
 
 // --- Table Structure Parser ---

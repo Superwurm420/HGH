@@ -40,13 +40,12 @@ async function extractText(pdfPath){
   } catch {
     throw new Error('Dependency missing: pdf-parse. Install with: npm i -D pdf-parse');
   }
-  if (typeof PDFParse !== 'function') {
-    throw new Error('pdf-parse: PDFParse export not found. Use pdf-parser-specialized.js instead.');
-  }
 
   const buf = fs.readFileSync(pdfPath);
-  const data = await PDFParse(buf);
-  return data.text || '';
+  const data = new Uint8Array(buf);
+  const parser = new PDFParse(data);
+  const result = await parser.getText();
+  return result.text || '';
 }
 
 function isTeacherToken(tok){
