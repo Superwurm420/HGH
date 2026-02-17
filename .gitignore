@@ -3,3 +3,5 @@ archive/
 *.log
 .DS_Store
 .env
+debug-*.txt
+tmp_*.json

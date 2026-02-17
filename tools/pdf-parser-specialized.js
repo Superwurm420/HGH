@@ -1,332 +1,302 @@
 #!/usr/bin/env node
 /**
- * HGH Stundenplan PDF Parser - Spezialisiert für Tabellen-Layout
- * 
- * Versteht die spezifische Struktur:
- * - Header: HT11 HT12 HT21 HT22 G11 G21 GT01
- * - Pro Tag (MO, DI, MI, DO, FR): 10 Slots
- * - Pro Slot: Zeit | Fach (Zeile 1) + Lehrkraft (Zeile 2) | Raum
- * 
+ * HGH Stundenplan PDF Parser - Coordinate-based
+ *
+ * Uses pdfjs-dist to extract text items with x/y coordinates,
+ * then maps items to the correct class columns using header positions.
+ *
+ * PDF Structure:
+ * - 7 classes: HT11, HT12, HT21, HT22, G11, G21, GT01
+ * - 5 days (MO–FR), each with 10 numbered rows in pairs:
+ *     Odd rows  (1, 3, 5, 7, 9)  → Subject + Room
+ *     Even rows (2, 4, 6, 8, 10) → Teacher
+ * - Pairs form double lessons (Doppelstunden):
+ *     Rows 1+2 → app slots 1,2
+ *     Rows 3+4 → app slots 3,4
+ *     Rows 5+6 → app slots 5,6
+ *     Rows 7+8 → app slots 8,9  (after Mittagspause)
+ *
  * Usage:
  *   node tools/pdf-parser-specialized.js <input.pdf> [options]
- * 
+ *
  * Options:
  *   --out <path>         Output JSON file (default: data/timetable.json)
  *   --validFrom <date>   Valid from date (default: today)
  *   --debug              Show debug output
- *   --save-text          Save extracted text to file
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const pdfjsLib = require('pdfjs-dist');
 
 // === Configuration ===
-const CONFIG = {
-  classes: ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'],
-  days: ['MO', 'DI', 'MI', 'DO', 'FR'],
-  dayMapping: {
-    'MO': 'mo', 'DI': 'di', 'MI': 'mi', 
-    'DO': 'do', 'FR': 'fr'
-  },
-  timeslots: [
-    { id: '1', time: '08:00–08:45' },
-    { id: '2', time: '08:45–09:30' },
-    { id: '3', time: '09:50–10:35' },
-    { id: '4', time: '10:35–11:20' },
-    { id: '5', time: '11:40–12:25' },
-    { id: '6', time: '12:25–13:10' },
-    { id: '7', time: 'Mittagspause' },
-    { id: '8', time: '14:10–14:55' },
-    { id: '9', time: '14:55–15:40' },
-    { id: '10', time: '15:45–16:30' }
-  ],
-  knownTeachers: [
-    'STE', 'WED', 'STI', 'BÜ', 'HOFF', 'GRO', 'TAM', 
-    'WEN', 'MEL', 'WEZ', 'HOG', 'BER'
-  ]
+const CLASS_IDS = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
+const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
+
+const TIMESLOTS = [
+  { id: '1', time: '08:00–08:45' },
+  { id: '2', time: '08:45–09:30' },
+  { id: '3', time: '09:50–10:35' },
+  { id: '4', time: '10:35–11:20' },
+  { id: '5', time: '11:40–12:25' },
+  { id: '6', time: '12:25–13:10' },
+  { id: '7', time: 'Mittagspause' },
+  { id: '8', time: '14:10–14:55' },
+  { id: '9', time: '14:55–15:40' }
+];
+
+// PDF row pair → app slot pair mapping
+// PDF rows 1+2 = lesson 1 → app slots 1,2
+// PDF rows 3+4 = lesson 2 → app slots 3,4
+// PDF rows 5+6 = lesson 3 → app slots 5,6
+// PDF rows 7+8 = lesson 4 → app slots 8,9 (after Mittagspause)
+// PDF rows 9+10 = lesson 5 → (no app slot, usually empty)
+const PAIR_TO_SLOTS = {
+  '1': ['1', '2'],
+  '3': ['3', '4'],
+  '5': ['5', '6'],
+  '7': ['8', '9']
 };
 
 // === Argument Parsing ===
-const args = {
-  input: process.argv[2],
-  out: getArg('--out') || 'data/timetable.json',
-  validFrom: getArg('--validFrom') || new Date().toISOString().split('T')[0],
-  debug: process.argv.includes('--debug'),
-  saveText: process.argv.includes('--save-text')
-};
-
 function getArg(flag) {
   const idx = process.argv.indexOf(flag);
   return idx !== -1 ? process.argv[idx + 1] : null;
 }
 
+const args = {
+  input: process.argv[2],
+  out: getArg('--out') || 'data/timetable.json',
+  validFrom: getArg('--validFrom') || new Date().toISOString().split('T')[0],
+  debug: process.argv.includes('--debug')
+};
+
 if (!args.input) {
-  console.error('❌ Usage: node pdf-parser-specialized.js <input.pdf> [options]');
+  console.error('Usage: node tools/pdf-parser-specialized.js <input.pdf> [options]');
   process.exit(1);
 }
 
 // === Logging ===
-function log(...msgs) {
-  if (args.debug) console.log('[DEBUG]', ...msgs);
+function log(...msgs) { if (args.debug) console.log('[DEBUG]', ...msgs); }
+
+// === PDF Item Extraction ===
+async function extractItems(pdfPath) {
+  const data = new Uint8Array(fs.readFileSync(pdfPath));
+  const doc = await pdfjsLib.getDocument({ data }).promise;
+  const page = await doc.getPage(1);
+  const content = await page.getTextContent();
+  return content.items
+    .map(it => ({
+      str: String(it.str || '').replace(/\s+/g, ' ').trim(),
+      x: it.transform[4],
+      y: it.transform[5]
+    }))
+    .filter(it => it.str);
 }
 
-function info(...msgs) {
-  console.log('ℹ️ ', ...msgs);
-}
+// === Column Detection ===
+function findColumns(items) {
+  // Find R header positions (7 "R" items at the same y)
+  const rItems = items.filter(it => it.str === 'R');
+  const rXs = rItems.map(it => it.x).sort((a, b) => a - b);
 
-function success(...msgs) {
-  console.log('✅', ...msgs);
-}
-
-function warn(...msgs) {
-  console.warn('⚠️ ', ...msgs);
-}
-
-function error(...msgs) {
-  console.error('❌', ...msgs);
-}
-
-// === PDF Text Extraction ===
-async function extractPdfText(pdfPath) {
-  let PDFParse;
-  try {
-    const mod = await import('pdf-parse');
-    PDFParse = mod.PDFParse || mod.default;
-  } catch {
-    throw new Error('pdf-parse not installed. Run: npm install pdf-parse');
+  if (rXs.length < 7) {
+    throw new Error(`Expected 7 R columns, found ${rXs.length}`);
   }
 
-  if (typeof PDFParse !== 'function') {
-    throw new Error('pdf-parse module could not be loaded correctly. Check version compatibility.');
+  // Column boundaries: each class column spans from left edge to its R column
+  // The leftmost data starts around x=150 (before first class header)
+  const DATA_LEFT = 150;
+  const DATA_RIGHT = rXs[6] + 50;
+
+  // Build column definitions
+  // Subject/teacher items appear left-aligned in each class column
+  // Room items appear near the R column x position
+  const columns = CLASS_IDS.map((id, i) => {
+    const leftBound = i === 0 ? DATA_LEFT : rXs[i - 1];
+    const rightBound = rXs[i];
+    const roomX = rXs[i];
+    return { id, leftBound, rightBound, roomX };
+  });
+
+  log('Columns detected:');
+  columns.forEach(c => log(`  ${c.id}: subject x=[${Math.round(c.leftBound)}..${Math.round(c.rightBound)}], room x≈${Math.round(c.roomX)}`));
+
+  return columns;
+}
+
+// === Day Block Detection ===
+function findDayBlocks(items) {
+  // Find all "1." slot markers — there should be 5, one per day
+  const slot1Items = items
+    .filter(it => it.str === '1.' && it.x < 100) // slot markers are at the left edge
+    .sort((a, b) => b.y - a.y); // top to bottom (PDF y increases upward)
+
+  if (slot1Items.length < 5) {
+    throw new Error(`Expected 5 day blocks (5× slot "1."), found ${slot1Items.length}`);
   }
 
-  const buffer = fs.readFileSync(pdfPath);
-  const uint8 = new Uint8Array(buffer);
-  const pdf = new PDFParse(uint8, {});
-  const result = await pdf.getText();
-  const text = result.pages.map(p => p.text).join('\n');
+  // Take exactly 5 (in case there are duplicates)
+  const dayStarts = slot1Items.slice(0, 5);
 
-  log(`Extracted ${text.length} characters from PDF`);
-  return text;
-}
+  // Find all slot markers for grouping
+  const allSlots = items
+    .filter(it => /^\d{1,2}\.$/.test(it.str) && it.x < 100)
+    .map(it => ({ num: parseInt(it.str), y: it.y }));
 
-// === Token Recognition ===
-function isTeacher(token) {
-  const clean = token.trim().toUpperCase();
-  
-  // Known teachers
-  if (CONFIG.knownTeachers.includes(clean)) return true;
-  
-  // Combined teachers (e.g., "WEZ/BER")
-  if (clean.includes('/')) {
-    return clean.split('/').every(t => 
-      CONFIG.knownTeachers.includes(t) || /^[A-ZÄÖÜ]{2,4}$/.test(t)
-    );
-  }
-  
-  // Pattern: 2-4 uppercase letters
-  return /^[A-ZÄÖÜ]{2,4}$/.test(clean);
-}
+  // Build day blocks: each block spans from its "1." to its "10."
+  const blocks = dayStarts.map((start, dayIdx) => {
+    const dayId = DAY_IDS[dayIdx];
 
-function isRoom(token) {
-  const clean = token.trim();
-  
-  // Numeric rooms: 1, 2, 3, etc.
-  if (/^\d{1,2}$/.test(clean)) return true;
-  
-  // Special rooms: T1, BS, HS, USF
-  if (/^(T\d|BS|HS|USF)$/.test(clean)) return true;
-  
-  // Alphanumeric: A12, R6, etc.
-  if (/^[A-Z]\d{1,3}$/.test(clean)) return true;
-  
-  return false;
-}
+    // Find slot items belonging to this day block
+    // They are between this day's "1." and the next day's "1." (or bottom of page)
+    const yTop = start.y + 5;
+    const yBottom = dayIdx < 4 ? dayStarts[dayIdx + 1].y - 5 : -Infinity;
 
-function isNotAvailable(token) {
-  const clean = token.trim().toUpperCase();
-  return clean === '#NV' || clean === '#N/A' || clean === 'N.V.';
-}
+    const daySlots = allSlots
+      .filter(s => s.y <= yTop && s.y >= yBottom)
+      .sort((a, b) => b.y - a.y); // top to bottom
 
-function isSlotNumber(token) {
-  return /^\d{1,2}\.$/.test(token.trim());
-}
-
-function isDayMarker(token) {
-  const clean = token.trim().toUpperCase();
-  return CONFIG.days.includes(clean);
-}
-
-// === Text Cleaning ===
-function cleanText(text) {
-  return text
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\t/g, ' ')
-    .trim();
-}
-
-function normalizeSpaces(text) {
-  return text.replace(/\s+/g, ' ').trim();
-}
-
-// === Line-based Parser ===
-class LineParser {
-  constructor(text) {
-    this.lines = cleanText(text).split('\n').map(l => l.trim()).filter(Boolean);
-    this.currentIndex = 0;
-    this.currentDay = null;
-    this.result = this.buildEmptyStructure();
-  }
-
-  buildEmptyStructure() {
-    const structure = {};
-    for (const classId of CONFIG.classes) {
-      structure[classId] = {};
-      for (const day of CONFIG.days) {
-        structure[classId][CONFIG.dayMapping[day]] = [];
-      }
+    // Group by slot number (there may be duplicate numbers from different y-lines)
+    const slotYs = {};
+    for (const s of daySlots) {
+      if (!slotYs[s.num]) slotYs[s.num] = s.y;
     }
-    return structure;
+
+    log(`Day ${dayId}: yTop=${Math.round(yTop)}, yBottom=${Math.round(yBottom)}, slots found: ${Object.keys(slotYs).join(',')}`);
+
+    return { dayId, yTop, yBottom, slotYs };
+  });
+
+  return blocks;
+}
+
+// === Item Lookup ===
+function findItemInColumn(items, column, y, yTolerance) {
+  // Find the item that falls within the column's x-range and near the given y
+  const candidates = items.filter(it =>
+    it.x >= column.leftBound - 5 &&
+    it.x < column.rightBound - 5 &&
+    Math.abs(it.y - y) <= yTolerance
+  );
+
+  if (candidates.length === 0) return null;
+
+  // Pick the one closest to y
+  candidates.sort((a, b) => Math.abs(a.y - y) - Math.abs(b.y - y));
+  return candidates[0];
+}
+
+function findRoomInColumn(items, column, y, yTolerance) {
+  // Room items appear near the R column x position, between subject and teacher rows
+  const candidates = items.filter(it =>
+    Math.abs(it.x - column.roomX) < 20 &&
+    Math.abs(it.y - y) <= yTolerance &&
+    /^(\d{1,2}|T\d|BS|HS|USF|BL|H|8\/4)$/.test(it.str)
+  );
+
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => Math.abs(a.y - y) - Math.abs(b.y - y));
+  return candidates[0];
+}
+
+// === Main Parser ===
+function parseTimetable(items, columns, dayBlocks) {
+  const classes = {};
+  for (const cls of CLASS_IDS) {
+    classes[cls] = {};
+    for (const day of DAY_IDS) {
+      classes[cls][day] = [];
+    }
   }
 
-  parse() {
-    while (this.currentIndex < this.lines.length) {
-      const line = this.lines[this.currentIndex];
-      
-      // Check for day marker
-      const dayMatch = CONFIG.days.find(d => line.includes(d));
-      if (dayMatch) {
-        this.currentDay = CONFIG.dayMapping[dayMatch];
-        log(`Found day: ${dayMatch} → ${this.currentDay}`);
-        this.currentIndex++;
+  for (const block of dayBlocks) {
+    const { dayId, slotYs } = block;
+
+    // Process slot pairs: (1,2), (3,4), (5,6), (7,8)
+    for (const [oddStr, appSlots] of Object.entries(PAIR_TO_SLOTS)) {
+      const oddNum = parseInt(oddStr);
+      const evenNum = oddNum + 1;
+
+      const subjectY = slotYs[oddNum];
+      const teacherY = slotYs[evenNum];
+
+      if (!subjectY) {
+        log(`  ${dayId}: No slot ${oddNum} found, skipping pair`);
         continue;
       }
 
-      // Check for slot
-      const slotMatch = line.match(/^(\d{1,2})\./);
-      if (slotMatch && this.currentDay) {
-        const slotId = slotMatch[1];
-        this.parseSlot(slotId);
-      }
+      // Room items appear between subject and teacher rows (~7 units below subject)
+      const roomY = subjectY - 7;
 
-      this.currentIndex++;
-    }
+      for (const col of columns) {
+        // Find subject
+        const subjectItem = findItemInColumn(items, col, subjectY, 3);
+        let subject = subjectItem?.str || null;
 
-    return this.result;
-  }
+        // Find teacher
+        let teacher = null;
+        if (teacherY) {
+          const teacherItem = findItemInColumn(items, col, teacherY, 3);
+          teacher = teacherItem?.str || null;
+        }
 
-  parseSlot(slotId) {
-    log(`Parsing slot ${slotId} for day ${this.currentDay}`);
-    
-    // Collect next few lines (contains subjects and teachers)
-    const dataLines = [];
-    let tempIndex = this.currentIndex + 1;
-    
-    while (tempIndex < this.lines.length && dataLines.length < 3) {
-      const line = this.lines[tempIndex];
-      
-      // Stop at next slot or day
-      if (isSlotNumber(line) || CONFIG.days.some(d => line.includes(d))) {
-        break;
-      }
-      
-      if (line.trim().length > 0) {
-        dataLines.push(line);
-      }
-      
-      tempIndex++;
-    }
+        // Find room
+        const roomItem = findRoomInColumn(items, col, roomY, 5);
+        const room = roomItem?.str || null;
 
-    if (dataLines.length === 0) return;
+        // Filter out #NV, time-like tokens, and non-lesson notes
+        if (subject === '#NV') subject = null;
+        if (teacher === '#NV') teacher = null;
+        if (subject && /^\d{1,2}\.\d{2}/.test(subject)) subject = null; // time token
+        if (subject && /^\d{1,2}\.\d{2}\s*-?$/.test(subject)) subject = null;
+        // Filter non-teacher items on teacher lines (locations, notes)
+        if (teacher && /\s/.test(teacher)) teacher = null; // teachers never contain spaces
+        if (subject && /^(Serviceteam|USF-Treffen)$/i.test(subject)) subject = null;
 
-    // Extract data for each class
-    this.extractSlotData(slotId, dataLines);
-  }
+        // Skip completely empty entries
+        if (!subject && !teacher && !room) continue;
 
-  extractSlotData(slotId, dataLines) {
-    // Combine all data lines
-    const combinedText = dataLines.join(' ');
-    const tokens = combinedText.split(/\s+/).filter(Boolean);
-    
-    log(`  Tokens (${tokens.length}):`, tokens.slice(0, 20).join(' '), '...');
+        // Create entries for both app slots in the pair
+        for (const slotId of appSlots) {
+          classes[col.id][dayId].push({
+            slotId,
+            subject: subject || null,
+            teacher: teacher || null,
+            room: room || null
+          });
+        }
 
-    // Try to extract data for each class
-    // This is heuristic-based - we need to split tokens among 7 classes
-    const tokensPerClass = Math.ceil(tokens.length / CONFIG.classes.length);
-    
-    CONFIG.classes.forEach((classId, index) => {
-      const start = index * tokensPerClass;
-      const end = Math.min((index + 1) * tokensPerClass, tokens.length);
-      const classTokens = tokens.slice(start, end);
-      
-      const entry = this.extractEntry(classTokens);
-      
-      if (entry.subject || entry.teacher || entry.room) {
-        this.result[classId][this.currentDay].push({
-          slotId,
-          ...entry
-        });
-        
-        log(`    ${classId}: ${entry.subject || '—'} | ${entry.teacher || '—'} | ${entry.room || '—'}`);
-      }
-    });
-  }
-
-  extractEntry(tokens) {
-    const entry = {
-      subject: null,
-      teacher: null,
-      room: null
-    };
-
-    const teachers = [];
-    const rooms = [];
-    const subjectParts = [];
-
-    for (const token of tokens) {
-      if (isNotAvailable(token)) {
-        continue;
-      } else if (isTeacher(token)) {
-        teachers.push(token);
-      } else if (isRoom(token)) {
-        rooms.push(token);
-      } else {
-        // Assume it's part of subject
-        subjectParts.push(token);
+        log(`  ${dayId} slots ${appSlots.join(',')}: ${col.id} → "${subject || '—'}" | ${teacher || '—'} | R:${room || '—'}`);
       }
     }
 
-    entry.teacher = teachers[0] || null;
-    entry.room = rooms[0] || null;
-    entry.subject = subjectParts.length > 0 ? subjectParts.join(' ') : null;
-
-    return entry;
+    // Sort entries by slot ID
+    for (const cls of CLASS_IDS) {
+      classes[cls][dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
+    }
   }
+
+  return classes;
 }
 
 // === Statistics ===
 function generateStats(classes) {
-  const stats = {
-    totalEntries: 0,
-    byClass: {},
-    teachers: new Set(),
-    rooms: new Set(),
-    subjects: new Set()
-  };
+  const stats = { totalEntries: 0, byClass: {}, teachers: new Set(), rooms: new Set(), subjects: new Set() };
 
-  for (const classId of CONFIG.classes) {
+  for (const classId of CLASS_IDS) {
     let count = 0;
-    for (const dayId of Object.keys(classes[classId])) {
+    for (const dayId of DAY_IDS) {
       const entries = classes[classId][dayId];
       count += entries.length;
       stats.totalEntries += entries.length;
-
-      entries.forEach(e => {
+      for (const e of entries) {
         if (e.teacher) stats.teachers.add(e.teacher);
         if (e.room) stats.rooms.add(e.room);
         if (e.subject) stats.subjects.add(e.subject);
-      });
+      }
     }
     stats.byClass[classId] = count;
   }
@@ -334,87 +304,72 @@ function generateStats(classes) {
   return {
     totalEntries: stats.totalEntries,
     byClass: stats.byClass,
-    teachers: Array.from(stats.teachers).sort(),
-    rooms: Array.from(stats.rooms).sort(),
-    subjects: Array.from(stats.subjects).sort()
+    teachers: [...stats.teachers].sort(),
+    rooms: [...stats.rooms].sort(),
+    subjects: [...stats.subjects].sort()
   };
 }
 
 // === Main ===
 (async () => {
   try {
-    info(`HGH PDF Parser - Specialized`);
-    info(`Input: ${path.basename(args.input)}`);
+    console.log(`ℹ️  HGH PDF Parser v2.0 (coordinate-based)`);
+    console.log(`ℹ️  Input: ${path.basename(args.input)}`);
     console.log('');
 
-    // Extract text
-    const text = await extractPdfText(args.input);
-    
-    if (args.saveText) {
-      const textFile = 'debug-pdf-text.txt';
-      fs.writeFileSync(textFile, text, 'utf8');
-      info(`Saved extracted text to: ${textFile}`);
-    }
+    // 1. Extract items with coordinates
+    const items = await extractItems(args.input);
+    log(`Extracted ${items.length} text items from PDF`);
 
-    // Parse
-    const parser = new LineParser(text);
-    const classes = parser.parse();
+    // 2. Detect class columns from R headers
+    const columns = findColumns(items);
 
-    // Generate statistics
+    // 3. Detect 5 day blocks from repeated slot "1." markers
+    const dayBlocks = findDayBlocks(items);
+
+    // 4. Parse timetable
+    const classes = parseTimetable(items, columns, dayBlocks);
+
+    // 5. Generate statistics
     const stats = generateStats(classes);
 
-    // Build output
+    // 6. Build and write output
     const output = {
       meta: {
         school: 'HGH',
         validFrom: args.validFrom,
         updatedAt: new Date().toISOString(),
-        source: path.basename(args.input),
-        parser: 'specialized-v1.0',
-        stats: {
-          totalEntries: stats.totalEntries,
-          entriesByClass: stats.byClass,
-          teachersFound: stats.teachers.length,
-          roomsFound: stats.rooms.length,
-          subjectsFound: stats.subjects.length
-        }
+        source: path.basename(args.input)
       },
-      timeslots: CONFIG.timeslots,
+      timeslots: TIMESLOTS,
       classes
     };
 
-    // Write output
     fs.mkdirSync(path.dirname(args.out), { recursive: true });
     fs.writeFileSync(args.out, JSON.stringify(output, null, 2) + '\n', 'utf8');
 
-    console.log('');
-    success('Parsing complete!');
+    console.log('✅ Parsing complete!');
     console.log('');
     console.log('📊 Statistics:');
     console.log(`   Total entries: ${stats.totalEntries}`);
-    console.log(`   Teachers: ${stats.teachers.length} (${stats.teachers.slice(0, 10).join(', ')}${stats.teachers.length > 10 ? '...' : ''})`);
+    console.log(`   Teachers: ${stats.teachers.length} (${stats.teachers.slice(0, 10).join(', ')})`);
     console.log(`   Rooms: ${stats.rooms.length} (${stats.rooms.join(', ')})`);
     console.log(`   Subjects: ${stats.subjects.length}`);
     console.log('');
-    console.log(`   By class:`);
     Object.entries(stats.byClass).forEach(([cls, count]) => {
-      console.log(`     ${cls}: ${count} entries`);
+      console.log(`   ${cls}: ${count} entries`);
     });
     console.log('');
-    info(`Output: ${args.out}`);
+    console.log(`ℹ️  Output: ${args.out}`);
 
-    if (stats.totalEntries < 50) {
+    if (stats.totalEntries < 100) {
       console.log('');
-      warn('Low entry count detected!');
-      warn('The parser may not have recognized the PDF structure correctly.');
-      warn('Try running with --debug and --save-text to inspect the extracted text.');
+      console.warn('⚠️  Low entry count! Try running with --debug to inspect.');
     }
 
   } catch (err) {
-    error('Parsing failed:', err.message);
-    if (args.debug) {
-      console.error(err);
-    }
+    console.error('❌ Parsing failed:', err.message);
+    if (args.debug) console.error(err);
     process.exit(1);
   }
 })();
