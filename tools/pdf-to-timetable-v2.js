@@ -14,8 +14,10 @@
  *   node tools/pdf-to-timetable-v2.js <input.pdf> [--out data/timetable.json] [--validFrom 2026-01-19]
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 const pdfjsLib = require('pdfjs-dist');
 
 const DAYS = [

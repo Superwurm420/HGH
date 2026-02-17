@@ -2,8 +2,10 @@
 // Extract text items with x/y positions using pdfjs-dist
 // Usage: node tools/pdf-extract-items.js input.pdf out.json
 
-const fs = require('fs');
-const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const pdfjsLib = require('pdfjs-dist');
 
 const inPdf = process.argv[2];
 const outJson = process.argv[3] || 'tmp_pdf_items.json';

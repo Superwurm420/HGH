@@ -88,19 +88,26 @@ function error(...msgs) {
 
 // === PDF Text Extraction ===
 async function extractPdfText(pdfPath) {
-  let pdfParse;
+  let PDFParse;
   try {
     const mod = await import('pdf-parse');
-    pdfParse = mod.default || mod;
+    PDFParse = mod.PDFParse || mod.default;
   } catch {
     throw new Error('pdf-parse not installed. Run: npm install pdf-parse');
   }
 
+  if (typeof PDFParse !== 'function') {
+    throw new Error('pdf-parse module could not be loaded correctly. Check version compatibility.');
+  }
+
   const buffer = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buffer);
-  
-  log(`Extracted ${data.text.length} characters from PDF`);
-  return data.text;
+  const uint8 = new Uint8Array(buffer);
+  const pdf = new PDFParse(uint8, {});
+  const result = await pdf.getText();
+  const text = result.pages.map(p => p.text).join('\n');
+
+  log(`Extracted ${text.length} characters from PDF`);
+  return text;
 }
 
 // === Token Recognition ===

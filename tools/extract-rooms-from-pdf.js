@@ -10,8 +10,10 @@
     node tools/extract-rooms-from-pdf.js input.pdf > rooms.json
 */
 
-const fs = require('fs');
-const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const pdfjsLib = require('pdfjs-dist');
 
 const inPdf = process.argv[2];
 if (!inPdf) {
