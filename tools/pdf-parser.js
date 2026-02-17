@@ -33,16 +33,19 @@ if(!input){
 async function extractText(pdfPath){
   // Lazy import: pdf-parse is common in Node.
   // If not installed, give a helpful error.
-  let pdfParse;
+  let PDFParse;
   try{
     const mod = await import('pdf-parse');
-    pdfParse = mod.default || mod;
+    PDFParse = mod.PDFParse || mod.default;
   } catch {
     throw new Error('Dependency missing: pdf-parse. Install with: npm i -D pdf-parse');
   }
+  if (typeof PDFParse !== 'function') {
+    throw new Error('pdf-parse: PDFParse export not found. Use pdf-parser-specialized.js instead.');
+  }
 
   const buf = fs.readFileSync(pdfPath);
-  const data = await pdfParse(buf);
+  const data = await PDFParse(buf);
   return data.text || '';
 }
 
