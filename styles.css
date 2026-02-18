@@ -39,6 +39,10 @@
   background:rgba(0,0,0,.06);
 }
 
+[data-theme="light"] .card.surface{
+  border-top-color:rgba(11,92,255,.22);
+}
+
 [data-theme="light"] .countdown,
 [data-theme="light"] .stat,
 [data-theme="light"] .listItem {
@@ -75,6 +79,8 @@ body{
     radial-gradient(900px 700px at 80% 20%, rgba(74,199,255,.25), transparent 55%),
     linear-gradient(180deg, var(--bg0), var(--bg1));
   overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
   /* Verhindert Flash beim Theme-Wechsel */
   transition: background 180ms ease;
 }
@@ -232,7 +238,7 @@ select:focus-visible{
 }
 
 .navIcon{
-  font-size:16px;
+  font-size:20px;
   opacity:.9;
 }
 
@@ -267,6 +273,32 @@ select:focus-visible{
 .card{
   padding:16px;
   border-radius:var(--radius);
+  position:relative;
+}
+
+.card.surface{
+  border-top-color:rgba(11,92,255,.40);
+}
+
+/* Card Section Headings */
+.card h2{
+  margin:0 0 14px;
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:-.2px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.card h2::before{
+  content:'';
+  flex-shrink:0;
+  display:block;
+  width:3px;
+  height:18px;
+  background:linear-gradient(180deg, var(--accent), var(--accent2));
+  border-radius:2px;
 }
 
 /* Hero Section */
@@ -411,6 +443,12 @@ select:focus-visible{
 .netIndicator[data-status="online"]{
   background:rgba(60,255,145,.9);
   box-shadow:0 0 10px rgba(60,255,145,.4);
+  animation:netPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes netPulse{
+  0%,100%{ box-shadow:0 0 8px rgba(60,255,145,.4); }
+  50%{ box-shadow:0 0 18px rgba(60,255,145,.75); }
 }
 
 .netIndicator[data-status="offline"]{
@@ -1223,21 +1261,85 @@ select:focus-visible{
     grid-template-columns:1.1fr .9fr;
     align-items:stretch;
   }
-  
+
   .grid2{
     grid-template-columns:1fr 1fr;
   }
-  
+
   .nav{
     top:72px;
   }
-  
+
   .linkCards{
     grid-template-columns:1fr 1fr;
   }
 
   .igProfiles{
     grid-template-columns:1fr 1fr;
+  }
+}
+
+/* Mobile Bottom Navigation */
+@media (max-width:739px){
+  .nav{
+    position:fixed;
+    top:auto;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:100;
+    border-radius:0;
+    padding:6px 8px calc(8px + env(safe-area-inset-bottom));
+    background:rgba(7,11,20,.92);
+    backdrop-filter:blur(28px);
+    -webkit-backdrop-filter:blur(28px);
+    border-top:1px solid var(--line);
+    border-bottom:none;
+    box-shadow:0 -6px 32px rgba(0,0,0,.35);
+    gap:4px;
+  }
+
+  /* Einzelne navItem-Glaseffekte im Bottom-Nav entfernen */
+  .navItem,
+  .navItem[aria-current="page"]{
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    border-radius:12px;
+    padding:7px 6px 5px;
+    font-size:11px;
+    gap:3px;
+    position:relative;
+  }
+
+  /* Aktiver Tab hervorheben */
+  .navItem[aria-current="page"]{
+    background:rgba(11,92,255,.18) !important;
+  }
+
+  /* Aktiv-Indikator oben */
+  .navItem[aria-current="page"]::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:50%;
+    transform:translateX(-50%);
+    width:20px;
+    height:2px;
+    background:var(--accent);
+    border-radius:0 0 3px 3px;
+  }
+
+  /* Mehr Platz für den Bottom-Nav */
+  .main{
+    padding-bottom:calc(80px + env(safe-area-inset-bottom));
+  }
+
+  [data-theme="light"] .nav{
+    background:rgba(246,249,255,.94);
+    box-shadow:0 -4px 24px rgba(10,30,80,.12);
   }
 }
 
