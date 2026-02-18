@@ -575,12 +575,12 @@ function renderTimetable() {
       const isNote = !!r?.note;
       const noteClass = isNote ? ' note' : '';
 
-      const teacherLines = (raw) => {
-        if (!raw) return '<small>—</small>';
-        return raw
-          .split('/')
-          .map((t) => `<small>${escapeHtml(formatTeacherName(t.trim()))}</small>`)
-          .join('<br>');
+      const metaCell = (teacher, room) => {
+        const t = teacher
+          ? teacher.split('/').map((x) => `<small>${escapeHtml(x.trim())}</small>`).join('<br>')
+          : '<small>—</small>';
+        const r = room ? `<small class="muted">${escapeHtml(String(room))}</small>` : '';
+        return `<div class="td tdMeta">${t}${r}</div>`;
       };
 
       if (secondSlot) {
@@ -588,28 +588,24 @@ function renderTimetable() {
         const timeFrom = s.time.split('–')[0];
         const timeTo = secondSlot.time.split('–')[1];
         const subject = r?.subject || '—';
-        const room = r?.room || '—';
 
         return `
         <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
           <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
           <div class="td">${escapeHtml(subject)}</div>
-          <div class="td">${teacherLines(r?.teacher)}</div>
-          <div class="td"><small>${escapeHtml(room)}</small></div>
+          ${metaCell(r?.teacher, r?.room)}
         </div>
       `;
       }
 
       const subject = r?.subject || '—';
-      const room = r?.room || '—';
       const [tFrom, tTo] = s.time.split('–');
 
       return `
       <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
         <div class="td">${escapeHtml(subject)}</div>
-        <div class="td">${teacherLines(r?.teacher)}</div>
-        <div class="td"><small>${escapeHtml(room)}</small></div>
+        ${metaCell(r?.teacher, r?.room)}
       </div>
     `;
     })
