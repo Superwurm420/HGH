@@ -466,9 +466,13 @@ function renderTimetable() {
       const isNote = !!r?.note;
       const noteClass = isNote ? ' note' : '';
 
-      const teacherLines = (raw) => raw
-        ? raw.split('/').map((t) => `<small>${escapeHtml(formatTeacherName(t.trim()))}</small>`).join('<br>')
-        : '<small>—</small>';
+      const teacherLines = (raw) => {
+        if (!raw) return '<small>—</small>';
+        return raw
+          .split('/')
+          .map((t) => `<small>${escapeHtml(formatTeacherName(t.trim()))}</small>`)
+          .join('<br>');
+      };
 
       if (secondSlot) {
         skip.add(secondId);
@@ -514,9 +518,7 @@ function renderTodayPreview() {
 
   const classId = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
   const className = CLASSES.find((c) => c.id === classId)?.name || classId;
-  const dayName = !isWeekday()
-    ? 'Nächster Schultag (Montag)'
-    : (DAYS.find((d) => d.id === todayId)?.label || 'Heute');
+  const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find((d) => d.id === todayId)?.label || 'Heute');
 
   todayLabel.textContent = `${dayName} · Klasse ${className}`;
 
@@ -537,9 +539,7 @@ function renderTodayPreview() {
   list.innerHTML = mergedRows
     .map((r) => {
       const subject = r?.subject ?? '—';
-      const teacherLines = r?.teacher
-        ? r.teacher.split('/').map((t) => escapeHtml(formatTeacherName(t.trim())))
-        : [];
+      const teacherLines = r?.teacher ? r.teacher.split('/').map((t) => escapeHtml(formatTeacherName(t.trim()))) : [];
       const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
       const teacherHtml = teacherLines.length ? teacherLines.join('<br>') : '—';
 
@@ -860,9 +860,10 @@ function parseICSDate(s) {
   const y = +s.slice(0, 4), mo = +s.slice(4, 6) - 1, d = +s.slice(6, 8);
   if (s.includes('T')) {
     const h = +s.slice(9, 11), mi = +s.slice(11, 13), sec = +s.slice(13, 15);
-    return s.endsWith('Z')
-      ? new Date(Date.UTC(y, mo, d, h, mi, sec))
-      : new Date(y, mo, d, h, mi, sec);
+    if (s.endsWith('Z')) {
+      return new Date(Date.UTC(y, mo, d, h, mi, sec));
+    }
+    return new Date(y, mo, d, h, mi, sec);
   }
   return new Date(y, mo, d);
 }
@@ -1015,9 +1016,7 @@ function renderCalendarEvents() {
     const div = document.createElement('div');
     div.className = 'calEvent';
     div.style.setProperty('--calColor', ev.color);
-    const range = ev.allDay
-      ? formatCalDateRange(ev.start, ev.end, true)
-      : `${ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${ev.end ? ev.end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''}`;
+    const range = ev.allDay ? formatCalDateRange(ev.start, ev.end, true) : `${ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${ev.end ? ev.end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''}`;
     div.innerHTML = `
       <div class="calEventTitle">${escapeHtml(ev.title)}</div>
       <div class="calEventMeta small muted">${escapeHtml(ev.calLabel)} · ${escapeHtml(range)}</div>`;
