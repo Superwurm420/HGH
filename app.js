@@ -1,8 +1,8 @@
-/* HGH Schüler-PWA – vanilla JS (optimized & bugfixed) */
+/* HGH Schüler-PWA – vanilla JS, performance-optimiert & vereinfacht */
 
 const APP = {
   name: 'HGH Hildesheim',
-  version: '1.1.0',
+  version: '1.2.0',
   storageKeys: {
     theme: 'hgh_theme',
     classId: 'hgh_class',
@@ -12,28 +12,17 @@ const APP = {
     timetableCacheTs: 'hgh_timetable_cache_ts'
   },
   routes: ['home', 'timetable', 'week', 'links', 'instagram'],
-  
-  // Konstanten für bessere Wartbarkeit
   constants: {
-    COUNTDOWN_UPDATE_INTERVAL: 30000, // 30 Sekunden statt 15
-    TIMETABLE_AUTO_REFRESH_INTERVAL: 5 * 60 * 1000, // 5 Minuten
-    TIMETABLE_MIN_REFRESH_GAP: 60 * 1000, // mindestens 1 Minute Abstand
-    CACHE_MAX_AGE: 24 * 60 * 60 * 1000, // 24 Stunden
-    RETRY_DELAY: 1000
+    COUNTDOWN_INTERVAL: 30000,
+    AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
+    MIN_REFRESH_GAP: 60 * 1000
   }
 };
 
 // --- Data ---------------------------------------------------------------
 
-const CLASSES = [
-  { id: 'HT11', name: 'HT11' },
-  { id: 'HT12', name: 'HT12' },
-  { id: 'HT21', name: 'HT21' },
-  { id: 'HT22', name: 'HT22' },
-  { id: 'G11', name: 'G11' },
-  { id: 'G21', name: 'G21' },
-  { id: 'GT01', name: 'GT01' }
-];
+// id === name, daher reichen Strings
+const CLASSES = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
 
 const DAYS = [
   { id: 'mo', label: 'Montag' },
@@ -43,7 +32,8 @@ const DAYS = [
   { id: 'fr', label: 'Freitag' }
 ];
 
-// Lehrerkürzel → Name (mit / als Trennzeichen für die Anzeige)
+const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
+
 const TEACHER_MAP = {
   'STE': 'A. Steinau',
   'WED': 'H. Westendorf',
@@ -60,27 +50,34 @@ const TEACHER_MAP = {
   'BER/WEZ': 'Berenfeld/Wenzel'
 };
 
-/**
- * Formatiert Lehrerkürzel zu vollem Namen
- * @param {string} teacher - Lehrerkürzel
- * @returns {string} Formatierter Name
- */
-function formatTeacherName(teacher) {
-  if (!teacher) return '—';
-  return TEACHER_MAP[teacher] || teacher;
-}
-
 const DEFAULT_TIMESLOTS = [
-  ['1', '08:00–08:45'],
-  ['2', '08:45–09:30'],
-  ['3', '09:50–10:35'],
-  ['4', '10:35–11:20'],
-  ['5', '11:40–12:25'],
-  ['6', '12:25–13:10'],
-  ['7', 'Mittagspause'],
-  ['8', '14:10–14:55'],
-  ['9', '14:55–15:40']
-].map(([id, time]) => ({ id, time }));
+  { id: '1', time: '08:00–08:45' },
+  { id: '2', time: '08:45–09:30' },
+  { id: '3', time: '09:50–10:35' },
+  { id: '4', time: '10:35–11:20' },
+  { id: '5', time: '11:40–12:25' },
+  { id: '6', time: '12:25–13:10' },
+  { id: '7', time: 'Mittagspause' },
+  { id: '8', time: '14:10–14:55' },
+  { id: '9', time: '14:55–15:40' }
+];
+
+// Pre-computed Lookup-Strukturen (einmalig statt wiederholter .find()-Aufrufe)
+const DOUBLE_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
+const SECOND_SLOTS = new Set(Object.values(DOUBLE_PAIRS));
+const WEEK_PAIRS = [
+  { first: '1', second: '2' },
+  { first: '3', second: '4' },
+  { first: '5', second: '6' },
+  { first: '8', second: '9' }
+];
+const ROUTES_SET = new Set(APP.routes);
+const DAY_NUM_MAP = { 1: 'mo', 2: 'di', 3: 'mi', 4: 'do', 5: 'fr' };
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+];
+const CORS_PROXY = 'https://corsproxy.io/?url=';
 
 // --- Calendar config ----------------------------------------------------
 
@@ -103,17 +100,16 @@ const CAL_CONFIGS = [
 
 const state = {
   timeslots: DEFAULT_TIMESLOTS,
+  timeslotMap: new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s])),
   timetable: null,
   selectedDayId: null,
   els: {},
   isLoading: false,
-  timetableAutoRefreshInterval: null,
-  lastTimetableSignature: null,
-  lastTimetableRefreshAt: 0,
+  autoRefreshTimer: null,
+  lastSignature: null,
+  lastRefreshAt: 0,
   installPromptEvent: null,
-  visibilityHandler: null,
-  onlineHandler: null,
-  countdownInterval: null,
+  countdownTimer: null,
   cal: {
     events: {},
     enabled: {},
@@ -128,11 +124,6 @@ const state = {
 const qs = (sel, root = document) => root.querySelector(sel);
 const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-/**
- * Escaped HTML-Zeichen für sichere Ausgabe
- * @param {any} str - Zu escapender String
- * @returns {string} Escaped String
- */
 function escapeHtml(str) {
   return String(str)
     .replaceAll('&', '&amp;')
@@ -142,39 +133,42 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
-/**
- * Gibt die aktuelle Tages-ID zurück (mo-fr)
- * @returns {string} Tages-ID oder 'mo' als Fallback
- */
 function getTodayId() {
-  const day = new Date().getDay(); // 0 Sun ... 6 Sat
-  const map = { 1: 'mo', 2: 'di', 3: 'mi', 4: 'do', 5: 'fr' };
-  return map[day] || 'mo';
+  return DAY_NUM_MAP[new Date().getDay()] || 'mo';
 }
 
-/**
- * Prüft ob heute ein Wochentag ist
- * @returns {boolean} true wenn Mo-Fr
- */
 function isWeekday() {
-  const day = new Date().getDay();
-  return day >= 1 && day <= 5;
+  const d = new Date().getDay();
+  return d >= 1 && d <= 5;
 }
 
-/**
- * Setzt Text eines Elements sicher (null-safe)
- * @param {HTMLElement|null} el - Element
- * @param {string} text - Text
- */
 function safeSetText(el, text) {
   if (el) el.textContent = text;
 }
 
-/**
- * Validiert Timetable-Datenstruktur
- * @param {any} data - Zu validierende Daten
- * @returns {boolean} true wenn valide
- */
+// localStorage-Helper: eliminiert repetitive try/catch-Blöcke
+function storageGet(key) {
+  try { return localStorage.getItem(key); }
+  catch { return null; }
+}
+
+function storageSet(key, value) {
+  try { localStorage.setItem(key, value); }
+  catch { /* quota/private mode */ }
+}
+
+function formatTeacherName(teacher) {
+  if (!teacher) return '—';
+  return TEACHER_MAP[teacher] || teacher;
+}
+
+function formatTeacherRoom(teacher, room) {
+  const parts = [];
+  if (teacher) parts.push(formatTeacherName(teacher));
+  if (room) parts.push(String(room));
+  return parts.join(' / ');
+}
+
 function isValidTimetableData(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.timeslots && !Array.isArray(data.timeslots)) return false;
@@ -182,78 +176,50 @@ function isValidTimetableData(data) {
   return true;
 }
 
+// Befüllt ein <select> mit Klassen-Optionen (DRY)
+function populateClassSelect(sel) {
+  if (!sel) return;
+  sel.innerHTML = CLASSES.map(c =>
+    `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+  ).join('');
+}
+
 // --- Theme --------------------------------------------------------------
 
-/**
- * Wendet Theme an und speichert Präferenz
- * @param {string} theme - 'light' oder 'dark'
- */
 function applyTheme(theme) {
-  const isLight = theme === 'light';
-  document.documentElement.dataset.theme = isLight ? 'light' : 'dark';
-  
-  try {
-    localStorage.setItem(APP.storageKeys.theme, isLight ? 'light' : 'dark');
-  } catch (e) {
-    console.warn('Theme konnte nicht gespeichert werden:', e);
-  }
-
-  // Address bar color (kept constant for brand consistency)
+  document.documentElement.dataset.theme = theme;
+  storageSet(APP.storageKeys.theme, theme);
   const meta = qs('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', '#0b5cff');
 }
 
-/**
- * Initialisiert Theme basierend auf Präferenz oder System
- */
 function initTheme() {
-  try {
-    const saved = localStorage.getItem(APP.storageKeys.theme);
-    if (saved) return applyTheme(saved);
-  } catch (e) {
-    console.warn('Theme konnte nicht geladen werden:', e);
-  }
-
-  const prefersLight =
-    window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const saved = storageGet(APP.storageKeys.theme);
+  if (saved === 'light' || saved === 'dark') return applyTheme(saved);
+  const prefersLight = window.matchMedia?.('(prefers-color-scheme: light)').matches;
   applyTheme(prefersLight ? 'light' : 'dark');
 }
 
-/**
- * Initialisiert Theme-Toggle Button
- */
 function initThemeToggle() {
-  const toggle = state.els.darkToggle;
-  if (!toggle) return;
-  
-  toggle.addEventListener('click', () => {
-    const current = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-    applyTheme(current === 'light' ? 'dark' : 'light');
+  state.els.darkToggle?.addEventListener('click', () => {
+    applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
   });
 }
 
 // --- Timetable loader ---------------------------------------------------
 
-/**
- * Erstellt leere Stundenplan-Struktur
- * @returns {Object} Leerer Stundenplan
- */
 function ensureEmptyTimetable() {
   const empty = {};
   for (const c of CLASSES) {
-    empty[c.id] = { mo: [], di: [], mi: [], do: [], fr: [] };
+    empty[c] = { mo: [], di: [], mi: [], do: [], fr: [] };
   }
   return empty;
 }
 
-/**
- * Wendet Stundenplan-Daten auf State an
- * @param {Object} data - Stundenplan-Daten
- */
 function applyTimetableData(data) {
   if (!isValidTimetableData(data)) {
-    console.warn('Ungültige Timetable-Daten, verwende Defaults');
     state.timeslots = DEFAULT_TIMESLOTS;
+    state.timeslotMap = new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s]));
     state.timetable = ensureEmptyTimetable();
     return;
   }
@@ -263,13 +229,13 @@ function applyTimetableData(data) {
   } else {
     state.timeslots = DEFAULT_TIMESLOTS;
   }
+  state.timeslotMap = new Map(state.timeslots.map(s => [s.id, s]));
 
   const classes = data?.classes || ensureEmptyTimetable();
 
-  // Resolve sameAs references: { sameAs: "ClassName" } on a day copies that class's day
-  const DAYS = ['mo', 'di', 'mi', 'do', 'fr'];
+  // sameAs-Referenzen auflösen
   for (const cls of Object.keys(classes)) {
-    for (const day of DAYS) {
+    for (const day of DAY_IDS) {
       const entry = classes[cls][day];
       if (entry && !Array.isArray(entry) && entry.sameAs) {
         const ref = classes[entry.sameAs]?.[day];
@@ -280,104 +246,71 @@ function applyTimetableData(data) {
 
   state.timetable = classes;
 
-  // Update PDF links to match actual file name from meta.source
+  // PDF-Links aktualisieren
   if (data?.meta?.source) {
-    const pdfHref = `./plan/${data.meta.source}`;
-    for (const link of qsa('a[data-pdf-link]')) {
-      link.href = pdfHref;
-    }
+    const href = `./plan/${data.meta.source}`;
+    for (const link of qsa('a[data-pdf-link]')) link.href = href;
   }
 
-  // Show when timetable was last updated
-  const lastUpdatedEl = qs('#ttLastUpdated');
-  if (lastUpdatedEl && data?.meta?.updatedAt) {
+  // Aktualisierungsdatum anzeigen
+  const lastUpdEl = qs('#ttLastUpdated');
+  if (lastUpdEl && data?.meta?.updatedAt) {
     const d = new Date(data.meta.updatedAt);
-    const formatted = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    lastUpdatedEl.textContent = `Stundenplan aktualisiert: ${formatted}`;
+    lastUpdEl.textContent = `Stundenplan aktualisiert: ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
   }
 }
 
-/**
- * Erzeugt eine Signatur der Stundenplan-Daten für Change-Detection
- * @param {Object} data - Stundenplan-Daten
- * @returns {string}
- */
 function getTimetableSignature(data) {
-  const meta = data?.meta || {};
-  const classCount = data?.classes ? Object.keys(data.classes).length : 0;
-  return `${meta.updatedAt || 'n/a'}|${meta.source || 'n/a'}|${classCount}`;
+  const m = data?.meta || {};
+  const count = data?.classes ? Object.keys(data.classes).length : 0;
+  return `${m.updatedAt || 'n/a'}|${m.source || 'n/a'}|${count}`;
 }
 
-/**
- * Lädt Stundenplan vom Server oder Cache
- * @param {Object} options - Optionen
- * @param {boolean} options.forceNetwork - Erzwingt Netzwerk-Request
- * @returns {Promise<Object>} Lade-Ergebnis mit source
- */
 async function loadTimetable({ forceNetwork = false } = {}) {
-  // Verhindere parallele Lade-Vorgänge
-  if (state.isLoading) {
-    console.log('Lade-Vorgang bereits aktiv, überspringe');
-    return { source: 'skip' };
-  }
-
+  if (state.isLoading) return { source: 'skip' };
   state.isLoading = true;
-  const url = './data/timetable.json';
+
   let lastError = null;
 
-  // if offline and not forced, skip network early
-  if (!forceNetwork && typeof navigator !== 'undefined' && navigator.onLine === false) {
+  if (!forceNetwork && navigator.onLine === false) {
     lastError = new Error('offline');
   } else {
     try {
-      const res = await fetch(url, { cache: 'no-cache' });
+      const res = await fetch('./data/timetable.json', { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (!isValidTimetableData(data)) throw new Error('Ungültige Datenstruktur');
 
-      // Validiere Daten vor der Anwendung
-      if (!isValidTimetableData(data)) {
-        throw new Error('Ungültige Datenstruktur');
-      }
-
-      const signature = getTimetableSignature(data);
-      const changed = signature !== state.lastTimetableSignature;
+      const sig = getTimetableSignature(data);
+      const changed = sig !== state.lastSignature;
 
       applyTimetableData(data);
-      state.lastTimetableSignature = signature;
-      state.lastTimetableRefreshAt = Date.now();
+      state.lastSignature = sig;
+      state.lastRefreshAt = Date.now();
 
-      try {
-        localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
-        localStorage.setItem(APP.storageKeys.timetableCacheTs, new Date().toISOString());
-      } catch (e) {
-        console.warn('Cache konnte nicht gespeichert werden:', e);
-      }
+      storageSet(APP.storageKeys.timetableCache, JSON.stringify(data));
+      storageSet(APP.storageKeys.timetableCacheTs, new Date().toISOString());
 
       state.isLoading = false;
       return { source: 'network', changed };
     } catch (e) {
       lastError = e;
-      console.warn('Netzwerk-Fehler beim Laden:', e);
-      // continue to fallback
+      console.warn('Netzwerk-Fehler:', e);
     }
   }
 
-  // fallback to last cached timetable
+  // Cache-Fallback
   try {
-    const cached = localStorage.getItem(APP.storageKeys.timetableCache);
+    const cached = storageGet(APP.storageKeys.timetableCache);
     if (cached) {
       const data = JSON.parse(cached);
+      if (!isValidTimetableData(data)) throw new Error('Ungültige Cache-Daten');
 
-      // Validiere Cache-Daten
-      if (!isValidTimetableData(data)) {
-        throw new Error('Ungültige Cache-Daten');
-      }
-
-      const signature = getTimetableSignature(data);
-      const changed = signature !== state.lastTimetableSignature;
+      const sig = getTimetableSignature(data);
+      const changed = sig !== state.lastSignature;
 
       applyTimetableData(data);
-      state.lastTimetableSignature = signature;
+      state.lastSignature = sig;
       state.isLoading = false;
       return { source: 'cache', changed };
     }
@@ -385,167 +318,89 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     console.warn('Cache-Fehler:', e);
   }
 
-  // Keine Daten verfügbar – leere Struktur anwenden, Meldung kommt via renderTimetable
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
-  state.lastTimetableSignature = null;
+  state.lastSignature = null;
   state.isLoading = false;
   return { source: 'empty', changed: true };
 }
 
-/**
- * Lädt Stundenplan und rendert nur bei Änderungen neu
- * @param {Object} options
- * @param {boolean} options.forceNetwork - Erzwingt Netzwerk-Request
- * @param {boolean} options.silent - Verhindert Logs
- */
 async function refreshTimetableIfNeeded({ forceNetwork = false, silent = false } = {}) {
-  const now = Date.now();
-  const minGap = APP.constants.TIMETABLE_MIN_REFRESH_GAP;
-  if (!forceNetwork && now - state.lastTimetableRefreshAt < minGap) {
-    return;
-  }
+  if (!forceNetwork && Date.now() - state.lastRefreshAt < APP.constants.MIN_REFRESH_GAP) return;
 
   const result = await loadTimetable({ forceNetwork });
   if (result.source === 'skip') return;
 
   if (result.changed || result.source === 'empty') {
     render();
-    if (!silent) {
-      console.log(`[Timetable] Aktualisiert via ${result.source}`);
-    }
-  } else if (!silent) {
-    console.log('[Timetable] Keine Änderungen gefunden');
+    if (!silent) console.log(`[Timetable] Aktualisiert via ${result.source}`);
   }
 }
 
-/**
- * Initialisiert automatische Stundenplan-Aktualisierung
- */
-function initTimetableAutoRefresh() {
-  if (state.timetableAutoRefreshInterval) {
-    clearInterval(state.timetableAutoRefreshInterval);
-  }
+function initAutoRefresh() {
+  if (state.autoRefreshTimer) clearInterval(state.autoRefreshTimer);
 
   const refresh = () => {
-    if (document.hidden || navigator.onLine === false) return;
+    if (document.hidden || !navigator.onLine) return;
     refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
   };
 
-  state.timetableAutoRefreshInterval = setInterval(
-    refresh,
-    APP.constants.TIMETABLE_AUTO_REFRESH_INTERVAL
-  );
+  state.autoRefreshTimer = setInterval(refresh, APP.constants.AUTO_REFRESH_INTERVAL);
 
-  if (state.visibilityHandler) {
-    document.removeEventListener('visibilitychange', state.visibilityHandler);
-  }
-  state.visibilityHandler = () => {
-    if (!document.hidden) {
-      refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
-    }
-  };
-  document.addEventListener('visibilitychange', state.visibilityHandler);
-
-  if (state.onlineHandler) {
-    window.removeEventListener('online', state.onlineHandler);
-  }
-  state.onlineHandler = () => {
-    refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
-  };
-  window.addEventListener('online', state.onlineHandler);
+  // Visibility + Online als Trigger
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refresh();
+  });
+  window.addEventListener('online', refresh);
 }
 
 // --- Navigation ---------------------------------------------------------
 
-/**
- * Setzt aktive Route und aktualisiert UI
- * @param {string} route - Route-ID
- */
 function setRoute(route) {
-  const navButtons = state.els.navItems;
-
-  for (const b of navButtons) {
-    const isActive = b.dataset.route === route;
-    b.setAttribute('aria-current', isActive ? 'page' : 'false');
+  for (const b of state.els.navItems) {
+    b.setAttribute('aria-current', b.dataset.route === route ? 'page' : 'false');
   }
-
   for (const v of state.els.views) {
     v.hidden = v.dataset.view !== route;
   }
-
-  // Beim Tab-Wechsel immer nach oben scrollen
   window.scrollTo({ top: 0, behavior: 'instant' });
-
-  // Update URL ohne Seiten-Reload
-  if (window.history?.replaceState) {
-    history.replaceState(null, '', `#${route}`);
-  }
+  history.replaceState?.(null, '', `#${route}`);
 }
 
-/**
- * Initialisiert Navigation und Routing
- */
 function initNav() {
-  state.els.navItems.forEach((btn) => {
+  for (const btn of state.els.navItems) {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       setRoute(btn.dataset.route);
     });
-  });
+  }
 
-  // Handle hash changes (browser back/forward)
   window.addEventListener('hashchange', () => {
-    const route = (location.hash || '#home').replace('#', '');
-    const known = new Set(APP.routes);
-    if (known.has(route)) setRoute(route);
+    const route = (location.hash || '#home').slice(1);
+    if (ROUTES_SET.has(route)) setRoute(route);
   });
 
-  const initial = (location.hash || '#home').replace('#', '');
-  const known = new Set(APP.routes);
-  setRoute(known.has(initial) ? initial : 'home');
+  const initial = (location.hash || '#home').slice(1);
+  setRoute(ROUTES_SET.has(initial) ? initial : 'home');
 }
 
 // --- Renderer -----------------------------------------------------------
 
-/**
- * Rendert alle Views
- */
 function render() {
   renderTimetable();
   renderTodayPreview();
   renderWeek();
 }
 
-/**
- * Formatiert Lehrer und Raum für Anzeige
- * @param {string} teacher - Lehrerkürzel
- * @param {string} room - Raumnummer
- * @returns {string} Formatierter String
- */
-function formatTeacherRoom(teacher, room) {
-  const parts = [];
-  if (teacher) parts.push(formatTeacherName(teacher));
-  if (room) parts.push(String(room));
-  return parts.join(' / ');
-}
-
-// Doppelstunden-Paare: erste Stunde → zweite Stunde
-const DOUBLE_LESSON_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
-
-/**
- * Rendert Stundenplan-Tabelle mit zusammengefassten Doppelstunden
- */
 function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
   const dayId = state.selectedDayId || getTodayId();
-
   const body = state.els.timetableBody;
   if (!body) return;
 
-  // Wenn keine Daten verfügbar (weder Netz noch Cache) → Inline-Hinweis
   const hasData = state.timetable && Object.values(state.timetable).some(
-    (cls) => Object.values(cls).some((day) => day.length > 0)
+    cls => Object.values(cls).some(day => day.length > 0)
   );
+
   if (!hasData) {
     body.innerHTML = `
       <div class="timetableEmpty" role="status">
@@ -562,106 +417,86 @@ function renderTimetable() {
   }
 
   const rows = state.timetable?.[classId]?.[dayId] || [];
-  const bySlot = new Map(rows.map((r) => [r.slotId, r]));
+  const bySlot = new Map(rows.map(r => [r.slotId, r]));
   const skip = new Set();
 
-  body.innerHTML = state.timeslots
-    .map((s) => {
-      if (skip.has(s.id)) return '';
+  const metaCell = (teacher, room) => {
+    const t = teacher ? teacher.split('/').map(x => `<small>${escapeHtml(x.trim())}</small>`).join('<br>') : '<small>—</small>';
+    const r = room ? `<small class="muted">${escapeHtml(String(room))}</small>` : '';
+    return `<div class="td tdMeta">${t}${r}</div>`;
+  };
 
-      const r = bySlot.get(s.id);
-      const secondId = DOUBLE_LESSON_PAIRS[s.id];
-      const secondSlot = secondId ? state.timeslots.find((t) => t.id === secondId) : null;
-      const isNote = !!r?.note;
-      const noteClass = isNote ? ' note' : '';
+  body.innerHTML = state.timeslots.map(s => {
+    if (skip.has(s.id)) return '';
 
-      const metaCell = (teacher, room) => {
-        const t = teacher
-          ? teacher.split('/').map((x) => `<small>${escapeHtml(x.trim())}</small>`).join('<br>')
-          : '<small>—</small>';
-        const r = room ? `<small class="muted">${escapeHtml(String(room))}</small>` : '';
-        return `<div class="td tdMeta">${t}${r}</div>`;
-      };
+    const r = bySlot.get(s.id);
+    const secondId = DOUBLE_PAIRS[s.id];
+    const secondSlot = secondId ? state.timeslotMap.get(secondId) : null;
+    const noteClass = r?.note ? ' note' : '';
 
-      if (secondSlot) {
-        skip.add(secondId);
-        const timeFrom = s.time.split('–')[0];
-        const timeTo = secondSlot.time.split('–')[1];
-        const subject = r?.subject || '—';
-
-        return `
+    if (secondSlot) {
+      skip.add(secondId);
+      const timeFrom = s.time.split('–')[0];
+      const timeTo = secondSlot.time.split('–')[1];
+      return `
         <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
           <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
-          <div class="td">${escapeHtml(subject)}</div>
+          <div class="td">${escapeHtml(r?.subject || '—')}</div>
           ${metaCell(r?.teacher, r?.room)}
-        </div>
-      `;
-      }
+        </div>`;
+    }
 
-      const subject = r?.subject || '—';
-      const [tFrom, tTo] = s.time.split('–');
-
-      return `
+    const [tFrom, tTo] = s.time.split('–');
+    return `
       <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
-        <div class="td">${escapeHtml(subject)}</div>
+        <div class="td">${escapeHtml(r?.subject || '—')}</div>
         ${metaCell(r?.teacher, r?.room)}
-      </div>
-    `;
-    })
-    .join('');
+      </div>`;
+  }).join('');
 }
 
-/**
- * Rendert Heute-Vorschau auf Startseite
- */
 function renderTodayPreview() {
   const todayId = getTodayId();
-  const todayLabel = state.els.todayLabel;
-  const list = state.els.todayPreview;
+  const { todayLabel, todayPreview: list } = state.els;
   if (!todayLabel || !list) return;
 
-  const classId = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
-  const className = CLASSES.find((c) => c.id === classId)?.name || classId;
-  const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find((d) => d.id === todayId)?.label || 'Heute');
-
-  todayLabel.textContent = `${dayName} · Klasse ${className}`;
+  const classId = storageGet(APP.storageKeys.classId) || 'HT11';
+  const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find(d => d.id === todayId)?.label || 'Heute');
+  todayLabel.textContent = `${dayName} · Klasse ${classId}`;
 
   const allRows = (state.timetable?.[classId]?.[todayId] || [])
-    .filter((r) => r.slotId !== '7'); // Mittagspause ausblenden
+    .filter(r => r.slotId !== '7');
 
-  // Doppelstunden zusammenfassen: nur erste Stunde jedes Paares behalten
-  const secondSlots = new Set(Object.values(DOUBLE_LESSON_PAIRS));
-  const mergedRows = allRows.filter((r) => !secondSlots.has(r.slotId)).slice(0, 4);
+  // Nur erste Stunde jedes Doppelstunden-Paares behalten
+  const merged = allRows.filter(r => !SECOND_SLOTS.has(r.slotId)).slice(0, 4);
 
-  if (mergedRows.length === 0) {
-    list.innerHTML = `<div class="small muted">Keine Daten verfügbar.</div>`;
+  if (!merged.length) {
+    list.innerHTML = '<div class="small muted">Keine Daten verfügbar.</div>';
     return;
   }
 
-  const slotTime = (slotId) => state.timeslots.find((s) => s.id === slotId)?.time || '';
+  list.innerHTML = merged.map(r => {
+    const subject = r?.subject ?? '—';
+    const teacherLines = r?.teacher ? r.teacher.split('/').map(t => escapeHtml(formatTeacherName(t.trim()))) : [];
+    const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
+    const teacherHtml = teacherLines.length ? teacherLines.join('<br>') : '—';
 
-  list.innerHTML = mergedRows
-    .map((r) => {
-      const subject = r?.subject ?? '—';
-      const teacherLines = r?.teacher ? r.teacher.split('/').map((t) => escapeHtml(formatTeacherName(t.trim()))) : [];
-      const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
-      const teacherHtml = teacherLines.length ? teacherLines.join('<br>') : '—';
+    const secondId = DOUBLE_PAIRS[r.slotId];
+    const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
+    const noteClass = r.note ? ' note' : '';
+    const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
 
-      const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
-      const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
-      const noteClass = r.note ? ' note' : '';
-      const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
+    const firstSlot = state.timeslotMap.get(r.slotId);
+    let timeFrom, timeTo;
+    if (secondId) {
+      timeFrom = (firstSlot?.time || '').split('–')[0];
+      timeTo = (state.timeslotMap.get(secondId)?.time || '').split('–')[1];
+    } else {
+      [timeFrom, timeTo] = (firstSlot?.time || '').split('–');
+    }
 
-      let timeFrom, timeTo;
-      if (secondId) {
-        timeFrom = slotTime(r.slotId).split('–')[0] || '';
-        timeTo = slotTime(secondId).split('–')[1] || '';
-      } else {
-        [timeFrom, timeTo] = slotTime(r.slotId).split('–');
-      }
-
-      return `
+    return `
     <div class="listItem${noteClass}">
       <div>
         <div class="small muted">Std. ${escapeHtml(slotLabel)}</div>
@@ -676,272 +511,161 @@ function renderTodayPreview() {
         </div>
         ${noteHtml}
       </div>
-    </div>
-  `;
-    })
-    .join('');
+    </div>`;
+  }).join('');
 }
 
 // --- Selects ------------------------------------------------------------
 
-/**
- * Setzt aktiven Tag-Button
- * @param {string} dayId - Tages-ID
- */
 function setActiveDayButton(dayId) {
-  const buttons = state.els.dayButtons || [];
-  for (const btn of buttons) {
-    const isActive = btn.dataset.day === dayId;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  for (const btn of state.els.dayButtons || []) {
+    const active = btn.dataset.day === dayId;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
   }
 }
 
-/**
- * Initialisiert Klassen- und Tages-Auswahl
- */
+// Synchronisiert beide Klassen-Selects und speichert
+function syncClassSelects(changedSel) {
+  const val = changedSel.value;
+  storageSet(APP.storageKeys.classId, val);
+
+  const other = (changedSel === state.els.classSelect) ? state.els.weekClassSelect : state.els.classSelect;
+  if (other) other.value = val;
+
+  render();
+}
+
 function initSelects() {
   const { classSelect } = state.els;
   if (!classSelect) return;
 
-  classSelect.innerHTML = CLASSES.map((c) => 
-    `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
-  ).join('');
+  populateClassSelect(classSelect);
 
-  const savedClass = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
-  const savedDay = localStorage.getItem(APP.storageKeys.dayId) || getTodayId();
+  const savedClass = storageGet(APP.storageKeys.classId) || 'HT11';
+  const savedDay = storageGet(APP.storageKeys.dayId) || getTodayId();
 
-  classSelect.value = CLASSES.some((c) => c.id === savedClass) ? savedClass : 'HT11';
-  state.selectedDayId = DAYS.some((d) => d.id === savedDay) ? savedDay : 'mo';
+  classSelect.value = CLASSES.includes(savedClass) ? savedClass : 'HT11';
+  state.selectedDayId = DAY_IDS.includes(savedDay) ? savedDay : 'mo';
   setActiveDayButton(state.selectedDayId);
 
-  classSelect.addEventListener('change', () => {
-    try {
-      localStorage.setItem(APP.storageKeys.classId, classSelect.value);
-    } catch (e) {
-      console.warn('Klasse konnte nicht gespeichert werden:', e);
-    }
-    
-    // keep week view in sync
-    if (state.els.weekClassSelect) {
-      state.els.weekClassSelect.value = classSelect.value;
-    }
-    render();
-  });
+  classSelect.addEventListener('change', () => syncClassSelects(classSelect));
 
   for (const btn of state.els.dayButtons || []) {
     btn.addEventListener('click', () => {
       const dayId = btn.dataset.day;
       if (!dayId) return;
-      
       state.selectedDayId = dayId;
-      
-      try {
-        localStorage.setItem(APP.storageKeys.dayId, dayId);
-      } catch (e) {
-        console.warn('Tag konnte nicht gespeichert werden:', e);
-      }
-      
+      storageSet(APP.storageKeys.dayId, dayId);
       setActiveDayButton(dayId);
       renderTimetable();
     });
   }
 
-  // Heute-Button: springt zum heutigen Tag
   state.els.todayBtn?.addEventListener('click', () => {
     const todayId = getTodayId();
     state.selectedDayId = todayId;
-    try {
-      localStorage.setItem(APP.storageKeys.dayId, todayId);
-    } catch (e) { /* ignore */ }
+    storageSet(APP.storageKeys.dayId, todayId);
     setActiveDayButton(todayId);
     renderTimetable();
   });
-
 }
 
-// --- Countdown (Home) ---------------------------------------------------
+// --- Countdown ----------------------------------------------------------
 
-/**
- * Parsed Zeitslot-Range zu Date-Objekten
- * @param {string} range - Zeitrange (z.B. "08:00–08:45")
- * @param {Date} baseDate - Basis-Datum
- * @returns {Object|null} {start, end} oder null
- */
-function parseSlotRangeToDates(range, baseDate = new Date()) {
+function parseSlotRange(range, base = new Date()) {
   const m = String(range).match(/(\d{2}:\d{2})\s*[–-]\s*(\d{2}:\d{2})/);
   if (!m) return null;
-  const [_, startStr, endStr] = m;
 
-  const [sh, sm] = startStr.split(':').map(Number);
-  const [eh, em] = endStr.split(':').map(Number);
+  const [sh, sm] = m[1].split(':').map(Number);
+  const [eh, em] = m[2].split(':').map(Number);
 
-  const start = new Date(baseDate);
-  start.setHours(sh, sm, 0, 0);
-
-  const end = new Date(baseDate);
-  end.setHours(eh, em, 0, 0);
-
+  const start = new Date(base); start.setHours(sh, sm, 0, 0);
+  const end = new Date(base); end.setHours(eh, em, 0, 0);
   return { start, end };
 }
 
-/**
- * Berechnet Minuten-Differenz (aufgerundet)
- * @param {Date} a - Start-Zeit
- * @param {Date} b - End-Zeit
- * @returns {number} Minuten
- */
-function diffMinutesCeil(a, b) {
-  return Math.max(0, Math.ceil((b.getTime() - a.getTime()) / 60000));
+function diffMinsCeil(a, b) {
+  return Math.max(0, Math.ceil((b - a) / 60000));
 }
 
-/**
- * Gibt alle Unterrichtsstunden des Tages als Ranges zurück
- * @param {string} dayId - Tages-ID
- * @param {Date} baseDate - Basis-Datum
- * @returns {Array} Array von {slotId, start, end}
- */
-function getDayScheduleRanges(dayId, baseDate = new Date()) {
+function getDayRanges(dayId, base = new Date()) {
   const ranges = [];
   for (const s of state.timeslots) {
-    if (String(s.id) === '7') continue; // Mittagspause überspringen
-    const r = parseSlotRangeToDates(s.time, baseDate);
-    if (r) ranges.push({ slotId: String(s.id), ...r });
+    if (s.id === '7') continue;
+    const r = parseSlotRange(s.time, base);
+    if (r) ranges.push({ slotId: s.id, ...r });
   }
-  ranges.sort((a, b) => a.start - b.start);
-  return ranges;
+  return ranges.sort((a, b) => a.start - b.start);
 }
 
-/**
- * Aktualisiert Countdown-Anzeige
- */
 function updateCountdown() {
-  const nowEl = state.els.nowTime;
-  const textEl = state.els.countdownText;
+  const { nowTime: nowEl, countdownText: textEl } = state.els;
   if (!nowEl || !textEl) return;
 
   const now = new Date();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  nowEl.textContent = `${hh}:${mm}`;
+  nowEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // Prüfe ob Wochenende
-  if (!isWeekday()) {
-    textEl.textContent = 'Schönes Wochenende! 🎉';
-    return;
-  }
+  if (!isWeekday()) { textEl.textContent = 'Schönes Wochenende! 🎉'; return; }
 
-  const dayId = getTodayId();
-  const ranges = getDayScheduleRanges(dayId, now);
-  
-  if (!ranges.length) {
+  const ranges = getDayRanges(getTodayId(), now);
+  if (!ranges.length || now >= ranges[ranges.length - 1].end) {
     textEl.textContent = 'Schultag beendet – bis morgen! 👋';
     return;
   }
 
-  const lastEnd = ranges[ranges.length - 1].end;
-  if (now >= lastEnd) {
-    textEl.textContent = 'Schultag beendet – bis morgen! 👋';
-    return;
-  }
-
-  // Innerhalb einer Stunde?
-  const current = ranges.find((r) => now >= r.start && now < r.end);
+  // Aktuell in einer Stunde?
+  const current = ranges.find(r => now >= r.start && now < r.end);
   if (current) {
-    // Doppelstunden-Ende: bei Stunde 1→2, 3→4, 5→6, 8→9 bis zur zweiten Stunde zählen
-    const doubleEnd = { '1': '2', '3': '4', '5': '6', '8': '9' };
-    const partnerId = doubleEnd[current.slotId];
-    const partner = partnerId ? ranges.find((r) => r.slotId === partnerId) : null;
-    const endTarget = partner ? partner.end : current.end;
-    const mins = diffMinutesCeil(now, endTarget);
-    textEl.textContent = `Pause in ${mins} Min`;
+    const partnerId = DOUBLE_PAIRS[current.slotId];
+    const partner = partnerId ? ranges.find(r => r.slotId === partnerId) : null;
+    textEl.textContent = `Pause in ${diffMinsCeil(now, partner ? partner.end : current.end)} Min`;
     return;
   }
 
   // Pause vor nächster Stunde
-  const next = ranges.find((r) => now < r.start);
+  const next = ranges.find(r => now < r.start);
   if (next) {
-    const mins = diffMinutesCeil(now, next.start);
-    textEl.textContent = `Nächste Stunde in ${mins} Min`;
+    textEl.textContent = `Nächste Stunde in ${diffMinsCeil(now, next.start)} Min`;
     return;
   }
 
   textEl.textContent = 'Schultag beendet – bis morgen! 👋';
 }
 
-/**
- * Generiert lustige/motivierende Nachricht
- * @param {Date} now - Aktuelle Zeit
- * @returns {string} Nachricht
- */
 function getFunMessage(now = new Date()) {
-  const day = now.getDay(); // 0 Sun ... 6 Sat
-  const hour = now.getHours();
-
-  // Wochenende
-  if (day === 0 || day === 6) {
-    return 'Wochenende! Zeit zum Entspannen 🌴';
-  }
-
-  // Wochentag-spezifisch
+  const day = now.getDay(), hour = now.getHours();
+  if (day === 0 || day === 6) return 'Wochenende! Zeit zum Entspannen 🌴';
   if (day === 1) return 'Montag – neue Woche, neues Glück! 💪';
   if (day === 5) return 'Freitag! Schnell noch durchziehen… 🎉';
   if (day === 3) return 'Bergfest! Halbzeit der Woche! ⛰️';
-
-  // Tageszeit-basiert
   if (hour >= 16) return 'Fast geschafft – gleich ist Feierabend! 🏠';
   if (hour >= 15) return 'Noch ein bisschen – du schaffst das! 💪';
   if (hour >= 12 && hour < 14) return 'Mittagspause – guten Appetit! 🍽️';
   if (hour < 8) return 'Guten Morgen – Kaffee schon am Start? ☕';
-
   return 'Viel Erfolg heute! 🚀';
 }
 
-/**
- * Aktualisiert Fun-Message
- */
-function updateFunMessage() {
-  const el = state.els.funMessage;
-  if (!el) return;
-  el.textContent = getFunMessage(new Date());
-}
-
-/**
- * Startet Countdown-Updates
- */
 function initCountdown() {
-  updateCountdown();
-  updateFunMessage();
-  
-  // Cleanup vorheriger Interval
-  if (state.countdownInterval) {
-    clearInterval(state.countdownInterval);
-  }
-  
-  state.countdownInterval = setInterval(() => {
+  const tick = () => {
     updateCountdown();
-    updateFunMessage();
-  }, APP.constants.COUNTDOWN_UPDATE_INTERVAL);
+    safeSetText(state.els.funMessage, getFunMessage());
+  };
+  tick();
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  state.countdownTimer = setInterval(tick, APP.constants.COUNTDOWN_INTERVAL);
 }
 
-// --- Network / offline UI ----------------------------------------------
+// --- Network indicator --------------------------------------------------
 
-/**
- * Aktualisiert Netzwerk-Indikator
- */
 function updateNetworkIndicator() {
-  const ind = state.els.netIndicator;
-  const label = state.els.netLabel;
+  const { netIndicator: ind, netLabel: label } = state.els;
   if (!ind || !label) return;
-
   const online = navigator.onLine;
   ind.dataset.status = online ? 'online' : 'offline';
   label.textContent = online ? 'Online' : 'Offline';
 }
 
-/**
- * Initialisiert Netzwerk-Indikator
- */
 function initNetworkIndicator() {
   updateNetworkIndicator();
   window.addEventListener('online', updateNetworkIndicator);
@@ -950,52 +674,32 @@ function initNetworkIndicator() {
 
 // --- Calendar -----------------------------------------------------------
 
-const MONTH_NAMES = [
-  'Januar','Februar','März','April','Mai','Juni',
-  'Juli','August','September','Oktober','November','Dezember'
-];
-
-/**
- * Wandelt einen ICS-Datums-String in ein Date-Objekt um
- * @param {string} s - ICS-Datum (YYYYMMDD oder YYYYMMDDTHHMMSSZ)
- * @returns {Date|null}
- */
 function parseICSDate(s) {
   if (!s) return null;
   const y = +s.slice(0, 4), mo = +s.slice(4, 6) - 1, d = +s.slice(6, 8);
   if (s.includes('T')) {
     const h = +s.slice(9, 11), mi = +s.slice(11, 13), sec = +s.slice(13, 15);
-    if (s.endsWith('Z')) {
-      return new Date(Date.UTC(y, mo, d, h, mi, sec));
-    }
-    return new Date(y, mo, d, h, mi, sec);
+    return s.endsWith('Z') ? new Date(Date.UTC(y, mo, d, h, mi, sec)) : new Date(y, mo, d, h, mi, sec);
   }
   return new Date(y, mo, d);
 }
 
-/**
- * Parst ICS-Text in ein Array von Ereignissen
- * @param {string} text - Rohtext des ICS-Feeds
- * @returns {Array}
- */
 function parseICS(text) {
   const unfolded = text.replace(/\r?\n[ \t]/g, '');
-  // ICS-Backslash-Escapes auflösen (\n → Leerzeichen, \, \; \\ → Literal)
-  const unescape = (s) => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
+  const unescape = s => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
   const events = [];
   const blocks = unfolded.split('BEGIN:VEVENT');
-  blocks.shift();
-  for (const block of blocks) {
-    const end = block.indexOf('END:VEVENT');
-    const vevent = end >= 0 ? block.slice(0, end) : block;
-    const get = (name) => {
+  for (let i = 1; i < blocks.length; i++) {
+    const end = blocks[i].indexOf('END:VEVENT');
+    const vevent = end >= 0 ? blocks[i].slice(0, end) : blocks[i];
+    const get = name => {
       const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
       return m ? m[1].trim() : '';
     };
     const title = unescape(get('SUMMARY')) || '(Kein Titel)';
     const dtstart = get('DTSTART');
-    const dtend = get('DTEND');
     if (!dtstart) continue;
+    const dtend = get('DTEND');
     const allDay = !dtstart.includes('T');
     const start = parseICSDate(dtstart);
     const end2 = dtend ? parseICSDate(dtend) : start;
@@ -1004,15 +708,8 @@ function parseICS(text) {
   return events;
 }
 
-const CORS_PROXY = 'https://corsproxy.io/?url=';
-
-/**
- * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration.
- * Versucht zuerst direkt, fällt bei CORS-Fehler auf Proxy zurück.
- * @param {Object} cfg - Kalender-Konfiguration
- */
 async function fetchCalendar(cfg) {
-  const tryFetch = async (url) => {
+  const tryFetch = async url => {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.text();
@@ -1020,48 +717,29 @@ async function fetchCalendar(cfg) {
 
   try {
     let text;
-    try {
-      text = await tryFetch(cfg.icsUrl);
-    } catch {
-      text = await tryFetch(CORS_PROXY + encodeURIComponent(cfg.icsUrl));
-    }
+    try { text = await tryFetch(cfg.icsUrl); }
+    catch { text = await tryFetch(CORS_PROXY + encodeURIComponent(cfg.icsUrl)); }
     state.cal.events[cfg.id] = parseICS(text);
   } catch (e) {
-    console.warn(`[Cal] ${cfg.id} konnte nicht geladen werden:`, e);
+    console.warn(`[Cal] ${cfg.id}:`, e);
     if (!state.cal.events[cfg.id]) state.cal.events[cfg.id] = [];
   }
 }
 
-/**
- * Lädt alle Kalender parallel und rendert danach
- */
 async function loadCalendars() {
   await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
   renderCalendar();
 }
 
-/**
- * Gibt YYYY-MM-DD zurück für ein Date-Objekt
- * @param {Date} d
- * @returns {string}
- */
 function calDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/**
- * Prüft ob ein Ereignis ein bestimmtes Datum überdeckt
- * @param {Object} ev - Ereignis-Objekt
- * @param {Date} date - Zu prüfendes Datum (Mitternacht)
- * @returns {boolean}
- */
 function calEventCoversDate(ev, date) {
   const startDay = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
   let endDay;
   if (ev.end) {
     endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
-    // DTEND ist exklusiv – nur 1 Tag abziehen wenn DTEND wirklich nach DTSTART liegt.
-    // Falls kein DTEND vorhanden war, ist ev.end = ev.start → kein Abzug nötig.
     if (ev.allDay && endDay.getTime() > startDay.getTime()) {
       endDay = new Date(endDay.getTime() - 864e5);
     }
@@ -1071,13 +749,6 @@ function calEventCoversDate(ev, date) {
   return date >= startDay && date <= endDay;
 }
 
-/**
- * Formatiert einen Datumsbereich für die Ereignisanzeige
- * @param {Date} start
- * @param {Date|null} end
- * @param {boolean} allDay
- * @returns {string}
- */
 function formatCalDateRange(start, end, allDay) {
   const fmt = (d, opts) => d.toLocaleDateString('de-DE', opts);
   if (!end || start.getTime() === end.getTime()) {
@@ -1089,9 +760,6 @@ function formatCalDateRange(start, end, allDay) {
   return s === e ? s : `${s} – ${e}`;
 }
 
-/**
- * Rendert die Ereignisliste für das ausgewählte Datum
- */
 function renderCalendarEvents() {
   const el = state.els.calEvents;
   if (!el) return;
@@ -1111,7 +779,7 @@ function renderCalendarEvents() {
     }
   }
 
-  if (events.length === 0) {
+  if (!events.length) {
     el.innerHTML = `<p class="small muted calNoEvents">Kein Eintrag für ${date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}.</p>`;
     return;
   }
@@ -1129,9 +797,7 @@ function renderCalendarEvents() {
   }
 }
 
-/**
- * Rendert den Kalender-Monat als Grid
- */
+// Performance-optimiertes Kalender-Rendering mit vorberechneter Event-Map & DocumentFragment
 function renderCalendar() {
   const grid = state.els.calGrid;
   const label = state.els.calMonthLabel;
@@ -1141,7 +807,7 @@ function renderCalendar() {
   const { year, month, selectedDate } = state.cal;
   label.textContent = `${MONTH_NAMES[month]} ${year}`;
 
-  // Toggle-Buttons rendern
+  // Toggle-Buttons
   if (togglesEl) {
     togglesEl.innerHTML = '';
     for (const cfg of CAL_CONFIGS) {
@@ -1149,7 +815,7 @@ function renderCalendar() {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'calToggle';
-      btn.dataset.active = enabled ? 'true' : 'false';
+      btn.dataset.active = String(enabled);
       btn.innerHTML = `<span class="calDot" style="background:${cfg.color}"></span>${escapeHtml(cfg.label)}`;
       btn.addEventListener('click', () => {
         state.cal.enabled[cfg.id] = !state.cal.enabled[cfg.id];
@@ -1159,68 +825,66 @@ function renderCalendar() {
     }
   }
 
-  // Monats-Grid aufbauen
+  // Zellen berechnen
   const today = new Date();
   const todayStr = calDateStr(today);
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Startversatz: Montag = 0, Sonntag = 6
   let startDow = firstDay.getDay() - 1;
   if (startDow < 0) startDow = 6;
 
   const cells = [];
-
-  // Vormonats-Tage zum Auffüllen
   const prevLastDay = new Date(year, month, 0);
   for (let i = startDow - 1; i >= 0; i--) {
-    const dayNum = prevLastDay.getDate() - i;
-    cells.push({ day: dayNum, thisMonth: false, date: new Date(year, month - 1, dayNum) });
+    const d = prevLastDay.getDate() - i;
+    cells.push({ day: d, thisMonth: false, date: new Date(year, month - 1, d) });
   }
-
-  // Tage dieses Monats
-  for (let dd = 1; dd <= daysInMonth; dd++) {
-    cells.push({ day: dd, thisMonth: true, date: new Date(year, month, dd) });
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, thisMonth: true, date: new Date(year, month, d) });
   }
-
-  // Nachmonat-Tage bis 42 Zellen
   const remaining = 42 - cells.length;
-  for (let dd = 1; dd <= remaining; dd++) {
-    cells.push({ day: dd, thisMonth: false, date: new Date(year, month + 1, dd) });
+  for (let d = 1; d <= remaining; d++) {
+    cells.push({ day: d, thisMonth: false, date: new Date(year, month + 1, d) });
   }
 
-  grid.innerHTML = '';
-
-  for (const cell of cells) {
-    const cellDate = cell.date;
-    const cellStr = calDateStr(cellDate);
-
-    // Ereignisse für diesen Tag sammeln
-    const eventsForDay = [];
-    for (const cfg of CAL_CONFIGS) {
-      if (state.cal.enabled[cfg.id] === false) continue;
-      for (const ev of (state.cal.events[cfg.id] || [])) {
-        if (calEventCoversDate(ev, cellDate)) {
-          eventsForDay.push({ color: cfg.color });
+  // Event-Map vorberechnen: dateStr → Set von Farben
+  // Statt O(cells × events) nur O(cells + events)
+  const eventColorMap = new Map();
+  for (const cfg of CAL_CONFIGS) {
+    if (state.cal.enabled[cfg.id] === false) continue;
+    for (const ev of (state.cal.events[cfg.id] || [])) {
+      // Nur Events prüfen, die den sichtbaren Zeitraum überlappen
+      for (const cell of cells) {
+        if (calEventCoversDate(ev, cell.date)) {
+          const key = calDateStr(cell.date);
+          if (!eventColorMap.has(key)) eventColorMap.set(key, new Set());
+          eventColorMap.get(key).add(cfg.color);
         }
       }
     }
+  }
 
+  // Grid mit DocumentFragment (1 DOM-Write statt 42)
+  const frag = document.createDocumentFragment();
+
+  for (const cell of cells) {
+    const cellStr = calDateStr(cell.date);
+    const colors = eventColorMap.get(cellStr);
     const isToday = cellStr === todayStr;
     const isSelected = cellStr === selectedDate;
 
     const div = document.createElement('div');
     div.className = [
       'calCell',
-      !cell.thisMonth ? 'otherMonth' : '',
-      isToday ? 'today' : '',
-      isSelected ? 'selected' : '',
+      !cell.thisMonth && 'otherMonth',
+      isToday && 'today',
+      isSelected && 'selected',
     ].filter(Boolean).join(' ');
     div.setAttribute('role', 'gridcell');
     div.setAttribute('tabindex', '0');
-    div.setAttribute('aria-selected', isSelected ? 'true' : 'false');
-    div.setAttribute('aria-label', cellDate.toLocaleDateString('de-DE', {
+    div.setAttribute('aria-selected', String(isSelected));
+    div.setAttribute('aria-label', cell.date.toLocaleDateString('de-DE', {
       day: 'numeric', month: 'long', year: 'numeric'
     }));
 
@@ -1229,11 +893,12 @@ function renderCalendar() {
     dayNum.textContent = cell.day;
     div.appendChild(dayNum);
 
-    if (eventsForDay.length > 0) {
+    if (colors?.size) {
       const dotsDiv = document.createElement('div');
       dotsDiv.className = 'calEventDots';
-      const colors = [...new Set(eventsForDay.map((e) => e.color))].slice(0, 3);
+      let count = 0;
       for (const color of colors) {
+        if (count++ >= 3) break;
         const dot = document.createElement('span');
         dot.className = 'calEventDot';
         dot.style.background = color;
@@ -1247,24 +912,24 @@ function renderCalendar() {
       renderCalendar();
     };
     div.addEventListener('click', selectCell);
-    div.addEventListener('keydown', (e) => {
+    div.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCell(); }
     });
 
-    grid.appendChild(div);
+    frag.appendChild(div);
   }
+
+  grid.innerHTML = '';
+  grid.appendChild(frag);
 
   renderCalendarEvents();
 }
 
-/**
- * Initialisiert das Kalender-Widget
- */
 function initCalendar() {
   const now = new Date();
   state.cal = {
     events: {},
-    enabled: Object.fromEntries(CAL_CONFIGS.map((c) => [c.id, true])),
+    enabled: Object.fromEntries(CAL_CONFIGS.map(c => [c.id, true])),
     year: now.getFullYear(),
     month: now.getMonth(),
     selectedDate: null,
@@ -1283,43 +948,21 @@ function initCalendar() {
     renderCalendar();
   });
 
-  renderCalendar(); // Leeres Grid sofort anzeigen
-  loadCalendars();  // Dann ICS laden und neu rendern
+  renderCalendar();
+  loadCalendars();
 }
 
 // --- Week view ----------------------------------------------------------
 
-/**
- * Initialisiert Klassen-Auswahl für Wochenansicht
- */
 function initWeekSelect() {
   const sel = state.els.weekClassSelect;
   if (!sel) return;
-
-  sel.innerHTML = CLASSES.map((c) => 
-    `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
-  ).join('');
-  
-  const savedClass = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
-  sel.value = CLASSES.some((c) => c.id === savedClass) ? savedClass : 'HT11';
-
-  sel.addEventListener('change', () => {
-    try {
-      localStorage.setItem(APP.storageKeys.classId, sel.value);
-    } catch (e) {
-      console.warn('Klasse konnte nicht gespeichert werden:', e);
-    }
-    
-    if (state.els.classSelect) {
-      state.els.classSelect.value = sel.value;
-    }
-    render();
-  });
+  populateClassSelect(sel);
+  const saved = storageGet(APP.storageKeys.classId) || 'HT11';
+  sel.value = CLASSES.includes(saved) ? saved : 'HT11';
+  sel.addEventListener('change', () => syncClassSelects(sel));
 }
 
-/**
- * Rendert Wochenübersicht
- */
 function renderWeek() {
   const grid = state.els.weekGrid;
   const sel = state.els.weekClassSelect;
@@ -1327,95 +970,68 @@ function renderWeek() {
 
   const classId = sel.value || 'HT11';
 
-  // Header
   const header = `
     <div class="weekRow weekHeader" role="row">
       <div class="weekCell weekCorner" role="columnheader">Zeit</div>
-      ${DAYS.map((d) =>
+      ${DAYS.map(d =>
         `<div class="weekCell" role="columnheader">${escapeHtml(d.label.slice(0, 2))}</div>`
       ).join('')}
-    </div>
-  `;
+    </div>`;
 
-  // Doppelstunden-Zeilen: 1+2, 3+4, 5+6, 8+9
-  const WEEK_PAIRS = [
-    { firstId: '1', secondId: '2' },
-    { firstId: '3', secondId: '4' },
-    { firstId: '5', secondId: '6' },
-    { firstId: '8', secondId: '9' }
-  ];
+  const body = WEEK_PAIRS.map(pair => {
+    const firstSlot = state.timeslotMap.get(pair.first);
+    const secondSlot = state.timeslotMap.get(pair.second);
+    if (!firstSlot || !secondSlot) return '';
 
-  const body = WEEK_PAIRS
-    .map((pair) => {
-      const firstSlot = state.timeslots.find((s) => s.id === pair.firstId);
-      const secondSlot = state.timeslots.find((s) => s.id === pair.secondId);
-      if (!firstSlot || !secondSlot) return '';
+    const timeFrom = firstSlot.time.split('–')[0];
+    const timeTo = secondSlot.time.split('–')[1];
 
-      const timeFrom = firstSlot.time.split('–')[0];
-      const timeTo = secondSlot.time.split('–')[1];
-      const combinedTime = `${timeFrom}–${timeTo}`;
-
-      const dayCells = DAYS.map((d) => {
-        const rows = state.timetable?.[classId]?.[d.id] || [];
-        const r = rows.find((x) => String(x.slotId) === pair.firstId);
-        const subject = r?.subject || '—';
-        const meta = formatTeacherRoom(r?.teacher, r?.room);
-        const noteClass = r?.note ? ' note' : '';
-
-        return `
-          <div class="weekCell${noteClass}" role="cell">
-            <div class="weekSubject">${escapeHtml(subject)}</div>
-            ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">—</div>`}
-          </div>
-        `;
-      }).join('');
+    const dayCells = DAYS.map(d => {
+      const rows = state.timetable?.[classId]?.[d.id] || [];
+      const r = rows.find(x => String(x.slotId) === pair.first);
+      const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const noteClass = r?.note ? ' note' : '';
 
       return `
-        <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.firstId)}+${escapeHtml(pair.secondId)}">
-          <div class="weekCell weekSlot" role="rowheader">
-            <div class="tdTime">
-              <span class="small muted">Std. ${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</span>
-              <span class="timeFrom">${escapeHtml(timeFrom)}</span>
-              <span class="small muted">${escapeHtml(timeTo)}</span>
-            </div>
+        <div class="weekCell${noteClass}" role="cell">
+          <div class="weekSubject">${escapeHtml(r?.subject || '—')}</div>
+          ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : '<div class="weekMeta muted">—</div>'}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.first)}+${escapeHtml(pair.second)}">
+        <div class="weekCell weekSlot" role="rowheader">
+          <div class="tdTime">
+            <span class="small muted">Std. ${escapeHtml(pair.first)}/${escapeHtml(pair.second)}</span>
+            <span class="timeFrom">${escapeHtml(timeFrom)}</span>
+            <span class="small muted">${escapeHtml(timeTo)}</span>
           </div>
-          ${dayCells}
         </div>
-      `;
-    })
-    .join('');
+        ${dayCells}
+      </div>`;
+  }).join('');
 
   grid.innerHTML = `<div class="weekTable" role="rowgroup">${header}${body}</div>`;
 }
 
 // --- Install hint -------------------------------------------------------
 
-/**
- * Prüft ob App im Standalone-Modus läuft
- * @returns {boolean} true wenn installiert
- */
 function isStandalone() {
-  return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  return !!window.matchMedia?.('(display-mode: standalone)').matches;
 }
 
-/**
- * Initialisiert Install-Hinweise
- */
 function initInstallHint() {
-  const hint = state.els.installHint;
-  const banner = state.els.installBanner;
-  const closeBtn = state.els.installBannerClose;
-  const installButton = state.els.installButton;
+  const { installHint: hint, installBanner: banner, installBannerClose: closeBtn, installButton } = state.els;
 
   if (installButton) {
     installButton.addEventListener('click', async () => {
       if (!state.installPromptEvent) return;
-
       try {
         await state.installPromptEvent.prompt();
         await state.installPromptEvent.userChoice;
       } catch (e) {
-        console.warn('Installationsdialog konnte nicht geöffnet werden:', e);
+        console.warn('Installationsdialog:', e);
       } finally {
         state.installPromptEvent = null;
         installButton.disabled = true;
@@ -1424,36 +1040,23 @@ function initInstallHint() {
     });
   }
 
-  // Banner: nur wenn nicht installiert + noch nicht gesehen
-  try {
-    const seen = localStorage.getItem(APP.storageKeys.installHintShown) === '1';
-    if (!isStandalone() && !seen && banner) {
-      banner.hidden = false;
-    }
-  } catch (e) {
-    console.warn('Install-Hint Status konnte nicht geladen werden:', e);
+  if (!isStandalone() && storageGet(APP.storageKeys.installHintShown) !== '1' && banner) {
+    banner.hidden = false;
   }
 
   closeBtn?.addEventListener('click', () => {
     if (banner) banner.hidden = true;
-    try {
-      localStorage.setItem(APP.storageKeys.installHintShown, '1');
-    } catch (e) {
-      console.warn('Install-Hint Status konnte nicht gespeichert werden:', e);
-    }
+    storageSet(APP.storageKeys.installHintShown, '1');
   });
 
-  // Zusatz-Hint: wenn Browser Installierbarkeit signalisiert
   if (hint) {
-    window.addEventListener('beforeinstallprompt', (e) => {
+    window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       state.installPromptEvent = e;
-
       if (installButton) {
         installButton.disabled = false;
         installButton.setAttribute('aria-disabled', 'false');
       }
-
       safeSetText(hint, 'Installierbar: Du kannst jetzt direkt über den Button installieren.');
     });
 
@@ -1465,23 +1068,15 @@ function initInstallHint() {
         installButton.setAttribute('aria-disabled', 'true');
       }
       state.installPromptEvent = null;
-      try {
-        localStorage.setItem(APP.storageKeys.installHintShown, '1');
-      } catch (e) {
-        console.warn('Install-Hint Status konnte nicht gespeichert werden:', e);
-      }
+      storageSet(APP.storageKeys.installHintShown, '1');
     });
   }
 }
 
 // --- Service worker -----------------------------------------------------
 
-/**
- * Registriert Service Worker für Offline-Funktionalität
- */
 async function initServiceWorker() {
   const status = state.els.swStatus;
-  
   if (!('serviceWorker' in navigator)) {
     safeSetText(status, 'Service Worker nicht verfügbar.');
     return;
@@ -1504,75 +1099,74 @@ async function initServiceWorker() {
       });
     });
   } catch (e) {
-    console.warn('Service Worker Fehler:', e);
+    console.warn('SW Fehler:', e);
     safeSetText(status, 'Service Worker konnte nicht geladen werden.');
   }
 }
 
-/**
- * Initialisiert Footer mit aktuellem Jahr
- */
-function initFooter() {
-  safeSetText(state.els.year, String(new Date().getFullYear()));
+// --- Instagram Previews -------------------------------------------------
+
+async function loadInstagramPreviews() {
+  try {
+    const resp = await fetch('./data/instagram.json');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data?.profiles) return;
+
+    for (const [id, profile] of Object.entries(data.profiles)) {
+      if (profile.followers) {
+        const el = qs(`[data-ig-followers="${id}"]`);
+        if (el) el.textContent = `${profile.followers} Follower`;
+      }
+      if (profile.profilePic) {
+        const card = qs(`[data-ig="${id}"]`);
+        const avatar = card ? qs('.igAvatar', card) : null;
+        if (avatar) avatar.src = profile.profilePic;
+      }
+    }
+  } catch {
+    // instagram.json nicht vorhanden
+  }
 }
 
-// --- Element caching ----------------------------------------------------
+// --- Element caching & Boot ---------------------------------------------
 
-/**
- * Cached häufig verwendete DOM-Elemente
- */
 function cacheEls() {
   state.els = {
     navItems: qsa('.navItem'),
     views: qsa('.view'),
-
     classSelect: qs('#classSelect'),
     dayButtons: qsa('#daySelectGroup .dayBtn'),
     todayBtn: qs('#todayBtn'),
-
     timetableBody: qs('#timetableBody'),
     todayLabel: qs('#todayLabel'),
     todayPreview: qs('#todayPreview'),
-
-    // Home extras
     nowTime: qs('#nowTime'),
     countdownText: qs('#countdownText'),
     funMessage: qs('#funMessage'),
     netIndicator: qs('#netIndicator'),
     netLabel: qs('#netLabel'),
-
-    // Calendar
     calGrid: qs('#calGrid'),
     calMonthLabel: qs('#calMonthLabel'),
     calPrev: qs('#calPrev'),
     calNext: qs('#calNext'),
     calToggles: qs('#calToggles'),
     calEvents: qs('#calEvents'),
-
-    // Week view
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
-
     installButton: qs('#installButton'),
     installHint: qs('#installHint'),
     installBanner: qs('#installBanner'),
     installBannerClose: qs('#installBannerClose'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
-
     darkToggle: qs('#darkToggle')
   };
 }
 
-// --- Boot ---------------------------------------------------------------
-
-/**
- * Haupt-Initialisierungsfunktion
- */
 async function boot() {
   try {
     cacheEls();
-
     initTheme();
     initThemeToggle();
     initNav();
@@ -1583,80 +1177,17 @@ async function boot() {
     await refreshTimetableIfNeeded();
 
     initCountdown();
-    initTimetableAutoRefresh();
+    initAutoRefresh();
     initCalendar();
     initInstallHint();
     initServiceWorker();
-    initFooter();
+    safeSetText(state.els.year, String(new Date().getFullYear()));
     loadInstagramPreviews();
 
     console.log(`${APP.name} v${APP.version} geladen`);
   } catch (e) {
     console.error('Fehler beim Initialisieren:', e);
-    // App läuft trotzdem weiter mit Defaults
   }
 }
-
-// --- Instagram Previews -------------------------------------------------
-
-/**
- * Lädt Instagram-Vorschaudaten aus data/instagram.json (wenn vorhanden)
- * und füllt die Profilkarten mit Follower-Zahlen und Profilbildern
- */
-async function loadInstagramPreviews() {
-  try {
-    const resp = await fetch('./data/instagram.json');
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (!data?.profiles) return;
-
-    for (const [id, profile] of Object.entries(data.profiles)) {
-      // Follower count
-      if (profile.followers) {
-        const el = qs(`[data-ig-followers="${id}"]`);
-        if (el) el.textContent = `${profile.followers} Follower`;
-      }
-      // Profile picture as avatar (replace logo)
-      if (profile.profilePic) {
-        const card = qs(`[data-ig="${id}"]`);
-        const avatar = card ? qs('.igAvatar', card) : null;
-        if (avatar) avatar.src = profile.profilePic;
-      }
-    }
-  } catch {
-    // instagram.json nicht vorhanden – kein Problem
-  }
-}
-
-// --- Cleanup on unload --------------------------------------------------
-
-/**
- * Cleanup bei Seiten-Verlassen
- */
-function cleanup() {
-  if (state.timetableAutoRefreshInterval) {
-    clearInterval(state.timetableAutoRefreshInterval);
-    state.timetableAutoRefreshInterval = null;
-  }
-
-  if (state.visibilityHandler) {
-    document.removeEventListener('visibilitychange', state.visibilityHandler);
-    state.visibilityHandler = null;
-  }
-
-  if (state.onlineHandler) {
-    window.removeEventListener('online', state.onlineHandler);
-    state.onlineHandler = null;
-  }
-
-  if (state.countdownInterval) {
-    clearInterval(state.countdownInterval);
-    state.countdownInterval = null;
-  }
-}
-
-window.addEventListener('beforeunload', cleanup);
-
-// --- Start --------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', boot);

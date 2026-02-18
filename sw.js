@@ -1,9 +1,8 @@
-/* Service Worker – offline-first for app shell (optimized & improved) */
+/* Service Worker – offline-first for app shell (v1.4.0, optimiert) */
 
-const VERSION = 'v1.3.0';
+const VERSION = 'v1.4.0';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
-// Assets für Offline-Funktionalität
 const ASSETS = [
   './',
   './index.html',
@@ -20,263 +19,118 @@ const ASSETS = [
   './icons/logo-hgh-grid.svg'
 ];
 
-/**
- * Loggt Meldungen in der Console (nur in Development)
- * @param {string} message - Log-Nachricht
- * @param {any} data - Optional: Zusätzliche Daten
- */
-function log(message, data) {
-  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
-    console.log(`[SW v${VERSION}] ${message}`, data || '');
-  }
-}
+const isDev = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const log = isDev ? (msg, data) => console.log(`[SW ${VERSION}] ${msg}`, data || '') : () => {};
 
-/**
- * Install Event - Cached Assets
- */
-self.addEventListener('install', (event) => {
-  log('Installing...');
-  
-  event.waitUntil(
-    (async () => {
-      try {
-        const cache = await caches.open(CACHE);
-        
-        // Cache Assets einzeln für besseres Error-Handling
-        const promises = ASSETS.map(async (asset) => {
-          try {
-            await cache.add(asset);
-            log(`Cached: ${asset}`);
-          } catch (err) {
-            console.warn(`[SW] Failed to cache ${asset}:`, err);
-            // Fortfahren trotz Fehler bei einzelnen Assets
-          }
-        });
-        
-        await Promise.allSettled(promises);
-        
-        // Skip waiting, um sofort zu aktivieren
-        await self.skipWaiting();
-        log('Installation complete, skipping waiting');
-      } catch (err) {
-        console.error('[SW] Installation failed:', err);
-        throw err;
-      }
-    })()
-  );
-});
-
-/**
- * Activate Event - Cleanup alter Caches
- */
-self.addEventListener('activate', (event) => {
-  log('Activating...');
-  
-  event.waitUntil(
-    (async () => {
-      try {
-        // Lösche alte Caches
-        const keys = await caches.keys();
-        const deletePromises = keys
-          .filter(k => k !== CACHE && k.startsWith('hgh-school-pwa-'))
-          .map(k => {
-            log(`Deleting old cache: ${k}`);
-            return caches.delete(k);
-          });
-        
-        await Promise.all(deletePromises);
-        
-        // Übernimm Kontrolle über alle Clients sofort
-        await self.clients.claim();
-        log('Activation complete, claimed clients');
-      } catch (err) {
-        console.error('[SW] Activation failed:', err);
-      }
-    })()
-  );
-});
-
-/**
- * Fetch Event - Cache-Strategie
- */
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // Nur same-origin Requests behandeln
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  // Ignoriere chrome-extension:// und andere Protokolle
-  if (!req.url.startsWith('http')) {
-    return;
-  }
-
-  // Navigation: Network-first mit Cache-Fallback
-  if (req.mode === 'navigate') {
-    event.respondWith(handleNavigationRequest(req));
-    return;
-  }
-
-  // Statische Assets: Cache-first mit Network-Fallback
-  event.respondWith(handleAssetRequest(req));
-});
-
-/**
- * Behandelt Navigation-Requests (HTML-Seiten)
- * Strategie: Network-first mit Cache-Fallback
- * @param {Request} req - Request-Objekt
- * @returns {Promise<Response>} Response
- */
-async function handleNavigationRequest(req) {
-  const cache = await caches.open(CACHE);
-  
-  try {
-    // Versuche Network-Request (bevorzugt)
-    const fresh = await fetch(req, { 
-      cache: 'no-cache',
-      // Timeout nach 5 Sekunden
-      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
-    });
-    
-    if (fresh.ok) {
-      // Aktualisiere Cache mit frischer Version
-      cache.put('./index.html', fresh.clone());
-      log('Navigation: Fresh from network');
-      return fresh;
-    }
-    
-    // Fallback zu Cache bei nicht-OK Response
-    throw new Error(`Network response not OK: ${fresh.status}`);
-  } catch (err) {
-    log('Navigation: Falling back to cache', err.message);
-    
-    // Fallback: Serviere gecachte index.html
-    const cached = await cache.match('./index.html');
-    
-    if (cached) {
-      return cached;
-    }
-    
-    // Letzte Option: Offline-Nachricht
-    return new Response(
-      `<!DOCTYPE html>
+const OFFLINE_HTML = `<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Offline – HGH Hildesheim</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      display: grid;
-      place-items: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      text-align: center;
-    }
-    h1 { font-size: 2em; margin: 0 0 0.5em; }
-    p { opacity: 0.9; }
+    body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;text-align:center}
+    h1{font-size:2em;margin:0 0 .5em}p{opacity:.9}
   </style>
 </head>
 <body>
   <div>
-    <h1>📡 Offline</h1>
+    <h1>Offline</h1>
     <p>Keine Internetverbindung verfügbar.</p>
     <p>Bitte prüfe deine Verbindung und versuche es erneut.</p>
   </div>
 </body>
-</html>`,
-      { 
-        status: 200, 
-        headers: { 
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'no-cache'
-        } 
-      }
-    );
+</html>`;
+
+// --- Install ---
+self.addEventListener('install', event => {
+  log('Installing…');
+  event.waitUntil(
+    caches.open(CACHE).then(cache =>
+      Promise.allSettled(
+        ASSETS.map(asset =>
+          cache.add(asset).catch(err => console.warn(`[SW] Cache miss: ${asset}`, err))
+        )
+      )
+    ).then(() => self.skipWaiting())
+  );
+});
+
+// --- Activate ---
+self.addEventListener('activate', event => {
+  log('Activating…');
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE && k.startsWith('hgh-school-pwa-')).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+// --- Fetch ---
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Nur same-origin und HTTP(S)
+  if (url.origin !== self.location.origin || !request.url.startsWith('http')) return;
+
+  event.respondWith(
+    request.mode === 'navigate' ? handleNavigation(request) : handleAsset(request)
+  );
+});
+
+async function handleNavigation(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const opts = { cache: 'no-cache' };
+    if (AbortSignal.timeout) opts.signal = AbortSignal.timeout(5000);
+    const fresh = await fetch(req, opts);
+    if (fresh.ok) {
+      cache.put('./index.html', fresh.clone());
+      return fresh;
+    }
+    throw new Error(fresh.status);
+  } catch {
+    const cached = await cache.match('./index.html');
+    if (cached) return cached;
+    return new Response(OFFLINE_HTML, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }
+    });
   }
 }
 
-/**
- * Behandelt Asset-Requests (CSS, JS, Bilder, etc.)
- * Strategie: Cache-first mit Network-Fallback
- * @param {Request} req - Request-Objekt
- * @returns {Promise<Response>} Response
- */
-async function handleAssetRequest(req) {
+async function handleAsset(req) {
   const cache = await caches.open(CACHE);
-  
-  // 1. Versuche Cache zuerst (schneller)
+
+  // Cache-first
   const cached = await cache.match(req);
   if (cached) {
-    log(`Asset from cache: ${req.url.split('/').pop()}`);
-    
-    // Update im Hintergrund (stale-while-revalidate)
-    updateCacheInBackground(req, cache);
-    
+    // Stale-while-revalidate im Hintergrund
+    fetch(req, { cache: 'no-cache' })
+      .then(r => r?.status === 200 && r.type === 'basic' && cache.put(req, r))
+      .catch(() => {});
     return cached;
   }
-  
-  // 2. Falls nicht im Cache: Hole vom Netzwerk
-  try {
-    const fresh = await fetch(req, {
-      cache: 'no-cache'
-    });
-    
-    // Cache nur erfolgreiche Responses
-    if (fresh && fresh.status === 200 && fresh.type === 'basic') {
-      cache.put(req, fresh.clone());
-      log(`Asset cached from network: ${req.url.split('/').pop()}`);
-    }
-    
-    return fresh;
-  } catch (err) {
-    log(`Asset fetch failed: ${req.url.split('/').pop()}`, err.message);
-    
-    // Fallback: Leere Response mit Fehlercode
-    return new Response('', { 
-      status: 504,
-      statusText: 'Gateway Timeout' 
-    });
-  }
-}
 
-/**
- * Aktualisiert Cache im Hintergrund (stale-while-revalidate)
- * @param {Request} req - Request-Objekt
- * @param {Cache} cache - Cache-Objekt
- */
-async function updateCacheInBackground(req, cache) {
+  // Network-Fallback
   try {
     const fresh = await fetch(req, { cache: 'no-cache' });
-    
-    if (fresh && fresh.status === 200 && fresh.type === 'basic') {
-      await cache.put(req, fresh);
-      log(`Background update: ${req.url.split('/').pop()}`);
+    if (fresh?.status === 200 && fresh.type === 'basic') {
+      cache.put(req, fresh.clone());
     }
-  } catch (err) {
-    // Fehler ignorieren - alte Version bleibt im Cache
-    log(`Background update failed: ${req.url.split('/').pop()}`);
+    return fresh;
+  } catch {
+    return new Response('', { status: 504, statusText: 'Gateway Timeout' });
   }
 }
 
-/**
- * Message Event - Kommunikation mit Client
- */
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    log('Received SKIP_WAITING message');
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({ version: VERSION });
-  }
+// --- Messages ---
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'GET_VERSION') event.ports[0]?.postMessage({ version: VERSION });
 });
 
 log('Service Worker loaded');
