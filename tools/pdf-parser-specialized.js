@@ -243,18 +243,38 @@ function parseTimetable(items, columns, dayBlocks) {
 
         // Find room
         const roomItem = findRoomInColumn(items, col, roomY, 5);
-        const room = roomItem?.str || null;
+        let room = roomItem?.str || null;
 
         // Filter out #NV, time-like tokens
         if (subject === '#NV') subject = null;
         if (teacher === '#NV') teacher = null;
         if (subject && /^\d{1,2}\.\d{2}/.test(subject)) subject = null; // time token
         if (subject && /^\d{1,2}\.\d{2}\s*-?$/.test(subject)) subject = null;
-        // Filter non-teacher items on teacher lines (locations, notes)
+        // Filter non-teacher items on teacher lines
         if (teacher && /\s/.test(teacher)) teacher = null; // teachers never contain spaces
+        if (teacher && /^[A-ZÄÖÜ]+-$/.test(teacher)) teacher = null; // word fragments like "SERIEN-", "UNTER-"
+        if (teacher && CLASS_IDS.includes(teacher)) teacher = null; // class names aren't teachers
+        if (teacher && /^(USF|PROJEKT|FERTIGUNG)$/i.test(teacher)) teacher = null; // USF fragments
 
         // Detect special events (Serviceteam, USF-Treffen, etc.)
         const isSpecial = subject && /^(Serviceteam|USF-Treffen)$/i.test(subject);
+
+        // Detect USF project entries: "LUNIDO", "LYS", "Übergabe USF", etc.
+        const cleanSubject = subject?.replace(/[""„"]/g, '').trim();
+        const isUSF = teacher === 'USF'
+          || (cleanSubject && /^(LUNIDO|LYS|Combee|Scutobeat)$/i.test(cleanSubject))
+          || (subject && /^(USF|UNTER-|SERIEN-|NEHMENS-|PROJEKT|FERTIGUNG)$/i.test(subject))
+          || (subject && /Übergabe\s*USF/i.test(subject));
+
+        // If this is a USF entry, mark as special and clean up
+        if (isUSF) {
+          subject = subject?.replace(/[""„"]/g, '').trim() || 'USF';
+          teacher = null;
+          room = null;
+        }
+
+        // Filter out remaining pure fragments that aren't real subjects
+        if (subject && /^[A-ZÄÖÜ]+-$/.test(subject)) subject = null; // "SERIEN-", "UNTER-", etc.
 
         // Skip completely empty entries
         if (!subject && !teacher && !room) continue;
@@ -267,7 +287,7 @@ function parseTimetable(items, columns, dayBlocks) {
             teacher: teacher || null,
             room: room || null
           };
-          if (isSpecial) entry.note = subject;
+          if (isSpecial || isUSF) entry.note = subject;
           classes[col.id][dayId].push(entry);
         }
 
@@ -283,7 +303,7 @@ function parseTimetable(items, columns, dayBlocks) {
 
   // === Detect special events (e.g. "BBS Nienburg") ===
   // These are notes placed between or across columns, indicating offsite events
-  const specialPatterns = /^(BBS\s+\w+|Lehrfahrt|Exkursion|Praktikum|Praxistag|Messe|Betriebsbesichtigung)/i;
+  const specialPatterns = /^(BBS\s+\w+|Lehrfahrt|Exkursion|Praktikum|Praxistag|Messe|Betriebsbesichtigung|Serviceteam|USF-Treffen|Übergabe\s*USF)/i;
   const specialItems = items.filter(it => specialPatterns.test(it.str));
 
   for (const specialItem of specialItems) {
@@ -329,7 +349,84 @@ function parseTimetable(items, columns, dayBlocks) {
     log(`  Special event: "${specialItem.str}" → ${block.dayId}, slots ${matchedPair.join(',')}, columns: ${nearbyColumns.map(c => c.id).join(',')}`);
   }
 
-  // Re-sort after adding special events
+  // === Fill empty USF slots ===
+  // If a class has any USF/LUNIDO/LYS note in a day, fill all empty
+  // slots in that day with USF notes (they're doing their project all day)
+  const USF_SUBJECTS = /^(USF|LUNIDO|LYS|Combee|Scutobeat|Übergabe\s*USF)$/i;
+  for (const cls of CLASS_IDS) {
+    for (const dayId of DAY_IDS) {
+      const entries = classes[cls][dayId];
+      // Check if any entry in this day is a USF note
+      const usfEntry = entries.find(e => e.note && USF_SUBJECTS.test(e.subject));
+      if (!usfEntry) continue;
+
+      const usfLabel = usfEntry.subject; // e.g. "LUNIDO" or "USF"
+      // Find all slot IDs that should exist
+      const allSlotIds = Object.values(PAIR_TO_SLOTS).flat();
+      const existingSlotIds = new Set(entries.map(e => e.slotId));
+
+      for (const slotId of allSlotIds) {
+        if (!existingSlotIds.has(slotId)) {
+          entries.push({
+            slotId,
+            subject: usfLabel,
+            teacher: null,
+            room: null,
+            note: usfLabel
+          });
+          log(`  USF fill: ${cls} ${dayId} slot ${slotId} → "${usfLabel}"`);
+        }
+      }
+    }
+  }
+
+  // Also detect USF from fragments: if a class has mostly empty days
+  // with USF-related fragments in nearby items, mark entire days as USF
+  const USF_FRAGMENTS = /^(UNTER-|NEHMENS-|SERIEN-|FERTIGUNG|PROJEKT|USF)$/i;
+  for (const col of columns) {
+    // Find all USF-related fragment items in this column's x-range
+    const colFragments = items.filter(it =>
+      it.x >= col.leftBound - 5 && it.x < col.rightBound + 20 &&
+      USF_FRAGMENTS.test(it.str)
+    );
+
+    if (colFragments.length === 0) continue;
+
+    // Group fragments by day block
+    for (const block of dayBlocks) {
+      const dayFragments = colFragments.filter(f =>
+        f.y <= block.yTop && f.y >= block.yBottom
+      );
+      if (dayFragments.length === 0) continue;
+
+      // This day has USF fragments — fill empty slots
+      const entries = classes[col.id][block.dayId];
+      const hasUSF = entries.some(e => e.note && USF_SUBJECTS.test(e.subject));
+      if (hasUSF) continue; // Already handled above
+
+      const allSlotIds = Object.values(PAIR_TO_SLOTS).flat();
+      const existingSlotIds = new Set(entries.map(e => e.slotId));
+      let filled = false;
+
+      for (const slotId of allSlotIds) {
+        if (!existingSlotIds.has(slotId)) {
+          entries.push({
+            slotId,
+            subject: 'USF',
+            teacher: null,
+            room: null,
+            note: 'USF'
+          });
+          filled = true;
+        }
+      }
+      if (filled) {
+        log(`  USF fragments in ${col.id} ${block.dayId} → filled empty slots with USF`);
+      }
+    }
+  }
+
+  // Re-sort after adding special events and USF fills
   for (const block of dayBlocks) {
     for (const cls of CLASS_IDS) {
       classes[cls][block.dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
