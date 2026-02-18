@@ -159,25 +159,6 @@
         <!-- Heute-Karte -->
         <div class="card surface">
           <h2>Heute</h2>
-          
-          <!-- Changelog Box -->
-          <div id="changelogBox" class="changelogBox" role="region" aria-label="Neuigkeiten">
-            <div class="changelogHead">
-              <div class="changelogTitle">Neu</div>
-            </div>
-            <ul id="changelog" class="bullets" aria-label="Letzte Updates"></ul>
-          </div>
-          
-          <!-- Netzwerkstatus -->
-          <div class="netRow" role="status" aria-label="Netzwerkstatus">
-            <span 
-              id="netIndicator" 
-              class="netIndicator" 
-              data-status="unknown" 
-              aria-hidden="true"
-            ></span>
-            <span id="netLabel" class="small muted">—</span>
-          </div>
 
           <!-- Countdown -->
           <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
@@ -191,13 +172,25 @@
 
           <!-- Heute-Vorschau -->
           <p class="muted" id="todayLabel">—</p>
-          <div 
-            id="todayPreview" 
-            class="list" 
-            role="region" 
+          <div
+            id="todayPreview"
+            class="list"
+            role="region"
             aria-label="Heutiger Stundenplan (Vorschau)"
           ></div>
           <div class="small muted">Tipp: In „Stundenplan" Klasse auswählen.</div>
+
+          <!-- Netzwerkstatus -->
+          <div class="netRow" role="status" aria-label="Netzwerkstatus">
+            <span
+              id="netIndicator"
+              class="netIndicator"
+              data-status="unknown"
+              aria-hidden="true"
+            ></span>
+            <span id="netLabel" class="small muted">—</span>
+          </div>
+          <p id="ttLastUpdated" class="small muted"></p>
         </div>
 
         <!-- Install-Karte -->

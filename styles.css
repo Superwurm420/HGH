@@ -479,27 +479,6 @@ select:focus-visible{
   margin-top:2px;
 }
 
-/* Changelog */
-.changelogBox{
-  margin-top:12px;
-  padding:12px;
-  border-radius:16px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.04);
-}
-
-.changelogHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:6px;
-}
-
-.changelogTitle{
-  font-weight:900;
-  font-size:14px;
-}
-
 /* Lists */
 .bullets{
   margin:10px 0 0;
