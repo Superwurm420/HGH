@@ -1,8 +1,8 @@
 {
   "meta": {
     "school": "HGH",
-    "validFrom": "2026-02-18",
-    "updatedAt": "2026-02-18T00:34:45.021Z",
+    "validFrom": "2026-02-16",
+    "updatedAt": "2026-02-18T00:36:57.258Z",
     "source": "Stundenplan_kw_08_Hj2_2025_26.pdf"
   },
   "timeslots": [
@@ -107,6 +107,20 @@
           "subject": null,
           "teacher": null,
           "room": "9"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -275,6 +289,20 @@
           "subject": "Modul2/Obfl",
           "teacher": "WED",
           "room": "6"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -695,6 +723,20 @@
           "subject": "NAT/Chemie",
           "teacher": "STI",
           "room": "8"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [],
@@ -890,6 +932,20 @@
           "subject": "Englisch",
           "teacher": "WEN",
           "room": "9"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [

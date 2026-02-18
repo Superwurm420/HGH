@@ -301,20 +301,54 @@ function parseTimetable(items, columns, dayBlocks) {
     }
   }
 
-  // === Detect special events (e.g. "BBS Nienburg") ===
-  // These are notes placed between or across columns, indicating offsite events
-  const specialPatterns = /^(BBS\s+\w+|Lehrfahrt|Exkursion|Praktikum|Praxistag|Messe|Betriebsbesichtigung|Serviceteam|USF-Treffen|Übergabe\s*USF)/i;
-  const specialItems = items.filter(it => specialPatterns.test(it.str));
+  // === Detect special events (generic, structure-based) ===
+  // Any text item in the data area that wasn't consumed as a regular
+  // subject/teacher/room is a potential special event.
+  // We identify these by: they contain spaces (unlike teacher abbrevs),
+  // or are multi-word, and don't match known structural patterns.
+  const STRUCTURAL_PATTERNS = /^(\d{1,2}\.?|R|#NV|\d{1,2}\.\d{2}|—)$/;
+  const TEACHER_LIKE = /^[A-ZÄÖÜ]{2,5}(\/[A-ZÄÖÜ]{2,5})?$/; // e.g. "STE", "BER/WEZ"
+  const ROOM_LIKE = /^(\d{1,2}|T\d|BS|HS|BL|H|8\/4)$/;
+  const USF_FRAGMENT = /^[A-ZÄÖÜ]+-$|^(FERTIGUNG|PROJEKT|SERIENFERTIGUNG|UNTERNEHMENSPROJEKT)$/i;
 
-  for (const specialItem of specialItems) {
+  // Collect all items already used as subjects, teachers, rooms
+  const usedStrings = new Set();
+  for (const cls of CLASS_IDS) {
+    for (const day of DAY_IDS) {
+      for (const e of classes[cls][day]) {
+        if (e.subject) usedStrings.add(e.subject);
+      }
+    }
+  }
+
+  // Find candidate special event items
+  const dataLeft = columns[0].leftBound - 5;
+  const dataRight = columns[columns.length - 1].rightBound + 50;
+  const specialCandidates = items.filter(it => {
+    if (it.x < dataLeft || it.x > dataRight) return false; // outside data area
+    if (it.x < 100) return false; // slot markers at left edge
+    if (STRUCTURAL_PATTERNS.test(it.str)) return false;
+    if (TEACHER_LIKE.test(it.str)) return false;
+    if (ROOM_LIKE.test(it.str)) return false;
+    if (USF_FRAGMENT.test(it.str)) return false;
+    if (CLASS_IDS.includes(it.str)) return false;
+    if (usedStrings.has(it.str)) return false; // already used as subject
+    if (/^[""„"]/.test(it.str)) return false; // quoted USF project names (handled above)
+    // Must contain a space, or be a recognizable multi-word item
+    if (!/\s/.test(it.str) && it.str.length < 8) return false;
+    return true;
+  });
+
+  for (const specialItem of specialCandidates) {
     // Find which day block this belongs to
     const block = dayBlocks.find(b => specialItem.y <= b.yTop && specialItem.y >= b.yBottom);
     if (!block) continue;
 
-    // Find which columns this note applies to (columns with empty slots nearby)
+    // Find which columns this note applies to
     const nearbyColumns = columns.filter(col =>
       specialItem.x >= col.leftBound - 30 && specialItem.x <= col.rightBound + 30
     );
+    if (nearbyColumns.length === 0) continue;
 
     // Find which slot pair this falls into based on y position
     const { slotYs } = block;
@@ -330,7 +364,8 @@ function parseTimetable(items, columns, dayBlocks) {
     }
     if (!matchedPair) continue;
 
-    // Add note to columns that have no data for these slots
+    // Add note to columns that have empty slots for these slot pairs
+    let added = false;
     for (const col of nearbyColumns) {
       for (const slotId of matchedPair) {
         const existing = classes[col.id][block.dayId].find(e => e.slotId === slotId);
@@ -342,11 +377,14 @@ function parseTimetable(items, columns, dayBlocks) {
             room: null,
             note: specialItem.str
           });
+          added = true;
         }
       }
     }
 
-    log(`  Special event: "${specialItem.str}" → ${block.dayId}, slots ${matchedPair.join(',')}, columns: ${nearbyColumns.map(c => c.id).join(',')}`);
+    if (added) {
+      log(`  Special event: "${specialItem.str}" → ${block.dayId}, slots ${matchedPair.join(',')}, columns: ${nearbyColumns.map(c => c.id).join(',')}`);
+    }
   }
 
   // === Fill empty USF slots ===
