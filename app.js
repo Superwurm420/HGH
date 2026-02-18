@@ -879,15 +879,27 @@ function parseICS(text) {
   return events;
 }
 
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
 /**
- * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration
+ * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration.
+ * Versucht zuerst direkt, fällt bei CORS-Fehler auf Proxy zurück.
  * @param {Object} cfg - Kalender-Konfiguration
  */
 async function fetchCalendar(cfg) {
-  try {
-    const res = await fetch(cfg.icsUrl);
+  const tryFetch = async (url) => {
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
+    return res.text();
+  };
+
+  try {
+    let text;
+    try {
+      text = await tryFetch(cfg.icsUrl);
+    } catch {
+      text = await tryFetch(CORS_PROXY + encodeURIComponent(cfg.icsUrl));
+    }
     state.cal.events[cfg.id] = parseICS(text);
   } catch (e) {
     console.warn(`[Cal] ${cfg.id} konnte nicht geladen werden:`, e);
