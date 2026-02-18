@@ -541,8 +541,7 @@ function renderTodayPreview() {
         ? r.teacher.split('/').map((t) => escapeHtml(formatTeacherName(t.trim())))
         : [];
       const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
-      const metaLines = [...teacherLines, roomStr].filter(Boolean);
-      const metaHtml = metaLines.length ? metaLines.join('<br>') : '—';
+      const teacherHtml = teacherLines.length ? teacherLines.join('<br>') : '—';
 
       const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
       const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
@@ -566,7 +565,10 @@ function renderTodayPreview() {
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
-        <div class="sub">${metaHtml}</div>
+        <div class="metaRow">
+          <div class="sub">${teacherHtml}</div>
+          ${roomStr ? `<div class="sub roomLabel">${roomStr}</div>` : ''}
+        </div>
         ${noteHtml}
       </div>
     </div>
