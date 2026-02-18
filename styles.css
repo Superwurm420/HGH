@@ -481,6 +481,18 @@ select:focus-visible{
   font-size:13px;
 }
 
+.timeFrom{
+  font-weight:750;
+  font-size:13px;
+  line-height:1.2;
+}
+
+.tdTime{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
 .sub{
   color:var(--muted);
   font-size:12px;
