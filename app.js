@@ -110,6 +110,7 @@ const state = {
   timetableAutoRefreshInterval: null,
   lastTimetableSignature: null,
   lastTimetableRefreshAt: 0,
+  installPromptEvent: null,
   visibilityHandler: null,
   onlineHandler: null,
   countdownInterval: null,
@@ -1408,6 +1409,24 @@ function initInstallHint() {
   const hint = state.els.installHint;
   const banner = state.els.installBanner;
   const closeBtn = state.els.installBannerClose;
+  const installButton = state.els.installButton;
+
+  if (installButton) {
+    installButton.addEventListener('click', async () => {
+      if (!state.installPromptEvent) return;
+
+      try {
+        await state.installPromptEvent.prompt();
+        await state.installPromptEvent.userChoice;
+      } catch (e) {
+        console.warn('Installationsdialog konnte nicht geöffnet werden:', e);
+      } finally {
+        state.installPromptEvent = null;
+        installButton.disabled = true;
+        installButton.setAttribute('aria-disabled', 'true');
+      }
+    });
+  }
 
   // Banner: nur wenn nicht installiert + noch nicht gesehen
   try {
@@ -1432,12 +1451,24 @@ function initInstallHint() {
   if (hint) {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      safeSetText(hint, 'Installierbar: Du kannst die App über das Browser-Menü installieren.');
+      state.installPromptEvent = e;
+
+      if (installButton) {
+        installButton.disabled = false;
+        installButton.setAttribute('aria-disabled', 'false');
+      }
+
+      safeSetText(hint, 'Installierbar: Du kannst jetzt direkt über den Button installieren.');
     });
 
     window.addEventListener('appinstalled', () => {
       safeSetText(hint, 'App installiert – läuft auch offline! 🎉');
       if (banner) banner.hidden = true;
+      if (installButton) {
+        installButton.disabled = true;
+        installButton.setAttribute('aria-disabled', 'true');
+      }
+      state.installPromptEvent = null;
       try {
         localStorage.setItem(APP.storageKeys.installHintShown, '1');
       } catch (e) {
@@ -1526,6 +1557,7 @@ function cacheEls() {
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
 
+    installButton: qs('#installButton'),
     installHint: qs('#installHint'),
     installBanner: qs('#installBanner'),
     installBannerClose: qs('#installBannerClose'),
