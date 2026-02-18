@@ -542,9 +542,9 @@ function renderTodayPreview() {
       const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
       let time;
       if (secondId) {
-        const timeFrom = slotTime(r.slotId).split('–')[0];
-        const timeTo = slotTime(secondId).split('–')[1];
-        time = `${timeFrom}–${timeTo}`;
+        const timeFrom = slotTime(r.slotId).split('–')[0] || '';
+        const timeTo = slotTime(secondId).split('–')[1] || '';
+        time = timeFrom && timeTo ? `${timeFrom}–${timeTo}` : slotTime(r.slotId);
       } else {
         time = slotTime(r.slotId);
       }
@@ -857,6 +857,8 @@ function parseICSDate(s) {
  */
 function parseICS(text) {
   const unfolded = text.replace(/\r?\n[ \t]/g, '');
+  // ICS-Backslash-Escapes auflösen (\n → Leerzeichen, \, \; \\ → Literal)
+  const unescape = (s) => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
   const events = [];
   const blocks = unfolded.split('BEGIN:VEVENT');
   blocks.shift();
@@ -867,7 +869,7 @@ function parseICS(text) {
       const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
       return m ? m[1].trim() : '';
     };
-    const title = get('SUMMARY') || '(Kein Titel)';
+    const title = unescape(get('SUMMARY')) || '(Kein Titel)';
     const dtstart = get('DTSTART');
     const dtend = get('DTEND');
     if (!dtstart) continue;
@@ -879,15 +881,27 @@ function parseICS(text) {
   return events;
 }
 
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
 /**
- * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration
+ * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration.
+ * Versucht zuerst direkt, fällt bei CORS-Fehler auf Proxy zurück.
  * @param {Object} cfg - Kalender-Konfiguration
  */
 async function fetchCalendar(cfg) {
-  try {
-    const res = await fetch(cfg.icsUrl);
+  const tryFetch = async (url) => {
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
+    return res.text();
+  };
+
+  try {
+    let text;
+    try {
+      text = await tryFetch(cfg.icsUrl);
+    } catch {
+      text = await tryFetch(CORS_PROXY + encodeURIComponent(cfg.icsUrl));
+    }
     state.cal.events[cfg.id] = parseICS(text);
   } catch (e) {
     console.warn(`[Cal] ${cfg.id} konnte nicht geladen werden:`, e);
@@ -923,7 +937,11 @@ function calEventCoversDate(ev, date) {
   let endDay;
   if (ev.end) {
     endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
-    if (ev.allDay) endDay = new Date(endDay.getTime() - 864e5); // DTEND exklusiv → -1 Tag
+    // DTEND ist exklusiv – nur 1 Tag abziehen wenn DTEND wirklich nach DTSTART liegt.
+    // Falls kein DTEND vorhanden war, ist ev.end = ev.start → kein Abzug nötig.
+    if (ev.allDay && endDay.getTime() > startDay.getTime()) {
+      endDay = new Date(endDay.getTime() - 864e5);
+    }
   } else {
     endDay = startDay;
   }
@@ -1080,6 +1098,7 @@ function renderCalendar() {
     ].filter(Boolean).join(' ');
     div.setAttribute('role', 'gridcell');
     div.setAttribute('tabindex', '0');
+    div.setAttribute('aria-selected', isSelected ? 'true' : 'false');
     div.setAttribute('aria-label', cellDate.toLocaleDateString('de-DE', {
       day: 'numeric', month: 'long', year: 'numeric'
     }));
