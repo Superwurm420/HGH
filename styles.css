@@ -85,8 +85,8 @@ body{
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
   color:var(--text);
   background:
-    radial-gradient(1000px 700px at 20% 10%, rgba(11,92,255,.35), transparent 60%),
-    radial-gradient(900px 700px at 80% 20%, rgba(74,199,255,.25), transparent 55%),
+    radial-gradient(1000px 700px at 20% 10%, rgba(0,122,255,.28), transparent 60%),
+    radial-gradient(900px 700px at 80% 20%, rgba(52,170,220,.18), transparent 55%),
     linear-gradient(180deg, var(--bg0), var(--bg1));
   overflow-x:hidden;
   -webkit-font-smoothing:antialiased;
@@ -103,7 +103,7 @@ body{
   background:var(--accent);
   color:white;
   padding:10px 12px;
-  border-radius:10px;
+  border-radius:14px;
   z-index:999;
   font-weight:600;
   text-decoration:none;
@@ -146,12 +146,12 @@ select:focus-visible{
   height:44px;
   min-width:44px; /* Verhindert Schrumpfen */
   min-height:44px;
-  border-radius:14px;
+  border-radius:16px;
   display:grid;
   place-items:center;
   overflow:hidden;
   background:linear-gradient(135deg, var(--accent), var(--accent2));
-  box-shadow:0 10px 30px rgba(11,92,255,.35);
+  box-shadow:0 10px 30px rgba(0,122,255,.35);
   flex-shrink:0;
 }
 
@@ -257,9 +257,9 @@ select:focus-visible{
 }
 
 .navItem[aria-current="page"]{
-  border-color:rgba(11,92,255,.55);
-  box-shadow:0 0 0 4px rgba(11,92,255,.15);
-  background:rgba(11,92,255,.08);
+  border-color:rgba(0,122,255,.55);
+  box-shadow:0 0 0 4px rgba(0,122,255,.18);
+  background:rgba(0,122,255,.10);
 }
 
 .navItem:hover:not([aria-current="page"]){
@@ -357,7 +357,7 @@ select:focus-visible{
   background:linear-gradient(135deg, var(--accent), var(--accent2));
   color:white;
   padding:10px 14px;
-  border-radius:14px;
+  border-radius:16px;
   font-weight:650;
   text-decoration:none;
   display:inline-flex;
@@ -398,7 +398,7 @@ select:focus-visible{
   border-radius:var(--radius);
   background:
     radial-gradient(600px 300px at 30% 30%, rgba(255,255,255,.18), transparent 60%),
-    linear-gradient(135deg, rgba(11,92,255,.25), rgba(74,199,255,.12));
+    linear-gradient(135deg, rgba(0,122,255,.22), rgba(52,170,220,.12));
   border:1px solid rgba(255,255,255,.16);
 }
 
@@ -511,7 +511,7 @@ select:focus-visible{
   color:#fff;
   text-align:center;
   white-space:nowrap;
-  box-shadow:0 4px 14px rgba(11,92,255,.35);
+  box-shadow:0 4px 14px rgba(0,122,255,.35);
 }
 
 .countdownDivider{
@@ -608,8 +608,8 @@ select:focus-visible{
   margin-top:12px;
   padding:12px;
   border-radius:16px;
-  border:1px solid rgba(11,92,255,.45);
-  background:rgba(11,92,255,.10);
+  border:1px solid rgba(0,122,255,.45);
+  background:rgba(0,122,255,.10);
   display:flex;
   align-items:flex-start;
   gap:12px;
@@ -628,7 +628,7 @@ select:focus-visible{
   flex:0 0 auto;
   width:32px;
   height:32px;
-  border-radius:10px;
+  border-radius:12px;
   border:1px solid var(--line);
   background:rgba(255,255,255,.06);
   color:var(--text);
@@ -676,7 +676,7 @@ select:focus-visible{
   cursor:pointer;
   min-width:160px;
   padding:10px 12px;
-  border-radius:14px;
+  border-radius:16px;
   border:1px solid var(--line);
   background:rgba(255,255,255,.06);
   color:var(--text);
@@ -701,7 +701,7 @@ select:focus-visible{
   border:1px solid var(--line);
   background:rgba(255,255,255,.06);
   color:var(--text);
-  border-radius:14px;
+  border-radius:16px;
   padding:10px 14px;
   font-weight:800;
   font-size:14px;
@@ -715,9 +715,9 @@ select:focus-visible{
 
 .dayBtn[aria-pressed="true"],
 .dayBtn.active{
-  border-color:rgba(11,92,255,.55);
-  box-shadow:0 0 0 4px rgba(11,92,255,.15);
-  background:rgba(11,92,255,.18);
+  border-color:rgba(0,122,255,.55);
+  box-shadow:0 0 0 4px rgba(0,122,255,.18);
+  background:rgba(0,122,255,.18);
 }
 
 .dayBtn:active{
@@ -836,7 +836,7 @@ select:focus-visible{
 .calNavBtn{
   width:34px;
   height:34px;
-  border-radius:10px;
+  border-radius:14px;
   border:1px solid var(--line);
   background:var(--surface2);
   color:var(--text);
@@ -935,7 +935,7 @@ select:focus-visible{
 
 .calEvent{
   padding:8px 10px;
-  border-radius:10px;
+  border-radius:12px;
   background:var(--surface2);
   border-left:3px solid var(--calColor, #58b4ff);
   font-size:13px;
@@ -1114,8 +1114,8 @@ select:focus-visible{
 }
 
 .linkCard:hover{
-  border-color:rgba(11,92,255,.45);
-  background:rgba(11,92,255,.08);
+  border-color:rgba(0,122,255,.45);
+  background:rgba(0,122,255,.08);
   transform:translateY(-1px);
 }
 
@@ -1140,7 +1140,7 @@ select:focus-visible{
   align-items:center;
   gap:14px;
   padding:16px 18px;
-  border-radius:18px;
+  border-radius:22px;
   border:1px solid var(--line);
   background:rgba(255,255,255,.06);
   color:var(--text);
@@ -1149,10 +1149,10 @@ select:focus-visible{
 }
 
 .linkCardBig:hover{
-  border-color:rgba(11,92,255,.5);
-  background:rgba(11,92,255,.1);
+  border-color:rgba(0,122,255,.5);
+  background:rgba(0,122,255,.1);
   transform:translateY(-2px);
-  box-shadow:0 4px 16px rgba(11,92,255,.15);
+  box-shadow:0 4px 16px rgba(0,122,255,.18);
 }
 
 .linkCardIcon{
