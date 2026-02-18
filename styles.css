@@ -421,37 +421,56 @@ select:focus-visible{
 /* Countdown */
 .countdown{
   margin:10px 0 12px;
-  padding:12px;
+  padding:16px;
   border-radius:16px;
   border:1px solid var(--line);
   background:rgba(255,255,255,.06);
   display:grid;
-  gap:8px;
+  gap:12px;
 }
 
 .countdownTop{
   display:flex;
-  align-items:baseline;
+  align-items:center;
   justify-content:space-between;
   gap:12px;
 }
 
+.countdownTimeBlock{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
 .nowTime{
   font-weight:900;
-  font-size:22px;
-  letter-spacing:.4px;
+  font-size:40px;
+  letter-spacing:1px;
   font-variant-numeric:tabular-nums;
+  line-height:1;
 }
 
 .countdownText{
-  font-weight:800;
-  font-size:15px;
+  font-weight:700;
+  font-size:13px;
+  padding:7px 14px;
+  border-radius:20px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  text-align:center;
+  white-space:nowrap;
+  box-shadow:0 4px 14px rgba(11,92,255,.35);
+}
+
+.countdownDivider{
+  height:1px;
+  background:var(--line);
 }
 
 .funMessage{
-  font-size:12px;
-  color:var(--muted);
-  font-style:italic;
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
 }
 
 /* List Items */
