@@ -53,18 +53,15 @@
   background:rgba(0,0,0,.05);
 }
 
-[data-theme="light"] .weekHeader {
-  background:rgba(0,0,0,.04);
+[data-theme="light"] .weekHeader .weekCell {
+  background:rgba(0,0,0,.05);
   border-bottom-color:rgba(0,0,0,.10);
+  color:var(--muted);
 }
 
 [data-theme="light"] .weekSlot {
-  background:rgba(0,0,0,.03);
+  background:var(--bg1);
   border-right-color:rgba(0,0,0,.10) !important;
-}
-
-[data-theme="light"] .weekHeader .weekCell {
-  color:var(--muted);
 }
 
 [data-theme="light"] .calCell:hover {
@@ -970,15 +967,19 @@ select:focus-visible{
   border-radius:16px;
   overflow:auto;
   border:1px solid var(--line);
+  background:var(--bg1);
 }
 
+/* weekTable ist der einzige Grid-Container → alle Zeilen teilen dieselbe Spaltenbreite */
 .weekTable{
-  min-width:640px;
+  min-width:520px;
+  display:grid;
+  grid-template-columns:max-content repeat(5,minmax(0,1fr));
 }
 
+/* Zeilen werden unsichtbar – ihre Kinder landen direkt im Grid */
 .weekRow{
-  display:grid;
-  grid-template-columns:100px repeat(5,minmax(0,1fr));
+  display:contents;
 }
 
 .weekCell{
@@ -993,20 +994,16 @@ select:focus-visible{
   border-right:none;
 }
 
-.weekRow:last-child .weekCell{
-  border-bottom:none;
-}
+/* Letzte Daten-Zeile: kein border-bottom.
+   Da weekRow display:contents ist, hilft :last-child hier nicht —
+   stattdessen entfernen wir es via JS-Klasse oder lassen es weg (Grid-Rand übernimmt). */
 
-/* Header row – sticky */
-.weekHeader{
+/* Header-Zellen: jede einzeln sticky-top, da weekHeader display:contents */
+.weekHeader .weekCell{
   position:sticky;
   top:0;
-  background:rgba(255,255,255,.08);
-  border-bottom:1px solid var(--line);
-  z-index:2;
-}
-
-.weekHeader .weekCell{
+  z-index:3;
+  background:rgba(255,255,255,.10);
   font-size:12px;
   font-weight:750;
   letter-spacing:.04em;
@@ -1018,7 +1015,11 @@ select:focus-visible{
   justify-content:center;
 }
 
+/* Eck-Zelle: sticky top + left → höchster z-index */
 .weekCorner{
+  position:sticky;
+  left:0;
+  z-index:4;
   justify-content:flex-start !important;
   color:var(--muted);
   font-size:11px;
@@ -1027,13 +1028,13 @@ select:focus-visible{
   letter-spacing:.05em;
 }
 
-/* Stunden-Spalte: sticky links */
+/* Stunden-Spalte: sticky links, solider Hintergrund (kein Bleed-through) */
 .weekSlot{
-  background:rgba(255,255,255,.08);
+  background:var(--bg1);
   border-right:1px solid var(--line) !important;
   position:sticky;
   left:0;
-  z-index:1;
+  z-index:2;
   padding:10px 12px;
 }
 
