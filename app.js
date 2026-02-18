@@ -241,6 +241,14 @@ function applyTimetableData(data) {
       link.href = pdfHref;
     }
   }
+
+  // Show when timetable was last updated
+  const lastUpdatedEl = qs('#ttLastUpdated');
+  if (lastUpdatedEl && data?.meta?.updatedAt) {
+    const d = new Date(data.meta.updatedAt);
+    const formatted = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    lastUpdatedEl.textContent = `Stundenplan aktualisiert: ${formatted}`;
+  }
 }
 
 /**
@@ -388,7 +396,6 @@ function render() {
   renderTimetable();
   renderTodayPreview();
   renderWeek();
-  renderChangelog();
 }
 
 /**
@@ -399,7 +406,7 @@ function render() {
  */
 function formatTeacherRoom(teacher, room) {
   const parts = [];
-  if (teacher) parts.push(String(teacher));
+  if (teacher) parts.push(formatTeacherName(teacher));
   if (room) parts.push(String(room));
   return parts.join(' / ');
 }
@@ -477,7 +484,9 @@ function renderTodayPreview() {
 
   const classId = localStorage.getItem(APP.storageKeys.classId) || 'HT11';
   const className = CLASSES.find((c) => c.id === classId)?.name || classId;
-  const dayName = DAYS.find((d) => d.id === todayId)?.label || 'Heute';
+  const dayName = !isWeekday()
+    ? 'Nächster Schultag (Montag)'
+    : (DAYS.find((d) => d.id === todayId)?.label || 'Heute');
 
   todayLabel.textContent = `${dayName} · Klasse ${className}`;
 
@@ -1019,30 +1028,6 @@ async function initServiceWorker() {
   }
 }
 
-// --- Changelog ----------------------------------------------------------
-
-const CHANGELOG = [
-  '🐛 Fix: Wochentags-Buttons funktionieren zuverlässig',
-  '🎉 Neu: Motivierende Nachrichten unter dem Countdown',
-  '📋 Neu: Changelog-Box auf der Startseite',
-  '🎨 UI: Größere Tages-Buttons für bessere Bedienung',
-  '🏫 Branding: Schul-Logo im Header',
-  '⚡ Performance: Optimierte Render-Funktionen',
-  '🔒 Sicherheit: XSS-Schutz durch HTML-Escaping',
-  '♿ Accessibility: Verbesserte ARIA-Labels'
-];
-
-/**
- * Rendert Changelog auf Startseite
- */
-function renderChangelog() {
-  const list = state.els.changelog;
-  if (!list) return;
-  list.innerHTML = CHANGELOG.slice(0, 5)
-    .map((t) => `<li>${escapeHtml(t)}</li>`)
-    .join('');
-}
-
 /**
  * Initialisiert Footer mit aktuellem Jahr
  */
@@ -1072,7 +1057,6 @@ function cacheEls() {
     nowTime: qs('#nowTime'),
     countdownText: qs('#countdownText'),
     funMessage: qs('#funMessage'),
-    changelog: qs('#changelog'),
     netIndicator: qs('#netIndicator'),
     netLabel: qs('#netLabel'),
 
@@ -1150,16 +1134,8 @@ async function loadInstagramPreviews() {
       // Profile picture as avatar (replace logo)
       if (profile.profilePic) {
         const card = qs(`[data-ig="${id}"]`);
-        if (card) {
-          const avatar = qs('.igAvatar', card);
-          if (avatar) {
-            const img = new Image();
-            img.onload = () => {
-              avatar.src = profile.profilePic;
-            };
-            img.src = profile.profilePic;
-          }
-        }
+        const avatar = card ? qs('.igAvatar', card) : null;
+        if (avatar) avatar.src = profile.profilePic;
       }
     }
   } catch {
