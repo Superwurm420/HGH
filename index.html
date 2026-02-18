@@ -93,115 +93,42 @@
     
     <!-- HOME VIEW -->
     <section class="view" data-view="home">
-      <div class="card hero surface">
-        <div class="heroLeft">
-          <h1>HGH Hildesheim</h1>
-          <p class="muted">
-            Schnellzugriff auf Stundenplan, Links und Instagram – offlinefähig als PWA.
-          </p>
 
-          <div class="chips" aria-label="Features" role="list">
-            <span class="chip" role="listitem">Mobile-first</span>
-            <span class="chip" role="listitem">Offline Cache</span>
-            <span class="chip" role="listitem">Dark Mode</span>
+      <!-- Heute-Karte -->
+      <div class="card surface">
+        <h2>Heute</h2>
+
+        <!-- Countdown -->
+        <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
+          <div class="countdownTop">
+            <div class="small muted">Aktuelle Uhrzeit</div>
+            <div id="nowTime" class="nowTime" aria-live="polite">—</div>
           </div>
+          <div id="countdownText" class="countdownText" aria-live="polite">—</div>
+          <div id="funMessage" class="funMessage" aria-live="polite">&nbsp;</div>
         </div>
 
-        <div class="heroRight" aria-hidden="true">
-          <div class="glassBlob"></div>
-          <div class="stats">
-            <div class="stat">
-              <div class="statNum">7</div>
-              <div class="statLabel">Klassen</div>
-            </div>
-            <div class="stat">
-              <div class="statNum">Mo–Fr</div>
-              <div class="statLabel">Tagesansicht</div>
-            </div>
-            <div class="stat">
-              <div class="statNum">PWA</div>
-              <div class="statLabel">Installierbar</div>
-            </div>
-          </div>
+        <!-- Heute-Vorschau -->
+        <p class="muted" id="todayLabel">—</p>
+        <div
+          id="todayPreview"
+          class="list"
+          role="region"
+          aria-label="Heutiger Stundenplan (Vorschau)"
+        ></div>
+        <div class="small muted">Tipp: In „Stundenplan" Klasse auswählen.</div>
+
+        <!-- Netzwerkstatus -->
+        <div class="netRow" role="status" aria-label="Netzwerkstatus">
+          <span
+            id="netIndicator"
+            class="netIndicator"
+            data-status="unknown"
+            aria-hidden="true"
+          ></span>
+          <span id="netLabel" class="small muted">—</span>
         </div>
-      </div>
-
-      <div class="grid2">
-        <!-- Heute-Karte -->
-        <div class="card surface">
-          <h2>Heute</h2>
-
-          <!-- Countdown -->
-          <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
-            <div class="countdownTop">
-              <div class="small muted">Aktuelle Uhrzeit</div>
-              <div id="nowTime" class="nowTime" aria-live="polite">—</div>
-            </div>
-            <div id="countdownText" class="countdownText" aria-live="polite">—</div>
-            <div id="funMessage" class="funMessage" aria-live="polite">&nbsp;</div>
-          </div>
-
-          <!-- Heute-Vorschau -->
-          <p class="muted" id="todayLabel">—</p>
-          <div
-            id="todayPreview"
-            class="list"
-            role="region"
-            aria-label="Heutiger Stundenplan (Vorschau)"
-          ></div>
-          <div class="small muted">Tipp: In „Stundenplan" Klasse auswählen.</div>
-
-          <!-- Netzwerkstatus -->
-          <div class="netRow" role="status" aria-label="Netzwerkstatus">
-            <span
-              id="netIndicator"
-              class="netIndicator"
-              data-status="unknown"
-              aria-hidden="true"
-            ></span>
-            <span id="netLabel" class="small muted">—</span>
-          </div>
-          <p id="ttLastUpdated" class="small muted"></p>
-        </div>
-
-        <!-- Install-Karte -->
-        <div class="card surface">
-          <h2>Installieren</h2>
-          <p class="muted">Diese Seite ist eine Progressive Web App.</p>
-
-          <!-- Install-Banner (nur für Erstbesucher) -->
-          <div 
-            id="installBanner" 
-            class="installBanner" 
-            role="status" 
-            aria-live="polite" 
-            hidden
-          >
-            <div class="installBannerText">
-              Diese App kann installiert werden – folge der Anleitung unten.
-            </div>
-            <button 
-              id="installBannerClose" 
-              class="installBannerClose" 
-              type="button" 
-              aria-label="Hinweis schließen"
-            >
-              ×
-            </button>
-          </div>
-
-          <ul class="bullets">
-            <li>Android/Chrome: Menü → „App installieren"</li>
-            <li>iOS/Safari: Teilen → „Zum Home-Bildschirm"</li>
-          </ul>
-
-          <div 
-            id="installHint" 
-            class="hint" 
-            role="status" 
-            aria-live="polite"
-          ></div>
-        </div>
+        <p id="ttLastUpdated" class="small muted"></p>
       </div>
 
       <!-- Kalender-Karte -->
@@ -221,6 +148,45 @@
         </div>
         <div class="calGrid" id="calGrid" role="grid" aria-label="Kalenderansicht"></div>
         <div class="calEvents" id="calEvents" aria-live="polite"></div>
+      </div>
+
+      <!-- Install-Karte -->
+      <div class="card surface">
+        <h2>Installieren</h2>
+        <p class="muted">Diese Seite ist eine Progressive Web App.</p>
+
+        <!-- Install-Banner (nur für Erstbesucher) -->
+        <div
+          id="installBanner"
+          class="installBanner"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          <div class="installBannerText">
+            Diese App kann installiert werden – folge der Anleitung unten.
+          </div>
+          <button
+            id="installBannerClose"
+            class="installBannerClose"
+            type="button"
+            aria-label="Hinweis schließen"
+          >
+            ×
+          </button>
+        </div>
+
+        <ul class="bullets">
+          <li>Android/Chrome: Menü → „App installieren"</li>
+          <li>iOS/Safari: Teilen → „Zum Home-Bildschirm"</li>
+        </ul>
+
+        <div
+          id="installHint"
+          class="hint"
+          role="status"
+          aria-live="polite"
+        ></div>
       </div>
     </section>
 
