@@ -763,21 +763,9 @@ select:focus-visible{
   font-size:14px;
 }
 
-/* Heute-Button neben Klassen-Auswahl */
-.classControl{
-  display:flex;
-  align-items:flex-end;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.classControl label{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
-}
-.heuteBtn{
-  padding:8px 14px;
-  white-space:nowrap;
+/* Tag-Auswahl-Zeile unter den Controls */
+.dayRow{
+  margin-top:10px;
 }
 
 /* ── Kalender ────────────────────────────────────────────────────────── */
@@ -982,7 +970,7 @@ select:focus-visible{
   border-radius:22px;
   overflow:auto;
   border:1px solid var(--line);
-  background:rgba(255,255,255,.04);
+  background:rgba(255,255,255,.06);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
 }
 
@@ -1015,8 +1003,8 @@ select:focus-visible{
 .weekHeader{
   position:sticky;
   top:0;
-  background:rgba(6,9,15,.94);
-  border-bottom:1px solid rgba(255,255,255,.14);
+  background:rgba(16,26,46,.97);
+  border-bottom:1px solid rgba(255,255,255,.18);
   z-index:2;
 }
 
@@ -1043,8 +1031,8 @@ select:focus-visible{
 
 /* Stunden-Spalte: sticky links */
 .weekSlot{
-  background:rgba(8,12,22,.88);
-  border-right:1px solid rgba(255,255,255,.13) !important;
+  background:rgba(16,26,46,.95);
+  border-right:1px solid rgba(255,255,255,.18) !important;
   position:sticky;
   left:0;
   z-index:1;
@@ -1059,20 +1047,23 @@ select:focus-visible{
 
 /* Stundennummer (1/2, 3/4 …) */
 .weekSlotNum{
-  font-size:15px;
-  font-weight:700;
+  font-size:16px;
+  font-weight:750;
   color:var(--accent);
   line-height:1;
-  letter-spacing:-.01em;
+  letter-spacing:-.02em;
 }
 
 /* Zeitbereich unter der Stunde */
 .weekSlotTime{
-  font-size:9.5px;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  font-size:10.5px;
   color:var(--muted);
-  line-height:1.3;
+  line-height:1.25;
   text-align:center;
-  word-break:break-all;
+  font-variant-numeric:tabular-nums;
 }
 
 /* Fach */
