@@ -466,34 +466,36 @@ function renderTimetable() {
       const isNote = !!r?.note;
       const noteClass = isNote ? ' note' : '';
 
+      const teacherLines = (raw) => raw
+        ? raw.split('/').map((t) => `<small>${escapeHtml(formatTeacherName(t.trim()))}</small>`).join('<br>')
+        : '<small>—</small>';
+
       if (secondSlot) {
         skip.add(secondId);
         const timeFrom = s.time.split('–')[0];
         const timeTo = secondSlot.time.split('–')[1];
-        const combinedTime = `${timeFrom}–${timeTo}`;
         const subject = r?.subject || '—';
-        const teacher = r?.teacher ? formatTeacherName(r.teacher) : '—';
         const room = r?.room || '—';
 
         return `
-        <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}: ${escapeHtml(combinedTime)}">
-          <div class="td"><span class="time">${escapeHtml(combinedTime)}</span></div>
+        <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
+          <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
           <div class="td">${escapeHtml(subject)}</div>
-          <div class="td"><small>${escapeHtml(teacher)}</small></div>
+          <div class="td">${teacherLines(r?.teacher)}</div>
           <div class="td"><small>${escapeHtml(room)}</small></div>
         </div>
       `;
       }
 
       const subject = r?.subject || '—';
-      const teacher = r?.teacher ? formatTeacherName(r.teacher) : '—';
       const room = r?.room || '—';
+      const [tFrom, tTo] = s.time.split('–');
 
       return `
       <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
-        <div class="td"><span class="time">${escapeHtml(s.time)}</span></div>
+        <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
         <div class="td">${escapeHtml(subject)}</div>
-        <div class="td"><small>${escapeHtml(teacher)}</small></div>
+        <div class="td">${teacherLines(r?.teacher)}</div>
         <div class="td"><small>${escapeHtml(room)}</small></div>
       </div>
     `;
@@ -535,28 +537,36 @@ function renderTodayPreview() {
   list.innerHTML = mergedRows
     .map((r) => {
       const subject = r?.subject ?? '—';
-      const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const teacherLines = r?.teacher
+        ? r.teacher.split('/').map((t) => escapeHtml(formatTeacherName(t.trim())))
+        : [];
+      const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
+      const metaLines = [...teacherLines, roomStr].filter(Boolean);
+      const metaHtml = metaLines.length ? metaLines.join('<br>') : '—';
+
       const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
       const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
       const noteClass = r.note ? ' note' : '';
       const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
-      let time;
+
+      let timeFrom, timeTo;
       if (secondId) {
-        const timeFrom = slotTime(r.slotId).split('–')[0] || '';
-        const timeTo = slotTime(secondId).split('–')[1] || '';
-        time = timeFrom && timeTo ? `${timeFrom}–${timeTo}` : slotTime(r.slotId);
+        timeFrom = slotTime(r.slotId).split('–')[0] || '';
+        timeTo = slotTime(secondId).split('–')[1] || '';
       } else {
-        time = slotTime(r.slotId);
+        [timeFrom, timeTo] = slotTime(r.slotId).split('–');
       }
+
       return `
     <div class="listItem${noteClass}">
       <div>
         <div class="small muted">Std. ${escapeHtml(slotLabel)}</div>
-        <div class="time">${escapeHtml(time)}</div>
+        <div class="timeFrom">${escapeHtml(timeFrom || '—')}</div>
+        ${timeTo ? `<div class="small muted">${escapeHtml(timeTo)}</div>` : ''}
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
-        <div class="sub">${escapeHtml(meta || '—')}</div>
+        <div class="sub">${metaHtml}</div>
         ${noteHtml}
       </div>
     </div>
