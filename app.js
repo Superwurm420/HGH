@@ -80,6 +80,23 @@ const DEFAULT_TIMESLOTS = [
   ['9', '14:55–15:40']
 ].map(([id, time]) => ({ id, time }));
 
+// --- Calendar config ----------------------------------------------------
+
+const CAL_CONFIGS = [
+  {
+    id: 'jahreskalender',
+    label: 'HGH Jahreskalender',
+    icsUrl: 'https://calendar.google.com/calendar/ical/r1d6av3let2sjbfthapb5i87sg%40group.calendar.google.com/public/basic.ics',
+    color: '#58b4ff',
+  },
+  {
+    id: 'klausurenkalender',
+    label: 'Klausurenkalender',
+    icsUrl: 'https://calendar.google.com/calendar/ical/2jbkl2auqim9pb150rnd6tpnl8%40group.calendar.google.com/public/basic.ics',
+    color: '#ff9966',
+  },
+];
+
 // --- State --------------------------------------------------------------
 
 const state = {
@@ -87,8 +104,15 @@ const state = {
   timetable: null,
   selectedDayId: null,
   els: {},
-  isLoading: false, // Verhindert Race Conditions
-  countdownInterval: null // Für sauberes Cleanup
+  isLoading: false,
+  countdownInterval: null,
+  cal: {
+    events: {},
+    enabled: {},
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    selectedDate: null,
+  },
 };
 
 // --- Utils --------------------------------------------------------------
@@ -606,6 +630,17 @@ function initSelects() {
     });
   }
 
+  // Heute-Button: springt zum heutigen Tag
+  state.els.todayBtn?.addEventListener('click', () => {
+    const todayId = getTodayId();
+    state.selectedDayId = todayId;
+    try {
+      localStorage.setItem(APP.storageKeys.dayId, todayId);
+    } catch (e) { /* ignore */ }
+    setActiveDayButton(todayId);
+    renderTimetable();
+  });
+
 }
 
 // --- Countdown (Home) ---------------------------------------------------
@@ -789,6 +824,327 @@ function initNetworkIndicator() {
   updateNetworkIndicator();
   window.addEventListener('online', updateNetworkIndicator);
   window.addEventListener('offline', updateNetworkIndicator);
+}
+
+// --- Calendar -----------------------------------------------------------
+
+const MONTH_NAMES = [
+  'Januar','Februar','März','April','Mai','Juni',
+  'Juli','August','September','Oktober','November','Dezember'
+];
+
+/**
+ * Wandelt einen ICS-Datums-String in ein Date-Objekt um
+ * @param {string} s - ICS-Datum (YYYYMMDD oder YYYYMMDDTHHMMSSZ)
+ * @returns {Date|null}
+ */
+function parseICSDate(s) {
+  if (!s) return null;
+  const y = +s.slice(0, 4), mo = +s.slice(4, 6) - 1, d = +s.slice(6, 8);
+  if (s.includes('T')) {
+    const h = +s.slice(9, 11), mi = +s.slice(11, 13), sec = +s.slice(13, 15);
+    return s.endsWith('Z')
+      ? new Date(Date.UTC(y, mo, d, h, mi, sec))
+      : new Date(y, mo, d, h, mi, sec);
+  }
+  return new Date(y, mo, d);
+}
+
+/**
+ * Parst ICS-Text in ein Array von Ereignissen
+ * @param {string} text - Rohtext des ICS-Feeds
+ * @returns {Array}
+ */
+function parseICS(text) {
+  const unfolded = text.replace(/\r?\n[ \t]/g, '');
+  const events = [];
+  const blocks = unfolded.split('BEGIN:VEVENT');
+  blocks.shift();
+  for (const block of blocks) {
+    const end = block.indexOf('END:VEVENT');
+    const vevent = end >= 0 ? block.slice(0, end) : block;
+    const get = (name) => {
+      const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
+      return m ? m[1].trim() : '';
+    };
+    const title = get('SUMMARY') || '(Kein Titel)';
+    const dtstart = get('DTSTART');
+    const dtend = get('DTEND');
+    if (!dtstart) continue;
+    const allDay = !dtstart.includes('T');
+    const start = parseICSDate(dtstart);
+    const end2 = dtend ? parseICSDate(dtend) : start;
+    if (start) events.push({ title, start, end: end2, allDay });
+  }
+  return events;
+}
+
+/**
+ * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration
+ * @param {Object} cfg - Kalender-Konfiguration
+ */
+async function fetchCalendar(cfg) {
+  try {
+    const res = await fetch(cfg.icsUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    state.cal.events[cfg.id] = parseICS(text);
+  } catch (e) {
+    console.warn(`[Cal] ${cfg.id} konnte nicht geladen werden:`, e);
+    if (!state.cal.events[cfg.id]) state.cal.events[cfg.id] = [];
+  }
+}
+
+/**
+ * Lädt alle Kalender parallel und rendert danach
+ */
+async function loadCalendars() {
+  await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
+  renderCalendar();
+}
+
+/**
+ * Gibt YYYY-MM-DD zurück für ein Date-Objekt
+ * @param {Date} d
+ * @returns {string}
+ */
+function calDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Prüft ob ein Ereignis ein bestimmtes Datum überdeckt
+ * @param {Object} ev - Ereignis-Objekt
+ * @param {Date} date - Zu prüfendes Datum (Mitternacht)
+ * @returns {boolean}
+ */
+function calEventCoversDate(ev, date) {
+  const startDay = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+  let endDay;
+  if (ev.end) {
+    endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
+    if (ev.allDay) endDay = new Date(endDay.getTime() - 864e5); // DTEND exklusiv → -1 Tag
+  } else {
+    endDay = startDay;
+  }
+  return date >= startDay && date <= endDay;
+}
+
+/**
+ * Formatiert einen Datumsbereich für die Ereignisanzeige
+ * @param {Date} start
+ * @param {Date|null} end
+ * @param {boolean} allDay
+ * @returns {string}
+ */
+function formatCalDateRange(start, end, allDay) {
+  const fmt = (d, opts) => d.toLocaleDateString('de-DE', opts);
+  if (!end || start.getTime() === end.getTime()) {
+    return fmt(start, { day: 'numeric', month: 'short' });
+  }
+  const realEnd = allDay ? new Date(end.getTime() - 864e5) : end;
+  const s = fmt(start, { day: 'numeric', month: 'short' });
+  const e = fmt(realEnd, { day: 'numeric', month: 'short' });
+  return s === e ? s : `${s} – ${e}`;
+}
+
+/**
+ * Rendert die Ereignisliste für das ausgewählte Datum
+ */
+function renderCalendarEvents() {
+  const el = state.els.calEvents;
+  if (!el) return;
+  const { selectedDate } = state.cal;
+  if (!selectedDate) { el.innerHTML = ''; return; }
+
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const events = [];
+
+  for (const cfg of CAL_CONFIGS) {
+    if (state.cal.enabled[cfg.id] === false) continue;
+    for (const ev of (state.cal.events[cfg.id] || [])) {
+      if (calEventCoversDate(ev, date)) {
+        events.push({ ...ev, color: cfg.color, calLabel: cfg.label });
+      }
+    }
+  }
+
+  if (events.length === 0) {
+    el.innerHTML = `<p class="small muted calNoEvents">Kein Eintrag für ${date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}.</p>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  for (const ev of events) {
+    const div = document.createElement('div');
+    div.className = 'calEvent';
+    div.style.setProperty('--calColor', ev.color);
+    const range = ev.allDay
+      ? formatCalDateRange(ev.start, ev.end, true)
+      : `${ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${ev.end ? ev.end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''}`;
+    div.innerHTML = `
+      <div class="calEventTitle">${escapeHtml(ev.title)}</div>
+      <div class="calEventMeta small muted">${escapeHtml(ev.calLabel)} · ${escapeHtml(range)}</div>`;
+    el.appendChild(div);
+  }
+}
+
+/**
+ * Rendert den Kalender-Monat als Grid
+ */
+function renderCalendar() {
+  const grid = state.els.calGrid;
+  const label = state.els.calMonthLabel;
+  const togglesEl = state.els.calToggles;
+  if (!grid || !label) return;
+
+  const { year, month, selectedDate } = state.cal;
+  label.textContent = `${MONTH_NAMES[month]} ${year}`;
+
+  // Toggle-Buttons rendern
+  if (togglesEl) {
+    togglesEl.innerHTML = '';
+    for (const cfg of CAL_CONFIGS) {
+      const enabled = state.cal.enabled[cfg.id] !== false;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'calToggle';
+      btn.dataset.active = enabled ? 'true' : 'false';
+      btn.innerHTML = `<span class="calDot" style="background:${cfg.color}"></span>${escapeHtml(cfg.label)}`;
+      btn.addEventListener('click', () => {
+        state.cal.enabled[cfg.id] = !state.cal.enabled[cfg.id];
+        renderCalendar();
+      });
+      togglesEl.appendChild(btn);
+    }
+  }
+
+  // Monats-Grid aufbauen
+  const today = new Date();
+  const todayStr = calDateStr(today);
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+
+  // Startversatz: Montag = 0, Sonntag = 6
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+
+  const cells = [];
+
+  // Vormonats-Tage zum Auffüllen
+  const prevLastDay = new Date(year, month, 0);
+  for (let i = startDow - 1; i >= 0; i--) {
+    const dayNum = prevLastDay.getDate() - i;
+    cells.push({ day: dayNum, thisMonth: false, date: new Date(year, month - 1, dayNum) });
+  }
+
+  // Tage dieses Monats
+  for (let dd = 1; dd <= daysInMonth; dd++) {
+    cells.push({ day: dd, thisMonth: true, date: new Date(year, month, dd) });
+  }
+
+  // Nachmonat-Tage bis 42 Zellen
+  const remaining = 42 - cells.length;
+  for (let dd = 1; dd <= remaining; dd++) {
+    cells.push({ day: dd, thisMonth: false, date: new Date(year, month + 1, dd) });
+  }
+
+  grid.innerHTML = '';
+
+  for (const cell of cells) {
+    const cellDate = cell.date;
+    const cellStr = calDateStr(cellDate);
+
+    // Ereignisse für diesen Tag sammeln
+    const eventsForDay = [];
+    for (const cfg of CAL_CONFIGS) {
+      if (state.cal.enabled[cfg.id] === false) continue;
+      for (const ev of (state.cal.events[cfg.id] || [])) {
+        if (calEventCoversDate(ev, cellDate)) {
+          eventsForDay.push({ color: cfg.color });
+        }
+      }
+    }
+
+    const isToday = cellStr === todayStr;
+    const isSelected = cellStr === selectedDate;
+
+    const div = document.createElement('div');
+    div.className = [
+      'calCell',
+      !cell.thisMonth ? 'otherMonth' : '',
+      isToday ? 'today' : '',
+      isSelected ? 'selected' : '',
+    ].filter(Boolean).join(' ');
+    div.setAttribute('role', 'gridcell');
+    div.setAttribute('tabindex', '0');
+    div.setAttribute('aria-label', cellDate.toLocaleDateString('de-DE', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    }));
+
+    const dayNum = document.createElement('span');
+    dayNum.className = 'calDayNum';
+    dayNum.textContent = cell.day;
+    div.appendChild(dayNum);
+
+    if (eventsForDay.length > 0) {
+      const dotsDiv = document.createElement('div');
+      dotsDiv.className = 'calEventDots';
+      const colors = [...new Set(eventsForDay.map((e) => e.color))].slice(0, 3);
+      for (const color of colors) {
+        const dot = document.createElement('span');
+        dot.className = 'calEventDot';
+        dot.style.background = color;
+        dotsDiv.appendChild(dot);
+      }
+      div.appendChild(dotsDiv);
+    }
+
+    const selectCell = () => {
+      state.cal.selectedDate = cellStr;
+      renderCalendar();
+    };
+    div.addEventListener('click', selectCell);
+    div.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCell(); }
+    });
+
+    grid.appendChild(div);
+  }
+
+  renderCalendarEvents();
+}
+
+/**
+ * Initialisiert das Kalender-Widget
+ */
+function initCalendar() {
+  const now = new Date();
+  state.cal = {
+    events: {},
+    enabled: Object.fromEntries(CAL_CONFIGS.map((c) => [c.id, true])),
+    year: now.getFullYear(),
+    month: now.getMonth(),
+    selectedDate: null,
+  };
+
+  state.els.calPrev?.addEventListener('click', () => {
+    state.cal.month--;
+    if (state.cal.month < 0) { state.cal.month = 11; state.cal.year--; }
+    state.cal.selectedDate = null;
+    renderCalendar();
+  });
+  state.els.calNext?.addEventListener('click', () => {
+    state.cal.month++;
+    if (state.cal.month > 11) { state.cal.month = 0; state.cal.year++; }
+    state.cal.selectedDate = null;
+    renderCalendar();
+  });
+
+  renderCalendar(); // Leeres Grid sofort anzeigen
+  loadCalendars();  // Dann ICS laden und neu rendern
 }
 
 // --- Week view ----------------------------------------------------------
@@ -999,6 +1355,7 @@ function cacheEls() {
 
     classSelect: qs('#classSelect'),
     dayButtons: qsa('#daySelectGroup .dayBtn'),
+    todayBtn: qs('#todayBtn'),
 
     timetableBody: qs('#timetableBody'),
     todayLabel: qs('#todayLabel'),
@@ -1010,6 +1367,14 @@ function cacheEls() {
     funMessage: qs('#funMessage'),
     netIndicator: qs('#netIndicator'),
     netLabel: qs('#netLabel'),
+
+    // Calendar
+    calGrid: qs('#calGrid'),
+    calMonthLabel: qs('#calMonthLabel'),
+    calPrev: qs('#calPrev'),
+    calNext: qs('#calNext'),
+    calToggles: qs('#calToggles'),
+    calEvents: qs('#calEvents'),
 
     // Week view
     weekClassSelect: qs('#weekClassSelect'),
@@ -1045,6 +1410,7 @@ async function boot() {
     render();
 
     initCountdown();
+    initCalendar();
     initInstallHint();
     initServiceWorker();
     initFooter();

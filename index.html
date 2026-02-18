@@ -203,6 +203,25 @@
           ></div>
         </div>
       </div>
+
+      <!-- Kalender-Karte -->
+      <div class="card surface calCard">
+        <div class="calHeader">
+          <h2>Kalender</h2>
+          <div class="calToggles" id="calToggles"></div>
+        </div>
+        <div class="calNav">
+          <button class="calNavBtn" id="calPrev" aria-label="Vorheriger Monat">&#8249;</button>
+          <span id="calMonthLabel" class="calMonthLabel">—</span>
+          <button class="calNavBtn" id="calNext" aria-label="Nächster Monat">&#8250;</button>
+        </div>
+        <div class="calWeekHeader" aria-hidden="true">
+          <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span>
+          <span>Fr</span><span>Sa</span><span>So</span>
+        </div>
+        <div class="calGrid" id="calGrid" role="grid" aria-label="Kalenderansicht"></div>
+        <div class="calEvents" id="calEvents" aria-live="polite"></div>
+      </div>
     </section>
 
     <!-- WEEK VIEW -->
@@ -256,15 +275,23 @@
           </div>
 
           <div class="controls">
-            <!-- Klassen-Auswahl -->
-            <label class="control">
-              <span class="controlLabel">Klasse</span>
-              <select 
-                id="classSelect" 
-                class="select" 
-                aria-label="Klasse auswählen"
-              ></select>
-            </label>
+            <!-- Klassen-Auswahl + Heute-Button -->
+            <div class="control classControl">
+              <label>
+                <span class="controlLabel">Klasse</span>
+                <select
+                  id="classSelect"
+                  class="select"
+                  aria-label="Klasse auswählen"
+                ></select>
+              </label>
+              <button
+                type="button"
+                class="btn secondary heuteBtn"
+                id="todayBtn"
+                aria-label="Heute anzeigen"
+              >Heute</button>
+            </div>
 
             <!-- Tages-Auswahl -->
             <div class="control">

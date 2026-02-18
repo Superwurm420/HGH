@@ -1,6 +1,6 @@
 /* Service Worker – offline-first for app shell (optimized & improved) */
 
-const VERSION = 'v1.2.0';
+const VERSION = 'v1.3.0';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 // Assets für Offline-Funktionalität
