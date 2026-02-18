@@ -739,7 +739,64 @@
           "note": "KuSti-Exkursion"
         }
       ],
-      "mi": [],
+      "mi": [
+        {
+          "slotId": "1",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "2",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "3",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "4",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "5",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "6",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "8",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "9",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        }
+      ],
       "do": [
         {
           "slotId": "1",
