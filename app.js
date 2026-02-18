@@ -283,7 +283,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       }
 
       applyTimetableData(data);
-      
+
       try {
         localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
         localStorage.setItem(APP.storageKeys.timetableCacheTs, new Date().toISOString());
@@ -291,7 +291,6 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         console.warn('Cache konnte nicht gespeichert werden:', e);
       }
 
-      hideTimetableError();
       state.isLoading = false;
       return { source: 'network' };
     } catch (e) {
@@ -313,7 +312,6 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       }
 
       applyTimetableData(data);
-      hideTimetableError(); // Daten geladen – kein Fehler anzeigen
       state.isLoading = false;
       return { source: 'cache' };
     }
@@ -321,9 +319,8 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     console.warn('Cache-Fehler:', e);
   }
 
-  // Keine Daten verfügbar
+  // Keine Daten verfügbar – leere Struktur anwenden, Meldung kommt via renderTimetable
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
-  showTimetableError('Keine Daten verfügbar. Bitte Internetverbindung prüfen.', 'empty');
   state.isLoading = false;
   return { source: 'empty' };
 }
@@ -409,10 +406,29 @@ function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
   const dayId = state.selectedDayId || getTodayId();
 
-  const rows = state.timetable?.[classId]?.[dayId] || [];
   const body = state.els.timetableBody;
   if (!body) return;
 
+  // Wenn keine Daten verfügbar (weder Netz noch Cache) → Inline-Hinweis
+  const hasData = state.timetable && Object.values(state.timetable).some(
+    (cls) => Object.values(cls).some((day) => day.length > 0)
+  );
+  if (!hasData) {
+    body.innerHTML = `
+      <div class="timetableEmpty" role="status">
+        <p>Keine Stundenplan-Daten verfügbar.</p>
+        <button class="btn secondary" id="retryInline" type="button">Erneut laden</button>
+      </div>`;
+    qs('#retryInline')?.addEventListener('click', async () => {
+      const btn = qs('#retryInline');
+      if (btn) { btn.disabled = true; btn.textContent = 'Lädt…'; }
+      await loadTimetable({ forceNetwork: true });
+      render();
+    });
+    return;
+  }
+
+  const rows = state.timetable?.[classId]?.[dayId] || [];
   const bySlot = new Map(rows.map((r) => [r.slotId, r]));
   const skip = new Set();
 
@@ -775,50 +791,6 @@ function initNetworkIndicator() {
   window.addEventListener('offline', updateNetworkIndicator);
 }
 
-/**
- * Zeigt Stundenplan-Fehler an
- * @param {string} message - Fehlermeldung
- * @param {string} mode - Fehler-Modus ('offline', 'cache', 'empty', 'generic')
- */
-function showTimetableError(message, mode = 'generic') {
-  const box = state.els.ttError;
-  const msg = state.els.ttErrorMsg;
-  if (!box || !msg) return;
-
-  msg.textContent = message;
-  box.hidden = false;
-
-  // Retry-Button nur aktivieren wenn sinnvoll
-  if (state.els.retryBtn) {
-    state.els.retryBtn.disabled = mode === 'offline' && !navigator.onLine;
-  }
-}
-
-/**
- * Versteckt Stundenplan-Fehler
- */
-function hideTimetableError() {
-  if (state.els.ttError) state.els.ttError.hidden = true;
-}
-
-/**
- * Initialisiert Retry-Button
- */
-function initRetry() {
-  state.els.retryBtn?.addEventListener('click', async () => {
-    if (state.els.retryBtn) {
-      state.els.retryBtn.disabled = true;
-    }
-    
-    await loadTimetable({ forceNetwork: true });
-    render();
-    
-    if (state.els.retryBtn) {
-      state.els.retryBtn.disabled = false;
-    }
-  });
-}
-
 // --- Week view ----------------------------------------------------------
 
 /**
@@ -1043,11 +1015,6 @@ function cacheEls() {
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
 
-    // Offline / errors
-    ttError: qs('#ttError'),
-    ttErrorMsg: qs('#ttErrorMsg'),
-    retryBtn: qs('#retryBtn'),
-
     installHint: qs('#installHint'),
     installBanner: qs('#installBanner'),
     installBannerClose: qs('#installBannerClose'),
@@ -1073,7 +1040,6 @@ async function boot() {
     initSelects();
     initWeekSelect();
     initNetworkIndicator();
-    initRetry();
 
     await loadTimetable();
     render();
