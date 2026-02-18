@@ -273,12 +273,6 @@ select:focus-visible{
 }
 
 /* Buttons */
-.ctaRow{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
 .btn{
   appearance:none;
   cursor:pointer;
@@ -429,28 +423,6 @@ select:focus-visible{
   font-style:italic;
 }
 
-/* Error Box */
-.errorBox{
-  margin-top:12px;
-  padding:14px;
-  border-radius:16px;
-  border:1px solid rgba(255,92,92,.45);
-  background:rgba(255,92,92,.08);
-  display:grid;
-  gap:8px;
-}
-
-.errorTitle{
-  font-weight:900;
-  color:rgba(255,92,92,.95);
-}
-
-.errorActions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
 /* List Items */
 .list{
   display:grid;
@@ -466,6 +438,11 @@ select:focus-visible{
   border-radius:16px;
   background:rgba(255,255,255,.06);
   border:1px solid var(--line);
+}
+
+.listItem.note{
+  background:rgba(255,165,0,.10);
+  border-left:3px solid #ffa500;
 }
 
 .time{
@@ -646,6 +623,206 @@ select:focus-visible{
 .timetableHeader{
   background:rgba(255,255,255,.08);
   font-weight:750;
+}
+
+.timetableEmpty{
+  padding:20px 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:12px;
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* Heute-Button neben Klassen-Auswahl */
+.classControl{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.classControl label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.heuteBtn{
+  padding:8px 14px;
+  white-space:nowrap;
+}
+
+/* ── Kalender ────────────────────────────────────────────────────────── */
+
+.calCard{
+  margin-top:0;
+}
+
+.calHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.calToggles{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.calToggle{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:4px 10px;
+  border-radius:99px;
+  border:1px solid var(--line);
+  background:var(--surface2);
+  color:var(--text);
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  transition:opacity 150ms;
+}
+.calToggle[data-active="false"]{
+  opacity:.4;
+}
+
+.calDot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.calNav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.calNavBtn{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--surface2);
+  color:var(--text);
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background 100ms;
+}
+.calNavBtn:hover{
+  background:rgba(255,255,255,.1);
+}
+
+.calMonthLabel{
+  font-weight:750;
+  font-size:15px;
+}
+
+.calWeekHeader{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  text-align:center;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+  margin-bottom:4px;
+  letter-spacing:.04em;
+}
+
+.calGrid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:2px;
+}
+
+.calCell{
+  aspect-ratio:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:4px 2px 2px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:13px;
+  transition:background 100ms;
+}
+.calCell:hover{
+  background:rgba(255,255,255,.07);
+}
+.calCell.otherMonth{
+  opacity:.28;
+}
+.calCell.today .calDayNum{
+  background:var(--accent);
+  color:#fff;
+  border-radius:50%;
+  width:22px;
+  height:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.calCell.selected{
+  background:rgba(124,106,247,.25);
+  outline:1px solid rgba(124,106,247,.5);
+}
+
+.calDayNum{
+  font-size:13px;
+  line-height:1;
+}
+
+.calEventDots{
+  display:flex;
+  gap:2px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:2px;
+}
+
+.calEventDot{
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+.calEvents{
+  margin-top:14px;
+  display:grid;
+  gap:6px;
+}
+
+.calEvent{
+  padding:8px 10px;
+  border-radius:10px;
+  background:var(--surface2);
+  border-left:3px solid var(--calColor, #58b4ff);
+  font-size:13px;
+}
+
+.calEventTitle{
+  font-weight:700;
+}
+
+.calEventMeta{
+  margin-top:2px;
+}
+
+.calNoEvents{
+  padding:8px 0;
 }
 
 .tr:nth-child(even){

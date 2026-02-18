@@ -105,35 +105,6 @@
             <span class="chip" role="listitem">Offline Cache</span>
             <span class="chip" role="listitem">Dark Mode</span>
           </div>
-
-          <div class="ctaRow">
-            <button 
-              class="btn" 
-              data-route-jump="timetable" 
-              type="button"
-              aria-label="Zum Stundenplan wechseln"
-            >
-              Zum Stundenplan
-            </button>
-            <a 
-              class="btn secondary" 
-              href="https://holztechnik-hildesheim.de/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              Schul-Website
-            </a>
-            <a 
-              class="btn secondary" 
-              href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
-              target="_blank"
-              rel="noopener"
-              aria-label="Stundenplan als PDF herunterladen"
-              data-pdf-link
-            >
-              PDF-Stundenplan
-            </a>
-          </div>
         </div>
 
         <div class="heroRight" aria-hidden="true">
@@ -207,7 +178,7 @@
             hidden
           >
             <div class="installBannerText">
-              Installiere diese App für Offline-Zugriff: Android = Menü → 'App installieren', iOS = Teilen → 'Zum Home-Bildschirm'
+              Diese App kann installiert werden – folge der Anleitung unten.
             </div>
             <button 
               id="installBannerClose" 
@@ -231,6 +202,25 @@
             aria-live="polite"
           ></div>
         </div>
+      </div>
+
+      <!-- Kalender-Karte -->
+      <div class="card surface calCard">
+        <div class="calHeader">
+          <h2>Kalender</h2>
+          <div class="calToggles" id="calToggles"></div>
+        </div>
+        <div class="calNav">
+          <button class="calNavBtn" id="calPrev" aria-label="Vorheriger Monat">&#8249;</button>
+          <span id="calMonthLabel" class="calMonthLabel">—</span>
+          <button class="calNavBtn" id="calNext" aria-label="Nächster Monat">&#8250;</button>
+        </div>
+        <div class="calWeekHeader" aria-hidden="true">
+          <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span>
+          <span>Fr</span><span>Sa</span><span>So</span>
+        </div>
+        <div class="calGrid" id="calGrid" role="grid" aria-label="Kalenderansicht"></div>
+        <div class="calEvents" id="calEvents" aria-live="polite"></div>
       </div>
     </section>
 
@@ -285,15 +275,23 @@
           </div>
 
           <div class="controls">
-            <!-- Klassen-Auswahl -->
-            <label class="control">
-              <span class="controlLabel">Klasse</span>
-              <select 
-                id="classSelect" 
-                class="select" 
-                aria-label="Klasse auswählen"
-              ></select>
-            </label>
+            <!-- Klassen-Auswahl + Heute-Button -->
+            <div class="control classControl">
+              <label>
+                <span class="controlLabel">Klasse</span>
+                <select
+                  id="classSelect"
+                  class="select"
+                  aria-label="Klasse auswählen"
+                ></select>
+              </label>
+              <button
+                type="button"
+                class="btn secondary heuteBtn"
+                id="todayBtn"
+                aria-label="Heute anzeigen"
+              >Heute</button>
+            </div>
 
             <!-- Tages-Auswahl -->
             <div class="control">
@@ -347,15 +345,6 @@
               </div>
             </div>
 
-            <!-- Heute-Button -->
-            <button 
-              id="todayBtn" 
-              class="btn secondary" 
-              type="button"
-              aria-label="Zum heutigen Tag springen"
-            >
-              Heute
-            </button>
           </div>
         </div>
 
@@ -378,27 +367,6 @@
           ></div>
         </div>
 
-        <!-- Fehlerbox -->
-        <div 
-          id="ttError" 
-          class="errorBox" 
-          role="alert" 
-          aria-live="assertive"
-          hidden
-        >
-          <div class="errorTitle">Stundenplan konnte nicht geladen werden.</div>
-          <div id="ttErrorMsg" class="small muted">—</div>
-          <div class="errorActions">
-            <button 
-              id="retryBtn" 
-              class="btn" 
-              type="button"
-              aria-label="Stundenplan erneut laden"
-            >
-              Erneut versuchen
-            </button>
-          </div>
-        </div>
 
       </div>
     </section>

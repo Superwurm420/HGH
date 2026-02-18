@@ -80,6 +80,23 @@ const DEFAULT_TIMESLOTS = [
   ['9', '14:55–15:40']
 ].map(([id, time]) => ({ id, time }));
 
+// --- Calendar config ----------------------------------------------------
+
+const CAL_CONFIGS = [
+  {
+    id: 'jahreskalender',
+    label: 'HGH Jahreskalender',
+    icsUrl: 'https://calendar.google.com/calendar/ical/r1d6av3let2sjbfthapb5i87sg%40group.calendar.google.com/public/basic.ics',
+    color: '#58b4ff',
+  },
+  {
+    id: 'klausurenkalender',
+    label: 'Klausurenkalender',
+    icsUrl: 'https://calendar.google.com/calendar/ical/2jbkl2auqim9pb150rnd6tpnl8%40group.calendar.google.com/public/basic.ics',
+    color: '#ff9966',
+  },
+];
+
 // --- State --------------------------------------------------------------
 
 const state = {
@@ -87,8 +104,15 @@ const state = {
   timetable: null,
   selectedDayId: null,
   els: {},
-  isLoading: false, // Verhindert Race Conditions
-  countdownInterval: null // Für sauberes Cleanup
+  isLoading: false,
+  countdownInterval: null,
+  cal: {
+    events: {},
+    enabled: {},
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    selectedDate: null,
+  },
 };
 
 // --- Utils --------------------------------------------------------------
@@ -283,7 +307,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       }
 
       applyTimetableData(data);
-      
+
       try {
         localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
         localStorage.setItem(APP.storageKeys.timetableCacheTs, new Date().toISOString());
@@ -291,7 +315,6 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         console.warn('Cache konnte nicht gespeichert werden:', e);
       }
 
-      hideTimetableError();
       state.isLoading = false;
       return { source: 'network' };
     } catch (e) {
@@ -306,19 +329,13 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     const cached = localStorage.getItem(APP.storageKeys.timetableCache);
     if (cached) {
       const data = JSON.parse(cached);
-      
+
       // Validiere Cache-Daten
       if (!isValidTimetableData(data)) {
         throw new Error('Ungültige Cache-Daten');
       }
-      
+
       applyTimetableData(data);
-      
-      const errorMsg = lastError?.message === 'offline' 
-        ? 'Offline-Modus: Zeige letzte gespeicherte Daten.'
-        : 'Netzwerk-Fehler: Zeige Cache-Daten.';
-      
-      showTimetableError(errorMsg, lastError?.message === 'offline' ? 'offline' : 'cache');
       state.isLoading = false;
       return { source: 'cache' };
     }
@@ -326,9 +343,8 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     console.warn('Cache-Fehler:', e);
   }
 
-  // Keine Daten verfügbar
+  // Keine Daten verfügbar – leere Struktur anwenden, Meldung kommt via renderTimetable
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
-  showTimetableError('Keine Daten verfügbar. Bitte Internetverbindung prüfen.', 'empty');
   state.isLoading = false;
   return { source: 'empty' };
 }
@@ -365,13 +381,6 @@ function initNav() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       setRoute(btn.dataset.route);
-    });
-  });
-
-  qsa('[data-route-jump]').forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      setRoute(el.dataset.routeJump);
     });
   });
 
@@ -421,10 +430,29 @@ function renderTimetable() {
   const classId = state.els.classSelect?.value || 'HT11';
   const dayId = state.selectedDayId || getTodayId();
 
-  const rows = state.timetable?.[classId]?.[dayId] || [];
   const body = state.els.timetableBody;
   if (!body) return;
 
+  // Wenn keine Daten verfügbar (weder Netz noch Cache) → Inline-Hinweis
+  const hasData = state.timetable && Object.values(state.timetable).some(
+    (cls) => Object.values(cls).some((day) => day.length > 0)
+  );
+  if (!hasData) {
+    body.innerHTML = `
+      <div class="timetableEmpty" role="status">
+        <p>Keine Stundenplan-Daten verfügbar.</p>
+        <button class="btn secondary" id="retryInline" type="button">Erneut laden</button>
+      </div>`;
+    qs('#retryInline')?.addEventListener('click', async () => {
+      const btn = qs('#retryInline');
+      if (btn) { btn.disabled = true; btn.textContent = 'Lädt…'; }
+      await loadTimetable({ forceNetwork: true });
+      render();
+    });
+    return;
+  }
+
+  const rows = state.timetable?.[classId]?.[dayId] || [];
   const bySlot = new Map(rows.map((r) => [r.slotId, r]));
   const skip = new Set();
 
@@ -509,6 +537,9 @@ function renderTodayPreview() {
       const subject = r?.subject ?? '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
       const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
+      const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
+      const noteClass = r.note ? ' note' : '';
+      const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
       let time;
       if (secondId) {
         const timeFrom = slotTime(r.slotId).split('–')[0];
@@ -518,13 +549,15 @@ function renderTodayPreview() {
         time = slotTime(r.slotId);
       }
       return `
-    <div class="listItem">
+    <div class="listItem${noteClass}">
       <div>
+        <div class="small muted">Std. ${escapeHtml(slotLabel)}</div>
         <div class="time">${escapeHtml(time)}</div>
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
         <div class="sub">${escapeHtml(meta || '—')}</div>
+        ${noteHtml}
       </div>
     </div>
   `;
@@ -551,7 +584,7 @@ function setActiveDayButton(dayId) {
  * Initialisiert Klassen- und Tages-Auswahl
  */
 function initSelects() {
-  const { classSelect, todayBtn } = state.els;
+  const { classSelect } = state.els;
   if (!classSelect) return;
 
   classSelect.innerHTML = CLASSES.map((c) => 
@@ -597,19 +630,17 @@ function initSelects() {
     });
   }
 
-  todayBtn?.addEventListener('click', () => {
-    const today = getTodayId();
-    state.selectedDayId = today;
-    
+  // Heute-Button: springt zum heutigen Tag
+  state.els.todayBtn?.addEventListener('click', () => {
+    const todayId = getTodayId();
+    state.selectedDayId = todayId;
     try {
-      localStorage.setItem(APP.storageKeys.dayId, today);
-    } catch (e) {
-      console.warn('Tag konnte nicht gespeichert werden:', e);
-    }
-    
-    setActiveDayButton(today);
+      localStorage.setItem(APP.storageKeys.dayId, todayId);
+    } catch (e) { /* ignore */ }
+    setActiveDayButton(todayId);
     renderTimetable();
   });
+
 }
 
 // --- Countdown (Home) ---------------------------------------------------
@@ -795,48 +826,325 @@ function initNetworkIndicator() {
   window.addEventListener('offline', updateNetworkIndicator);
 }
 
+// --- Calendar -----------------------------------------------------------
+
+const MONTH_NAMES = [
+  'Januar','Februar','März','April','Mai','Juni',
+  'Juli','August','September','Oktober','November','Dezember'
+];
+
 /**
- * Zeigt Stundenplan-Fehler an
- * @param {string} message - Fehlermeldung
- * @param {string} mode - Fehler-Modus ('offline', 'cache', 'empty', 'generic')
+ * Wandelt einen ICS-Datums-String in ein Date-Objekt um
+ * @param {string} s - ICS-Datum (YYYYMMDD oder YYYYMMDDTHHMMSSZ)
+ * @returns {Date|null}
  */
-function showTimetableError(message, mode = 'generic') {
-  const box = state.els.ttError;
-  const msg = state.els.ttErrorMsg;
-  if (!box || !msg) return;
+function parseICSDate(s) {
+  if (!s) return null;
+  const y = +s.slice(0, 4), mo = +s.slice(4, 6) - 1, d = +s.slice(6, 8);
+  if (s.includes('T')) {
+    const h = +s.slice(9, 11), mi = +s.slice(11, 13), sec = +s.slice(13, 15);
+    return s.endsWith('Z')
+      ? new Date(Date.UTC(y, mo, d, h, mi, sec))
+      : new Date(y, mo, d, h, mi, sec);
+  }
+  return new Date(y, mo, d);
+}
 
-  msg.textContent = message;
-  box.hidden = false;
+/**
+ * Parst ICS-Text in ein Array von Ereignissen
+ * @param {string} text - Rohtext des ICS-Feeds
+ * @returns {Array}
+ */
+function parseICS(text) {
+  const unfolded = text.replace(/\r?\n[ \t]/g, '');
+  const events = [];
+  const blocks = unfolded.split('BEGIN:VEVENT');
+  blocks.shift();
+  for (const block of blocks) {
+    const end = block.indexOf('END:VEVENT');
+    const vevent = end >= 0 ? block.slice(0, end) : block;
+    const get = (name) => {
+      const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
+      return m ? m[1].trim() : '';
+    };
+    const title = get('SUMMARY') || '(Kein Titel)';
+    const dtstart = get('DTSTART');
+    const dtend = get('DTEND');
+    if (!dtstart) continue;
+    const allDay = !dtstart.includes('T');
+    const start = parseICSDate(dtstart);
+    const end2 = dtend ? parseICSDate(dtend) : start;
+    if (start) events.push({ title, start, end: end2, allDay });
+  }
+  return events;
+}
 
-  // Retry-Button nur aktivieren wenn sinnvoll
-  if (state.els.retryBtn) {
-    state.els.retryBtn.disabled = mode === 'offline' && !navigator.onLine;
+/**
+ * Lädt und parst einen ICS-Feed für eine Kalender-Konfiguration
+ * @param {Object} cfg - Kalender-Konfiguration
+ */
+async function fetchCalendar(cfg) {
+  try {
+    const res = await fetch(cfg.icsUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    state.cal.events[cfg.id] = parseICS(text);
+  } catch (e) {
+    console.warn(`[Cal] ${cfg.id} konnte nicht geladen werden:`, e);
+    if (!state.cal.events[cfg.id]) state.cal.events[cfg.id] = [];
   }
 }
 
 /**
- * Versteckt Stundenplan-Fehler
+ * Lädt alle Kalender parallel und rendert danach
  */
-function hideTimetableError() {
-  if (state.els.ttError) state.els.ttError.hidden = true;
+async function loadCalendars() {
+  await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
+  renderCalendar();
 }
 
 /**
- * Initialisiert Retry-Button
+ * Gibt YYYY-MM-DD zurück für ein Date-Objekt
+ * @param {Date} d
+ * @returns {string}
  */
-function initRetry() {
-  state.els.retryBtn?.addEventListener('click', async () => {
-    if (state.els.retryBtn) {
-      state.els.retryBtn.disabled = true;
+function calDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Prüft ob ein Ereignis ein bestimmtes Datum überdeckt
+ * @param {Object} ev - Ereignis-Objekt
+ * @param {Date} date - Zu prüfendes Datum (Mitternacht)
+ * @returns {boolean}
+ */
+function calEventCoversDate(ev, date) {
+  const startDay = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+  let endDay;
+  if (ev.end) {
+    endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
+    if (ev.allDay) endDay = new Date(endDay.getTime() - 864e5); // DTEND exklusiv → -1 Tag
+  } else {
+    endDay = startDay;
+  }
+  return date >= startDay && date <= endDay;
+}
+
+/**
+ * Formatiert einen Datumsbereich für die Ereignisanzeige
+ * @param {Date} start
+ * @param {Date|null} end
+ * @param {boolean} allDay
+ * @returns {string}
+ */
+function formatCalDateRange(start, end, allDay) {
+  const fmt = (d, opts) => d.toLocaleDateString('de-DE', opts);
+  if (!end || start.getTime() === end.getTime()) {
+    return fmt(start, { day: 'numeric', month: 'short' });
+  }
+  const realEnd = allDay ? new Date(end.getTime() - 864e5) : end;
+  const s = fmt(start, { day: 'numeric', month: 'short' });
+  const e = fmt(realEnd, { day: 'numeric', month: 'short' });
+  return s === e ? s : `${s} – ${e}`;
+}
+
+/**
+ * Rendert die Ereignisliste für das ausgewählte Datum
+ */
+function renderCalendarEvents() {
+  const el = state.els.calEvents;
+  if (!el) return;
+  const { selectedDate } = state.cal;
+  if (!selectedDate) { el.innerHTML = ''; return; }
+
+  const [y, m, d] = selectedDate.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const events = [];
+
+  for (const cfg of CAL_CONFIGS) {
+    if (state.cal.enabled[cfg.id] === false) continue;
+    for (const ev of (state.cal.events[cfg.id] || [])) {
+      if (calEventCoversDate(ev, date)) {
+        events.push({ ...ev, color: cfg.color, calLabel: cfg.label });
+      }
     }
-    
-    await loadTimetable({ forceNetwork: true });
-    render();
-    
-    if (state.els.retryBtn) {
-      state.els.retryBtn.disabled = false;
+  }
+
+  if (events.length === 0) {
+    el.innerHTML = `<p class="small muted calNoEvents">Kein Eintrag für ${date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}.</p>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  for (const ev of events) {
+    const div = document.createElement('div');
+    div.className = 'calEvent';
+    div.style.setProperty('--calColor', ev.color);
+    const range = ev.allDay
+      ? formatCalDateRange(ev.start, ev.end, true)
+      : `${ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${ev.end ? ev.end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''}`;
+    div.innerHTML = `
+      <div class="calEventTitle">${escapeHtml(ev.title)}</div>
+      <div class="calEventMeta small muted">${escapeHtml(ev.calLabel)} · ${escapeHtml(range)}</div>`;
+    el.appendChild(div);
+  }
+}
+
+/**
+ * Rendert den Kalender-Monat als Grid
+ */
+function renderCalendar() {
+  const grid = state.els.calGrid;
+  const label = state.els.calMonthLabel;
+  const togglesEl = state.els.calToggles;
+  if (!grid || !label) return;
+
+  const { year, month, selectedDate } = state.cal;
+  label.textContent = `${MONTH_NAMES[month]} ${year}`;
+
+  // Toggle-Buttons rendern
+  if (togglesEl) {
+    togglesEl.innerHTML = '';
+    for (const cfg of CAL_CONFIGS) {
+      const enabled = state.cal.enabled[cfg.id] !== false;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'calToggle';
+      btn.dataset.active = enabled ? 'true' : 'false';
+      btn.innerHTML = `<span class="calDot" style="background:${cfg.color}"></span>${escapeHtml(cfg.label)}`;
+      btn.addEventListener('click', () => {
+        state.cal.enabled[cfg.id] = !state.cal.enabled[cfg.id];
+        renderCalendar();
+      });
+      togglesEl.appendChild(btn);
     }
+  }
+
+  // Monats-Grid aufbauen
+  const today = new Date();
+  const todayStr = calDateStr(today);
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+
+  // Startversatz: Montag = 0, Sonntag = 6
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+
+  const cells = [];
+
+  // Vormonats-Tage zum Auffüllen
+  const prevLastDay = new Date(year, month, 0);
+  for (let i = startDow - 1; i >= 0; i--) {
+    const dayNum = prevLastDay.getDate() - i;
+    cells.push({ day: dayNum, thisMonth: false, date: new Date(year, month - 1, dayNum) });
+  }
+
+  // Tage dieses Monats
+  for (let dd = 1; dd <= daysInMonth; dd++) {
+    cells.push({ day: dd, thisMonth: true, date: new Date(year, month, dd) });
+  }
+
+  // Nachmonat-Tage bis 42 Zellen
+  const remaining = 42 - cells.length;
+  for (let dd = 1; dd <= remaining; dd++) {
+    cells.push({ day: dd, thisMonth: false, date: new Date(year, month + 1, dd) });
+  }
+
+  grid.innerHTML = '';
+
+  for (const cell of cells) {
+    const cellDate = cell.date;
+    const cellStr = calDateStr(cellDate);
+
+    // Ereignisse für diesen Tag sammeln
+    const eventsForDay = [];
+    for (const cfg of CAL_CONFIGS) {
+      if (state.cal.enabled[cfg.id] === false) continue;
+      for (const ev of (state.cal.events[cfg.id] || [])) {
+        if (calEventCoversDate(ev, cellDate)) {
+          eventsForDay.push({ color: cfg.color });
+        }
+      }
+    }
+
+    const isToday = cellStr === todayStr;
+    const isSelected = cellStr === selectedDate;
+
+    const div = document.createElement('div');
+    div.className = [
+      'calCell',
+      !cell.thisMonth ? 'otherMonth' : '',
+      isToday ? 'today' : '',
+      isSelected ? 'selected' : '',
+    ].filter(Boolean).join(' ');
+    div.setAttribute('role', 'gridcell');
+    div.setAttribute('tabindex', '0');
+    div.setAttribute('aria-label', cellDate.toLocaleDateString('de-DE', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    }));
+
+    const dayNum = document.createElement('span');
+    dayNum.className = 'calDayNum';
+    dayNum.textContent = cell.day;
+    div.appendChild(dayNum);
+
+    if (eventsForDay.length > 0) {
+      const dotsDiv = document.createElement('div');
+      dotsDiv.className = 'calEventDots';
+      const colors = [...new Set(eventsForDay.map((e) => e.color))].slice(0, 3);
+      for (const color of colors) {
+        const dot = document.createElement('span');
+        dot.className = 'calEventDot';
+        dot.style.background = color;
+        dotsDiv.appendChild(dot);
+      }
+      div.appendChild(dotsDiv);
+    }
+
+    const selectCell = () => {
+      state.cal.selectedDate = cellStr;
+      renderCalendar();
+    };
+    div.addEventListener('click', selectCell);
+    div.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCell(); }
+    });
+
+    grid.appendChild(div);
+  }
+
+  renderCalendarEvents();
+}
+
+/**
+ * Initialisiert das Kalender-Widget
+ */
+function initCalendar() {
+  const now = new Date();
+  state.cal = {
+    events: {},
+    enabled: Object.fromEntries(CAL_CONFIGS.map((c) => [c.id, true])),
+    year: now.getFullYear(),
+    month: now.getMonth(),
+    selectedDate: null,
+  };
+
+  state.els.calPrev?.addEventListener('click', () => {
+    state.cal.month--;
+    if (state.cal.month < 0) { state.cal.month = 11; state.cal.year--; }
+    state.cal.selectedDate = null;
+    renderCalendar();
   });
+  state.els.calNext?.addEventListener('click', () => {
+    state.cal.month++;
+    if (state.cal.month > 11) { state.cal.month = 0; state.cal.year++; }
+    state.cal.selectedDate = null;
+    renderCalendar();
+  });
+
+  renderCalendar(); // Leeres Grid sofort anzeigen
+  loadCalendars();  // Dann ICS laden und neu rendern
 }
 
 // --- Week view ----------------------------------------------------------
@@ -1060,14 +1368,17 @@ function cacheEls() {
     netIndicator: qs('#netIndicator'),
     netLabel: qs('#netLabel'),
 
+    // Calendar
+    calGrid: qs('#calGrid'),
+    calMonthLabel: qs('#calMonthLabel'),
+    calPrev: qs('#calPrev'),
+    calNext: qs('#calNext'),
+    calToggles: qs('#calToggles'),
+    calEvents: qs('#calEvents'),
+
     // Week view
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
-
-    // Offline / errors
-    ttError: qs('#ttError'),
-    ttErrorMsg: qs('#ttErrorMsg'),
-    retryBtn: qs('#retryBtn'),
 
     installHint: qs('#installHint'),
     installBanner: qs('#installBanner'),
@@ -1094,12 +1405,12 @@ async function boot() {
     initSelects();
     initWeekSelect();
     initNetworkIndicator();
-    initRetry();
 
     await loadTimetable();
     render();
 
     initCountdown();
+    initCalendar();
     initInstallHint();
     initServiceWorker();
     initFooter();
