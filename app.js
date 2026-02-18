@@ -16,6 +16,8 @@ const APP = {
   // Konstanten für bessere Wartbarkeit
   constants: {
     COUNTDOWN_UPDATE_INTERVAL: 30000, // 30 Sekunden statt 15
+    TIMETABLE_AUTO_REFRESH_INTERVAL: 5 * 60 * 1000, // 5 Minuten
+    TIMETABLE_MIN_REFRESH_GAP: 60 * 1000, // mindestens 1 Minute Abstand
     CACHE_MAX_AGE: 24 * 60 * 60 * 1000, // 24 Stunden
     RETRY_DELAY: 1000
   }
@@ -105,6 +107,11 @@ const state = {
   selectedDayId: null,
   els: {},
   isLoading: false,
+  timetableAutoRefreshInterval: null,
+  lastTimetableSignature: null,
+  lastTimetableRefreshAt: 0,
+  visibilityHandler: null,
+  onlineHandler: null,
   countdownInterval: null,
   cal: {
     events: {},
@@ -290,6 +297,17 @@ function applyTimetableData(data) {
 }
 
 /**
+ * Erzeugt eine Signatur der Stundenplan-Daten für Change-Detection
+ * @param {Object} data - Stundenplan-Daten
+ * @returns {string}
+ */
+function getTimetableSignature(data) {
+  const meta = data?.meta || {};
+  const classCount = data?.classes ? Object.keys(data.classes).length : 0;
+  return `${meta.updatedAt || 'n/a'}|${meta.source || 'n/a'}|${classCount}`;
+}
+
+/**
  * Lädt Stundenplan vom Server oder Cache
  * @param {Object} options - Optionen
  * @param {boolean} options.forceNetwork - Erzwingt Netzwerk-Request
@@ -320,7 +338,12 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         throw new Error('Ungültige Datenstruktur');
       }
 
+      const signature = getTimetableSignature(data);
+      const changed = signature !== state.lastTimetableSignature;
+
       applyTimetableData(data);
+      state.lastTimetableSignature = signature;
+      state.lastTimetableRefreshAt = Date.now();
 
       try {
         localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
@@ -330,7 +353,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       }
 
       state.isLoading = false;
-      return { source: 'network' };
+      return { source: 'network', changed };
     } catch (e) {
       lastError = e;
       console.warn('Netzwerk-Fehler beim Laden:', e);
@@ -349,9 +372,13 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         throw new Error('Ungültige Cache-Daten');
       }
 
+      const signature = getTimetableSignature(data);
+      const changed = signature !== state.lastTimetableSignature;
+
       applyTimetableData(data);
+      state.lastTimetableSignature = signature;
       state.isLoading = false;
-      return { source: 'cache' };
+      return { source: 'cache', changed };
     }
   } catch (e) {
     console.warn('Cache-Fehler:', e);
@@ -359,8 +386,72 @@ async function loadTimetable({ forceNetwork = false } = {}) {
 
   // Keine Daten verfügbar – leere Struktur anwenden, Meldung kommt via renderTimetable
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
+  state.lastTimetableSignature = null;
   state.isLoading = false;
-  return { source: 'empty' };
+  return { source: 'empty', changed: true };
+}
+
+/**
+ * Lädt Stundenplan und rendert nur bei Änderungen neu
+ * @param {Object} options
+ * @param {boolean} options.forceNetwork - Erzwingt Netzwerk-Request
+ * @param {boolean} options.silent - Verhindert Logs
+ */
+async function refreshTimetableIfNeeded({ forceNetwork = false, silent = false } = {}) {
+  const now = Date.now();
+  const minGap = APP.constants.TIMETABLE_MIN_REFRESH_GAP;
+  if (!forceNetwork && now - state.lastTimetableRefreshAt < minGap) {
+    return;
+  }
+
+  const result = await loadTimetable({ forceNetwork });
+  if (result.source === 'skip') return;
+
+  if (result.changed || result.source === 'empty') {
+    render();
+    if (!silent) {
+      console.log(`[Timetable] Aktualisiert via ${result.source}`);
+    }
+  } else if (!silent) {
+    console.log('[Timetable] Keine Änderungen gefunden');
+  }
+}
+
+/**
+ * Initialisiert automatische Stundenplan-Aktualisierung
+ */
+function initTimetableAutoRefresh() {
+  if (state.timetableAutoRefreshInterval) {
+    clearInterval(state.timetableAutoRefreshInterval);
+  }
+
+  const refresh = () => {
+    if (document.hidden || navigator.onLine === false) return;
+    refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+  };
+
+  state.timetableAutoRefreshInterval = setInterval(
+    refresh,
+    APP.constants.TIMETABLE_AUTO_REFRESH_INTERVAL
+  );
+
+  if (state.visibilityHandler) {
+    document.removeEventListener('visibilitychange', state.visibilityHandler);
+  }
+  state.visibilityHandler = () => {
+    if (!document.hidden) {
+      refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+    }
+  };
+  document.addEventListener('visibilitychange', state.visibilityHandler);
+
+  if (state.onlineHandler) {
+    window.removeEventListener('online', state.onlineHandler);
+  }
+  state.onlineHandler = () => {
+    refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+  };
+  window.addEventListener('online', state.onlineHandler);
 }
 
 // --- Navigation ---------------------------------------------------------
@@ -1461,10 +1552,10 @@ async function boot() {
     initWeekSelect();
     initNetworkIndicator();
 
-    await loadTimetable();
-    render();
+    await refreshTimetableIfNeeded();
 
     initCountdown();
+    initTimetableAutoRefresh();
     initCalendar();
     initInstallHint();
     initServiceWorker();
@@ -1515,6 +1606,21 @@ async function loadInstagramPreviews() {
  * Cleanup bei Seiten-Verlassen
  */
 function cleanup() {
+  if (state.timetableAutoRefreshInterval) {
+    clearInterval(state.timetableAutoRefreshInterval);
+    state.timetableAutoRefreshInterval = null;
+  }
+
+  if (state.visibilityHandler) {
+    document.removeEventListener('visibilitychange', state.visibilityHandler);
+    state.visibilityHandler = null;
+  }
+
+  if (state.onlineHandler) {
+    window.removeEventListener('online', state.onlineHandler);
+    state.onlineHandler = null;
+  }
+
   if (state.countdownInterval) {
     clearInterval(state.countdownInterval);
     state.countdownInterval = null;
