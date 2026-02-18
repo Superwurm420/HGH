@@ -367,6 +367,9 @@ function setRoute(route) {
     v.hidden = v.dataset.view !== route;
   }
 
+  // Beim Tab-Wechsel immer nach oben scrollen
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
   // Update URL ohne Seiten-Reload
   if (window.history?.replaceState) {
     history.replaceState(null, '', `#${route}`);
