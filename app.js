@@ -16,6 +16,8 @@ const APP = {
   // Konstanten für bessere Wartbarkeit
   constants: {
     COUNTDOWN_UPDATE_INTERVAL: 30000, // 30 Sekunden statt 15
+    TIMETABLE_AUTO_REFRESH_INTERVAL: 5 * 60 * 1000, // 5 Minuten
+    TIMETABLE_MIN_REFRESH_GAP: 60 * 1000, // mindestens 1 Minute Abstand
     CACHE_MAX_AGE: 24 * 60 * 60 * 1000, // 24 Stunden
     RETRY_DELAY: 1000
   }
@@ -105,6 +107,12 @@ const state = {
   selectedDayId: null,
   els: {},
   isLoading: false,
+  timetableAutoRefreshInterval: null,
+  lastTimetableSignature: null,
+  lastTimetableRefreshAt: 0,
+  installPromptEvent: null,
+  visibilityHandler: null,
+  onlineHandler: null,
   countdownInterval: null,
   cal: {
     events: {},
@@ -256,7 +264,21 @@ function applyTimetableData(data) {
     state.timeslots = DEFAULT_TIMESLOTS;
   }
 
-  state.timetable = data?.classes || ensureEmptyTimetable();
+  const classes = data?.classes || ensureEmptyTimetable();
+
+  // Resolve sameAs references: { sameAs: "ClassName" } on a day copies that class's day
+  const DAYS = ['mo', 'di', 'mi', 'do', 'fr'];
+  for (const cls of Object.keys(classes)) {
+    for (const day of DAYS) {
+      const entry = classes[cls][day];
+      if (entry && !Array.isArray(entry) && entry.sameAs) {
+        const ref = classes[entry.sameAs]?.[day];
+        classes[cls][day] = Array.isArray(ref) ? ref : [];
+      }
+    }
+  }
+
+  state.timetable = classes;
 
   // Update PDF links to match actual file name from meta.source
   if (data?.meta?.source) {
@@ -273,6 +295,17 @@ function applyTimetableData(data) {
     const formatted = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     lastUpdatedEl.textContent = `Stundenplan aktualisiert: ${formatted}`;
   }
+}
+
+/**
+ * Erzeugt eine Signatur der Stundenplan-Daten für Change-Detection
+ * @param {Object} data - Stundenplan-Daten
+ * @returns {string}
+ */
+function getTimetableSignature(data) {
+  const meta = data?.meta || {};
+  const classCount = data?.classes ? Object.keys(data.classes).length : 0;
+  return `${meta.updatedAt || 'n/a'}|${meta.source || 'n/a'}|${classCount}`;
 }
 
 /**
@@ -306,7 +339,12 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         throw new Error('Ungültige Datenstruktur');
       }
 
+      const signature = getTimetableSignature(data);
+      const changed = signature !== state.lastTimetableSignature;
+
       applyTimetableData(data);
+      state.lastTimetableSignature = signature;
+      state.lastTimetableRefreshAt = Date.now();
 
       try {
         localStorage.setItem(APP.storageKeys.timetableCache, JSON.stringify(data));
@@ -316,7 +354,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       }
 
       state.isLoading = false;
-      return { source: 'network' };
+      return { source: 'network', changed };
     } catch (e) {
       lastError = e;
       console.warn('Netzwerk-Fehler beim Laden:', e);
@@ -335,9 +373,13 @@ async function loadTimetable({ forceNetwork = false } = {}) {
         throw new Error('Ungültige Cache-Daten');
       }
 
+      const signature = getTimetableSignature(data);
+      const changed = signature !== state.lastTimetableSignature;
+
       applyTimetableData(data);
+      state.lastTimetableSignature = signature;
       state.isLoading = false;
-      return { source: 'cache' };
+      return { source: 'cache', changed };
     }
   } catch (e) {
     console.warn('Cache-Fehler:', e);
@@ -345,8 +387,72 @@ async function loadTimetable({ forceNetwork = false } = {}) {
 
   // Keine Daten verfügbar – leere Struktur anwenden, Meldung kommt via renderTimetable
   applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
+  state.lastTimetableSignature = null;
   state.isLoading = false;
-  return { source: 'empty' };
+  return { source: 'empty', changed: true };
+}
+
+/**
+ * Lädt Stundenplan und rendert nur bei Änderungen neu
+ * @param {Object} options
+ * @param {boolean} options.forceNetwork - Erzwingt Netzwerk-Request
+ * @param {boolean} options.silent - Verhindert Logs
+ */
+async function refreshTimetableIfNeeded({ forceNetwork = false, silent = false } = {}) {
+  const now = Date.now();
+  const minGap = APP.constants.TIMETABLE_MIN_REFRESH_GAP;
+  if (!forceNetwork && now - state.lastTimetableRefreshAt < minGap) {
+    return;
+  }
+
+  const result = await loadTimetable({ forceNetwork });
+  if (result.source === 'skip') return;
+
+  if (result.changed || result.source === 'empty') {
+    render();
+    if (!silent) {
+      console.log(`[Timetable] Aktualisiert via ${result.source}`);
+    }
+  } else if (!silent) {
+    console.log('[Timetable] Keine Änderungen gefunden');
+  }
+}
+
+/**
+ * Initialisiert automatische Stundenplan-Aktualisierung
+ */
+function initTimetableAutoRefresh() {
+  if (state.timetableAutoRefreshInterval) {
+    clearInterval(state.timetableAutoRefreshInterval);
+  }
+
+  const refresh = () => {
+    if (document.hidden || navigator.onLine === false) return;
+    refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+  };
+
+  state.timetableAutoRefreshInterval = setInterval(
+    refresh,
+    APP.constants.TIMETABLE_AUTO_REFRESH_INTERVAL
+  );
+
+  if (state.visibilityHandler) {
+    document.removeEventListener('visibilitychange', state.visibilityHandler);
+  }
+  state.visibilityHandler = () => {
+    if (!document.hidden) {
+      refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+    }
+  };
+  document.addEventListener('visibilitychange', state.visibilityHandler);
+
+  if (state.onlineHandler) {
+    window.removeEventListener('online', state.onlineHandler);
+  }
+  state.onlineHandler = () => {
+    refreshTimetableIfNeeded({ forceNetwork: true, silent: true });
+  };
+  window.addEventListener('online', state.onlineHandler);
 }
 
 // --- Navigation ---------------------------------------------------------
@@ -1299,6 +1405,24 @@ function initInstallHint() {
   const hint = state.els.installHint;
   const banner = state.els.installBanner;
   const closeBtn = state.els.installBannerClose;
+  const installButton = state.els.installButton;
+
+  if (installButton) {
+    installButton.addEventListener('click', async () => {
+      if (!state.installPromptEvent) return;
+
+      try {
+        await state.installPromptEvent.prompt();
+        await state.installPromptEvent.userChoice;
+      } catch (e) {
+        console.warn('Installationsdialog konnte nicht geöffnet werden:', e);
+      } finally {
+        state.installPromptEvent = null;
+        installButton.disabled = true;
+        installButton.setAttribute('aria-disabled', 'true');
+      }
+    });
+  }
 
   // Banner: nur wenn nicht installiert + noch nicht gesehen
   try {
@@ -1323,12 +1447,24 @@ function initInstallHint() {
   if (hint) {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      safeSetText(hint, 'Installierbar: Du kannst die App über das Browser-Menü installieren.');
+      state.installPromptEvent = e;
+
+      if (installButton) {
+        installButton.disabled = false;
+        installButton.setAttribute('aria-disabled', 'false');
+      }
+
+      safeSetText(hint, 'Installierbar: Du kannst jetzt direkt über den Button installieren.');
     });
 
     window.addEventListener('appinstalled', () => {
       safeSetText(hint, 'App installiert – läuft auch offline! 🎉');
       if (banner) banner.hidden = true;
+      if (installButton) {
+        installButton.disabled = true;
+        installButton.setAttribute('aria-disabled', 'true');
+      }
+      state.installPromptEvent = null;
       try {
         localStorage.setItem(APP.storageKeys.installHintShown, '1');
       } catch (e) {
@@ -1417,6 +1553,7 @@ function cacheEls() {
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
 
+    installButton: qs('#installButton'),
     installHint: qs('#installHint'),
     installBanner: qs('#installBanner'),
     installBannerClose: qs('#installBannerClose'),
@@ -1443,10 +1580,10 @@ async function boot() {
     initWeekSelect();
     initNetworkIndicator();
 
-    await loadTimetable();
-    render();
+    await refreshTimetableIfNeeded();
 
     initCountdown();
+    initTimetableAutoRefresh();
     initCalendar();
     initInstallHint();
     initServiceWorker();
@@ -1497,6 +1634,21 @@ async function loadInstagramPreviews() {
  * Cleanup bei Seiten-Verlassen
  */
 function cleanup() {
+  if (state.timetableAutoRefreshInterval) {
+    clearInterval(state.timetableAutoRefreshInterval);
+    state.timetableAutoRefreshInterval = null;
+  }
+
+  if (state.visibilityHandler) {
+    document.removeEventListener('visibilitychange', state.visibilityHandler);
+    state.visibilityHandler = null;
+  }
+
+  if (state.onlineHandler) {
+    window.removeEventListener('online', state.onlineHandler);
+    state.onlineHandler = null;
+  }
+
   if (state.countdownInterval) {
     clearInterval(state.countdownInterval);
     state.countdownInterval = null;
