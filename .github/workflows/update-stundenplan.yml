@@ -47,11 +47,15 @@ jobs:
             --validFrom $(date +%Y-%m-%d) \
             --debug
 
+      - name: Fetch Instagram Previews
+        run: node tools/fetch-instagram-preview.js || echo "Instagram fetch failed (non-critical)"
+        continue-on-error: true
+
       - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/timetable.json
+          git add data/timetable.json data/instagram.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No changes to timetable.json"
           else

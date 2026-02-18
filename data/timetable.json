@@ -1,8 +1,8 @@
 {
   "meta": {
     "school": "HGH",
-    "validFrom": "2026-02-18",
-    "updatedAt": "2026-02-18T00:26:53.782Z",
+    "validFrom": "2026-02-16",
+    "updatedAt": "2026-02-18T00:36:57.258Z",
     "source": "Stundenplan_kw_08_Hj2_2025_26.pdf"
   },
   "timeslots": [
@@ -107,6 +107,20 @@
           "subject": null,
           "teacher": null,
           "room": "9"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -275,6 +289,20 @@
           "subject": "Modul2/Obfl",
           "teacher": "WED",
           "room": "6"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -395,57 +423,178 @@
     "HT21": {
       "mo": [
         {
+          "slotId": "1",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "2",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "3",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "4",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "5",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "6",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
           "slotId": "8",
-          "subject": null,
-          "teacher": "SERIEN-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "9",
-          "subject": null,
-          "teacher": "SERIEN-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         }
       ],
       "di": [
         {
+          "slotId": "1",
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
+        },
+        {
+          "slotId": "2",
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
+        },
+        {
           "slotId": "3",
-          "subject": null,
-          "teacher": "USF",
-          "room": null
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": "USF",
-          "room": null
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": "HT21",
-          "room": null
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": "HT21",
-          "room": null
+          "subject": "LUNIDO",
+          "teacher": null,
+          "room": null,
+          "note": "LUNIDO"
         },
         {
           "slotId": "8",
-          "subject": "\"LUNIDO\"",
+          "subject": "LUNIDO",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "LUNIDO"
         },
         {
           "slotId": "9",
-          "subject": "\"LUNIDO\"",
+          "subject": "LUNIDO",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "LUNIDO"
         }
       ],
-      "mi": [],
+      "mi": [
+        {
+          "slotId": "1",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "2",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "3",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "4",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "5",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "6",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "8",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        },
+        {
+          "slotId": "9",
+          "subject": "Übergabe USF",
+          "teacher": null,
+          "room": null,
+          "note": "Übergabe USF"
+        }
+      ],
       "do": [
         {
           "slotId": "1",
@@ -574,57 +723,79 @@
           "subject": "NAT/Chemie",
           "teacher": "STI",
           "room": "8"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [],
       "do": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": "UNTER-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": "UNTER-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": "NEHMENS-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": "NEHMENS-",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": "PROJEKT",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": "PROJEKT",
-          "room": null
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "8",
-          "subject": "SERIEN-",
+          "subject": "USF",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "9",
-          "subject": "SERIEN-",
+          "subject": "USF",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "USF"
         }
       ],
       "fr": [
@@ -632,13 +803,57 @@
           "slotId": "1",
           "subject": "USF",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "2",
           "subject": "USF",
           "teacher": null,
-          "room": null
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "3",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "4",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "5",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "6",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "8",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "9",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         }
       ]
     },
@@ -717,6 +932,20 @@
           "subject": "Englisch",
           "teacher": "WEN",
           "room": "9"
+        },
+        {
+          "slotId": "8",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
+        },
+        {
+          "slotId": "9",
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
