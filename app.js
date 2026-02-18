@@ -419,7 +419,7 @@ function renderTimetable() {
   if (!body) return;
 
   const bySlot = new Map(rows.map((r) => [r.slotId, r]));
-  const skip = new Set(); // zweite Stunden die schon zusammengefasst wurden
+  const skip = new Set();
 
   body.innerHTML = state.timeslots
     .map((s) => {
@@ -428,34 +428,38 @@ function renderTimetable() {
       const r = bySlot.get(s.id);
       const secondId = DOUBLE_LESSON_PAIRS[s.id];
       const secondSlot = secondId ? state.timeslots.find((t) => t.id === secondId) : null;
+      const isNote = !!r?.note;
+      const noteClass = isNote ? ' note' : '';
 
-      // Doppelstunde: Zeitspanne zusammenfassen
       if (secondSlot) {
         skip.add(secondId);
         const timeFrom = s.time.split('–')[0];
         const timeTo = secondSlot.time.split('–')[1];
         const combinedTime = `${timeFrom}–${timeTo}`;
         const subject = r?.subject || '—';
-        const meta = formatTeacherRoom(r?.teacher, r?.room);
+        const teacher = r?.teacher ? formatTeacherName(r.teacher) : '—';
+        const room = r?.room || '—';
 
         return `
-        <div class="tr" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}: ${escapeHtml(combinedTime)}">
+        <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}: ${escapeHtml(combinedTime)}">
           <div class="td"><span class="time">${escapeHtml(combinedTime)}</span></div>
           <div class="td">${escapeHtml(subject)}</div>
-          <div class="td">${meta ? `<small>${escapeHtml(meta)}</small>` : '<small class="muted">—</small>'}</div>
+          <div class="td"><small>${escapeHtml(teacher)}</small></div>
+          <div class="td"><small>${escapeHtml(room)}</small></div>
         </div>
       `;
       }
 
-      // Einzelstunde (z.B. Mittagspause Slot 7)
       const subject = r?.subject || '—';
-      const meta = formatTeacherRoom(r?.teacher, r?.room);
+      const teacher = r?.teacher ? formatTeacherName(r.teacher) : '—';
+      const room = r?.room || '—';
 
       return `
-      <div class="tr" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
+      <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td"><span class="time">${escapeHtml(s.time)}</span></div>
         <div class="td">${escapeHtml(subject)}</div>
-        <div class="td">${meta ? `<small>${escapeHtml(meta)}</small>` : '<small class="muted">—</small>'}</div>
+        <div class="td"><small>${escapeHtml(teacher)}</small></div>
+        <div class="td"><small>${escapeHtml(room)}</small></div>
       </div>
     `;
     })
@@ -899,9 +903,10 @@ function renderWeek() {
         const r = rows.find((x) => String(x.slotId) === pair.firstId);
         const subject = r?.subject || '—';
         const meta = formatTeacherRoom(r?.teacher, r?.room);
+        const noteClass = r?.note ? ' note' : '';
 
         return `
-          <div class="weekCell" role="cell">
+          <div class="weekCell${noteClass}" role="cell">
             <div class="weekSubject">${escapeHtml(subject)}</div>
             ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : `<div class="weekMeta muted">—</div>`}
           </div>
@@ -1114,11 +1119,51 @@ async function boot() {
     initInstallHint();
     initServiceWorker();
     initFooter();
+    loadInstagramPreviews();
 
     console.log(`${APP.name} v${APP.version} geladen`);
   } catch (e) {
     console.error('Fehler beim Initialisieren:', e);
     // App läuft trotzdem weiter mit Defaults
+  }
+}
+
+// --- Instagram Previews -------------------------------------------------
+
+/**
+ * Lädt Instagram-Vorschaudaten aus data/instagram.json (wenn vorhanden)
+ * und füllt die Profilkarten mit Follower-Zahlen und Profilbildern
+ */
+async function loadInstagramPreviews() {
+  try {
+    const resp = await fetch('./data/instagram.json');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data?.profiles) return;
+
+    for (const [id, profile] of Object.entries(data.profiles)) {
+      // Follower count
+      if (profile.followers) {
+        const el = qs(`[data-ig-followers="${id}"]`);
+        if (el) el.textContent = `${profile.followers} Follower`;
+      }
+      // Profile picture as avatar (replace logo)
+      if (profile.profilePic) {
+        const card = qs(`[data-ig="${id}"]`);
+        if (card) {
+          const avatar = qs('.igAvatar', card);
+          if (avatar) {
+            const img = new Image();
+            img.onload = () => {
+              avatar.src = profile.profilePic;
+            };
+            img.src = profile.profilePic;
+          }
+        }
+      }
+    }
+  } catch {
+    // instagram.json nicht vorhanden – kein Problem
   }
 }
 

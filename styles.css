@@ -640,7 +640,7 @@ select:focus-visible{
   transform:translateY(1px);
 }
 
-/* Timetable (BUGFIX: 3 Spalten statt 4) */
+/* Timetable */
 .timetable{
   margin-top:14px;
   border-radius:16px;
@@ -651,7 +651,7 @@ select:focus-visible{
 .timetableHeader,
 .tr{
   display:grid;
-  grid-template-columns:120px 1fr 1fr; /* 3 Spalten: Zeit, Fach, Lehrkraft/Raum */
+  grid-template-columns:100px 1fr auto auto; /* 4 Spalten: Zeit, Fach, Lehrer, Raum */
 }
 
 .th,
@@ -682,6 +682,16 @@ select:focus-visible{
 .td small{
   color:var(--muted);
   font-size:12px;
+}
+
+.tr.note{
+  background:rgba(255,165,0,.10);
+  border-left:3px solid #ffa500;
+}
+
+.weekCell.note{
+  background:rgba(255,165,0,.10);
+  border-left:2px solid #ffa500;
 }
 
 /* Week Grid */
@@ -731,7 +741,7 @@ select:focus-visible{
 }
 
 .weekSlot{
-  background:rgba(255,255,255,.03);
+  background:var(--bg0);
   position:sticky;
   left:0;
   z-index:1;
@@ -802,6 +812,124 @@ select:focus-visible{
   font-size:12px;
 }
 
+/* Instagram Profiles */
+.igProfiles{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin-top:14px;
+}
+
+.igProfile{
+  display:block;
+  padding:16px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  text-decoration:none;
+  transition:all 150ms ease;
+}
+
+.igProfile:hover{
+  border-color:rgba(225,48,108,.4);
+  background:rgba(225,48,108,.06);
+  transform:translateY(-1px);
+}
+
+.igProfileHeader{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.igAvatarRing{
+  flex-shrink:0;
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  padding:3px;
+  background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+}
+
+.igAvatar{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  object-fit:cover;
+  background:var(--bg0);
+  border:2px solid var(--bg0);
+}
+
+.igProfileInfo{
+  flex:1;
+  min-width:0;
+}
+
+.igName{
+  font-weight:800;
+  font-size:15px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.igHandle{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:2px;
+}
+
+.igFollowers{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.igFollowers:empty{
+  display:none;
+}
+
+.igPreviewGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:3px;
+  margin-top:12px;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.igPreviewPlaceholder{
+  aspect-ratio:1;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.04);
+}
+
+.igPreviewImg{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.igOpenLabel{
+  display:block;
+  margin-top:12px;
+  text-align:center;
+  font-size:13px;
+  font-weight:600;
+  color:var(--accent);
+}
+
+[data-theme="light"] .igPreviewPlaceholder{
+  background:rgba(0,0,0,.04);
+  border-color:rgba(0,0,0,.06);
+}
+
+[data-theme="light"] .igProfile{
+  background:rgba(0,0,0,.02);
+}
+
 /* Footer */
 .footer{
   margin-top:14px;
@@ -834,12 +962,16 @@ select:focus-visible{
   .linkCards{
     grid-template-columns:1fr 1fr;
   }
+
+  .igProfiles{
+    grid-template-columns:1fr 1fr;
+  }
 }
 
 @media (max-width:360px){
   .timetableHeader,
   .tr{
-    grid-template-columns:100px 1fr 1fr;
+    grid-template-columns:80px 1fr auto auto;
   }
   
   .brandTitle{

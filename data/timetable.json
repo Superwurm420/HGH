@@ -2,7 +2,7 @@
   "meta": {
     "school": "HGH",
     "validFrom": "2025-11-03",
-    "updatedAt": "2026-02-17T09:37:45.014Z",
+    "updatedAt": "2026-02-17T19:05:13.571Z",
     "source": "Stundenplan_kw_45_Hj1_2025_26.pdf"
   },
   "timeslots": [
@@ -1043,6 +1043,20 @@
           "room": "7"
         },
         {
+          "slotId": "3",
+          "subject": "BBS Nienburg",
+          "teacher": null,
+          "room": null,
+          "note": "BBS Nienburg"
+        },
+        {
+          "slotId": "4",
+          "subject": "BBS Nienburg",
+          "teacher": null,
+          "room": null,
+          "note": "BBS Nienburg"
+        },
+        {
           "slotId": "8",
           "subject": "Buchführung",
           "teacher": "TAM",
@@ -1245,6 +1259,20 @@
           "subject": "Entwurf/Konstruktion WEZ",
           "teacher": "WEZ/BER",
           "room": "7"
+        },
+        {
+          "slotId": "3",
+          "subject": "BBS Nienburg",
+          "teacher": null,
+          "room": null,
+          "note": "BBS Nienburg"
+        },
+        {
+          "slotId": "4",
+          "subject": "BBS Nienburg",
+          "teacher": null,
+          "room": null,
+          "note": "BBS Nienburg"
         }
       ],
       "di": [

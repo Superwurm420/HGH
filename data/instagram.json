@@ -1,0 +1,29 @@
+{
+  "fetchedAt": "2026-02-18T00:09:46.608Z",
+  "profiles": {
+    "ht21": {
+      "handle": "usf_ht21",
+      "label": "HT21 – Lunido",
+      "url": "https://www.instagram.com/usf_ht21/",
+      "profilePic": null,
+      "followers": null,
+      "description": null
+    },
+    "ht22": {
+      "handle": "usf_ht22",
+      "label": "HT22 – LYS",
+      "url": "https://www.instagram.com/usf_ht22/",
+      "profilePic": null,
+      "followers": null,
+      "description": null
+    },
+    "schule": {
+      "handle": "hgh.hildesheim",
+      "label": "HGH Hildesheim",
+      "url": "https://www.instagram.com/hgh.hildesheim/",
+      "profilePic": null,
+      "followers": null,
+      "description": null
+    }
+  }
+}

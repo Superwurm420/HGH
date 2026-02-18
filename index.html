@@ -375,7 +375,8 @@
           <div class="timetableHeader" role="row">
             <div class="th" role="columnheader">Zeit</div>
             <div class="th" role="columnheader">Fach</div>
-            <div class="th" role="columnheader">Lehrkraft / Raum</div>
+            <div class="th" role="columnheader">Lehrer</div>
+            <div class="th" role="columnheader">Raum</div>
           </div>
           <div 
             id="timetableBody" 
@@ -457,85 +458,68 @@
     <section class="view" data-view="instagram" hidden>
       <div class="card surface">
         <h2>Instagram</h2>
-        <p class="muted">
-          Schnellzugriff auf die wichtigsten Profile (ohne Embed/Tracking).
-        </p>
+        <p class="muted">Schnellzugriff auf die wichtigsten Profile</p>
 
-        <div class="linkCards" aria-label="Instagram Profile" role="list">
+        <div class="igProfiles" id="igProfiles">
           <!-- HT21 -->
-          <article class="card surface" role="listitem" style="padding:14px;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <img 
-                src="./icons/logo-lunido.svg" 
-                alt="LUNIDO Logo" 
-                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
-                loading="lazy" 
-              />
-              <div>
-                <div class="linkTitle">HT21</div>
-                <div class="linkUrl">@hgh.ht21</div>
+          <a class="igProfile" href="https://www.instagram.com/usf_ht21" target="_blank" rel="noopener noreferrer" data-ig="ht21">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing">
+                <img src="./icons/logo-lunido.svg" alt="LUNIDO" class="igAvatar" loading="lazy" />
               </div>
-              <a 
-                class="btn" 
-                href="https://www.instagram.com/hgh.ht21" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label="HT21 auf Instagram öffnen"
-              >
-                Öffnen
-              </a>
+              <div class="igProfileInfo">
+                <div class="igName">HT21 – Lunido</div>
+                <div class="igHandle">@usf_ht21</div>
+                <div class="igFollowers" data-ig-followers="ht21"></div>
+              </div>
             </div>
-          </article>
+            <div class="igPreviewGrid" data-ig-grid="ht21">
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+            </div>
+            <span class="igOpenLabel">Auf Instagram öffnen</span>
+          </a>
 
           <!-- HT22 -->
-          <article class="card surface" role="listitem" style="padding:14px;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <img 
-                src="./icons/logo-lys.svg" 
-                alt="LYS Logo" 
-                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
-                loading="lazy" 
-              />
-              <div>
-                <div class="linkTitle">HT22</div>
-                <div class="linkUrl">@hgh.ht22</div>
+          <a class="igProfile" href="https://www.instagram.com/usf_ht22" target="_blank" rel="noopener noreferrer" data-ig="ht22">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing">
+                <img src="./icons/logo-lys.svg" alt="LYS" class="igAvatar" loading="lazy" />
               </div>
-              <a 
-                class="btn" 
-                href="https://www.instagram.com/hgh.ht22" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label="HT22 auf Instagram öffnen"
-              >
-                Öffnen
-              </a>
+              <div class="igProfileInfo">
+                <div class="igName">HT22 – LYS</div>
+                <div class="igHandle">@usf_ht22</div>
+                <div class="igFollowers" data-ig-followers="ht22"></div>
+              </div>
             </div>
-          </article>
+            <div class="igPreviewGrid" data-ig-grid="ht22">
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+            </div>
+            <span class="igOpenLabel">Auf Instagram öffnen</span>
+          </a>
 
           <!-- Schule -->
-          <article class="card surface" role="listitem" style="padding:14px;">
-            <div style="display:flex; flex-direction:column; gap:10px;">
-              <img 
-                src="./icons/logo-hgh-grid.svg" 
-                alt="HGH Grid Logo" 
-                style="width:100%; max-width:240px; height:auto; border-radius:16px; align-self:flex-start;" 
-                loading="lazy" 
-              />
-              <div>
-                <div class="linkTitle">Schule</div>
-                <div class="linkUrl">@hgh.hildesheim</div>
+          <a class="igProfile" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener noreferrer" data-ig="schule">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing">
+                <img src="./icons/logo-hgh-grid.svg" alt="HGH" class="igAvatar" loading="lazy" />
               </div>
-              <a 
-                class="btn" 
-                href="https://www.instagram.com/hgh.hildesheim" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                aria-label="HGH Hildesheim auf Instagram öffnen"
-              >
-                Öffnen
-              </a>
+              <div class="igProfileInfo">
+                <div class="igName">HGH Hildesheim</div>
+                <div class="igHandle">@hgh.hildesheim</div>
+                <div class="igFollowers" data-ig-followers="schule"></div>
+              </div>
             </div>
-          </article>
+            <div class="igPreviewGrid" data-ig-grid="schule">
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+              <div class="igPreviewPlaceholder"></div>
+            </div>
+            <span class="igOpenLabel">Auf Instagram öffnen</span>
+          </a>
         </div>
       </div>
     </section>

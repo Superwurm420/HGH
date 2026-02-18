@@ -245,26 +245,30 @@ function parseTimetable(items, columns, dayBlocks) {
         const roomItem = findRoomInColumn(items, col, roomY, 5);
         const room = roomItem?.str || null;
 
-        // Filter out #NV, time-like tokens, and non-lesson notes
+        // Filter out #NV, time-like tokens
         if (subject === '#NV') subject = null;
         if (teacher === '#NV') teacher = null;
         if (subject && /^\d{1,2}\.\d{2}/.test(subject)) subject = null; // time token
         if (subject && /^\d{1,2}\.\d{2}\s*-?$/.test(subject)) subject = null;
         // Filter non-teacher items on teacher lines (locations, notes)
         if (teacher && /\s/.test(teacher)) teacher = null; // teachers never contain spaces
-        if (subject && /^(Serviceteam|USF-Treffen)$/i.test(subject)) subject = null;
+
+        // Detect special events (Serviceteam, USF-Treffen, etc.)
+        const isSpecial = subject && /^(Serviceteam|USF-Treffen)$/i.test(subject);
 
         // Skip completely empty entries
         if (!subject && !teacher && !room) continue;
 
         // Create entries for both app slots in the pair
         for (const slotId of appSlots) {
-          classes[col.id][dayId].push({
+          const entry = {
             slotId,
             subject: subject || null,
             teacher: teacher || null,
             room: room || null
-          });
+          };
+          if (isSpecial) entry.note = subject;
+          classes[col.id][dayId].push(entry);
         }
 
         log(`  ${dayId} slots ${appSlots.join(',')}: ${col.id} → "${subject || '—'}" | ${teacher || '—'} | R:${room || '—'}`);
@@ -274,6 +278,61 @@ function parseTimetable(items, columns, dayBlocks) {
     // Sort entries by slot ID
     for (const cls of CLASS_IDS) {
       classes[cls][dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
+    }
+  }
+
+  // === Detect special events (e.g. "BBS Nienburg") ===
+  // These are notes placed between or across columns, indicating offsite events
+  const specialPatterns = /^(BBS\s+\w+|Lehrfahrt|Exkursion|Praktikum|Praxistag|Messe|Betriebsbesichtigung)/i;
+  const specialItems = items.filter(it => specialPatterns.test(it.str));
+
+  for (const specialItem of specialItems) {
+    // Find which day block this belongs to
+    const block = dayBlocks.find(b => specialItem.y <= b.yTop && specialItem.y >= b.yBottom);
+    if (!block) continue;
+
+    // Find which columns this note applies to (columns with empty slots nearby)
+    const nearbyColumns = columns.filter(col =>
+      specialItem.x >= col.leftBound - 30 && specialItem.x <= col.rightBound + 30
+    );
+
+    // Find which slot pair this falls into based on y position
+    const { slotYs } = block;
+    let matchedPair = null;
+    for (const [oddStr, appSlots] of Object.entries(PAIR_TO_SLOTS)) {
+      const oddNum = parseInt(oddStr);
+      const slotY = slotYs[oddNum];
+      if (!slotY) continue;
+      if (Math.abs(specialItem.y - slotY) < 25) {
+        matchedPair = appSlots;
+        break;
+      }
+    }
+    if (!matchedPair) continue;
+
+    // Add note to columns that have no data for these slots
+    for (const col of nearbyColumns) {
+      for (const slotId of matchedPair) {
+        const existing = classes[col.id][block.dayId].find(e => e.slotId === slotId);
+        if (!existing) {
+          classes[col.id][block.dayId].push({
+            slotId,
+            subject: specialItem.str,
+            teacher: null,
+            room: null,
+            note: specialItem.str
+          });
+        }
+      }
+    }
+
+    log(`  Special event: "${specialItem.str}" → ${block.dayId}, slots ${matchedPair.join(',')}, columns: ${nearbyColumns.map(c => c.id).join(',')}`);
+  }
+
+  // Re-sort after adding special events
+  for (const block of dayBlocks) {
+    for (const cls of CLASS_IDS) {
+      classes[cls][block.dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
     }
   }
 
