@@ -248,76 +248,37 @@
           </div>
 
           <div class="controls">
-            <!-- Klassen-Auswahl + Heute-Button -->
-            <div class="control classControl">
-              <label>
-                <span class="controlLabel">Klasse</span>
-                <select
-                  id="classSelect"
-                  class="select"
-                  aria-label="Klasse auswählen"
-                ></select>
-              </label>
-              <button
-                type="button"
-                class="btn secondary heuteBtn"
-                id="todayBtn"
-                aria-label="Heute anzeigen"
-              >Heute</button>
-            </div>
+            <label class="control">
+              <span class="controlLabel">Klasse</span>
+              <select
+                id="classSelect"
+                class="select"
+                aria-label="Klasse auswählen"
+              ></select>
+            </label>
+            <button
+              type="button"
+              class="btn secondary"
+              id="todayBtn"
+              aria-label="Heute anzeigen"
+            >Heute</button>
+          </div>
+        </div>
 
-            <!-- Tages-Auswahl -->
-            <div class="control">
-              <span class="controlLabel">Tag</span>
-              <div 
-                id="daySelectGroup" 
-                class="daySelectGroup" 
-                role="group" 
-                aria-label="Wochentag auswählen"
-              >
-                <button 
-                  type="button" 
-                  class="dayBtn" 
-                  data-day="mo"
-                  aria-label="Montag"
-                >
-                  Mo
-                </button>
-                <button 
-                  type="button" 
-                  class="dayBtn" 
-                  data-day="di"
-                  aria-label="Dienstag"
-                >
-                  Di
-                </button>
-                <button 
-                  type="button" 
-                  class="dayBtn" 
-                  data-day="mi"
-                  aria-label="Mittwoch"
-                >
-                  Mi
-                </button>
-                <button 
-                  type="button" 
-                  class="dayBtn" 
-                  data-day="do"
-                  aria-label="Donnerstag"
-                >
-                  Do
-                </button>
-                <button 
-                  type="button" 
-                  class="dayBtn" 
-                  data-day="fr"
-                  aria-label="Freitag"
-                >
-                  Fr
-                </button>
-              </div>
-            </div>
-
+        <!-- Tages-Auswahl -->
+        <div class="control dayRow">
+          <span class="controlLabel">Tag</span>
+          <div
+            id="daySelectGroup"
+            class="daySelectGroup"
+            role="group"
+            aria-label="Wochentag auswählen"
+          >
+            <button type="button" class="dayBtn" data-day="mo" aria-label="Montag">Mo</button>
+            <button type="button" class="dayBtn" data-day="di" aria-label="Dienstag">Di</button>
+            <button type="button" class="dayBtn" data-day="mi" aria-label="Mittwoch">Mi</button>
+            <button type="button" class="dayBtn" data-day="do" aria-label="Donnerstag">Do</button>
+            <button type="button" class="dayBtn" data-day="fr" aria-label="Freitag">Fr</button>
           </div>
         </div>
 

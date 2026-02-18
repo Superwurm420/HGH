@@ -1272,7 +1272,7 @@ function renderWeek() {
         <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.firstId)}+${escapeHtml(pair.secondId)}">
           <div class="weekCell weekSlot" role="rowheader">
             <div class="weekSlotNum">${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</div>
-            <div class="weekSlotTime">${escapeHtml(combinedTime)}</div>
+            <div class="weekSlotTime"><span>${escapeHtml(timeFrom)}</span><span>${escapeHtml(timeTo)}</span></div>
           </div>
           ${dayCells}
         </div>
