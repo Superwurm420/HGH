@@ -739,7 +739,7 @@
           "note": "KuSti-Exkursion"
         }
       ],
-      "mi": [],
+      "mi": { "sameAs": "HT21" },
       "do": [
         {
           "slotId": "1",
