@@ -158,11 +158,28 @@
       </div>
 
       <!-- Install-Karte -->
-      <div class="card surface">
-        <h2>Installieren</h2>
-        <p class="muted">Diese Seite ist eine Progressive Web App.</p>
+      <div class="card surface installCard">
+        <div class="installHead">
+          <div>
+            <h2>App installieren</h2>
+            <p class="muted">Schneller Zugriff, Offline-Modus und Start wie eine native App.</p>
+          </div>
+          <span class="installBadge" aria-hidden="true">PWA</span>
+        </div>
 
-        <!-- Install-Banner (nur für Erstbesucher) -->
+        <div class="installCtaRow">
+          <button
+            id="installButton"
+            class="btn"
+            type="button"
+            disabled
+            aria-disabled="true"
+          >
+            Jetzt installieren
+          </button>
+          <div id="installHint" class="hint" role="status" aria-live="polite"></div>
+        </div>
+
         <div
           id="installBanner"
           class="installBanner"
@@ -171,7 +188,7 @@
           hidden
         >
           <div class="installBannerText">
-            Diese App kann installiert werden – folge der Anleitung unten.
+            Tipp: Falls kein Button aktiv ist, nutze die Anleitung für deinen Browser.
           </div>
           <button
             id="installBannerClose"
@@ -183,17 +200,29 @@
           </button>
         </div>
 
-        <ul class="bullets">
-          <li>Android/Chrome: Menü → „App installieren"</li>
-          <li>iOS/Safari: Teilen → „Zum Home-Bildschirm"</li>
-        </ul>
-
-        <div
-          id="installHint"
-          class="hint"
-          role="status"
-          aria-live="polite"
-        ></div>
+        <div class="installSteps" role="list" aria-label="Installationsanleitung">
+          <article class="installStep" role="listitem">
+            <span class="installStepNumber" aria-hidden="true">1</span>
+            <div>
+              <h3>Android / Chrome</h3>
+              <p>Browser-Menü öffnen und <strong>„App installieren"</strong> auswählen.</p>
+            </div>
+          </article>
+          <article class="installStep" role="listitem">
+            <span class="installStepNumber" aria-hidden="true">2</span>
+            <div>
+              <h3>iPhone / Safari</h3>
+              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen.</p>
+            </div>
+          </article>
+          <article class="installStep" role="listitem">
+            <span class="installStepNumber" aria-hidden="true">3</span>
+            <div>
+              <h3>Desktop</h3>
+              <p>In der Adressleiste auf das <strong>Installationssymbol</strong> klicken.</p>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 

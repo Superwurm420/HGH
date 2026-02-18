@@ -53,6 +53,14 @@
   background:rgba(0,0,0,.05);
 }
 
+[data-theme="light"] .installStep {
+  background:rgba(0,0,0,.035);
+}
+
+[data-theme="light"] .installStep:hover {
+  background:rgba(0,0,0,.05);
+}
+
 [data-theme="light"] .weekHeader .weekCell {
   background:rgba(0,0,0,.05);
   border-bottom-color:rgba(0,0,0,.10);
@@ -581,20 +589,55 @@ select:focus-visible{
   margin-top:0;
 }
 
-/* Lists */
-.bullets{
-  margin:10px 0 0;
-  padding-left:18px;
-  color:var(--muted);
-  line-height:1.5;
+/* Install Card */
+.installCard{
+  display:grid;
+  gap:14px;
 }
 
-.bullets li{
-  margin:4px 0;
+.installHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.installHead h2{
+  margin-bottom:8px;
+}
+
+.installBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#fff;
+  background:linear-gradient(120deg, var(--accent), var(--accent2));
+  box-shadow:0 8px 20px rgba(0,122,255,.3);
+}
+
+.installCtaRow{
+  display:grid;
+  gap:8px;
+}
+
+.installCtaRow .btn{
+  width:fit-content;
+}
+
+.installCtaRow .btn[disabled]{
+  opacity:.55;
+  cursor:not-allowed;
+  filter:saturate(.7);
 }
 
 .hint{
-  margin-top:10px;
   color:var(--muted);
   font-size:12px;
   line-height:1.4;
@@ -602,7 +645,6 @@ select:focus-visible{
 
 /* Install Banner */
 .installBanner{
-  margin-top:12px;
   padding:12px;
   border-radius:16px;
   border:1px solid rgba(0,122,255,.45);
@@ -636,6 +678,52 @@ select:focus-visible{
 
 .installBannerClose:active{
   transform:translateY(1px);
+}
+
+.installSteps{
+  display:grid;
+  gap:10px;
+}
+
+.installStep{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:12px;
+  align-items:flex-start;
+  padding:12px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  transition:background 120ms ease, border-color 120ms ease;
+}
+
+.installStep:hover{
+  background:rgba(255,255,255,.07);
+  border-color:rgba(0,122,255,.38);
+}
+
+.installStepNumber{
+  width:28px;
+  height:28px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  font-size:12px;
+  font-weight:800;
+  color:#fff;
+  background:linear-gradient(120deg, var(--accent), var(--accent2));
+}
+
+.installStep h3{
+  margin:0;
+  font-size:14px;
+}
+
+.installStep p{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
 }
 
 /* Controls */
@@ -1358,6 +1446,15 @@ select:focus-visible{
     background:rgba(255,255,255,.76);
     border-color:rgba(0,0,0,.09);
     box-shadow:0 10px 40px rgba(10,30,100,.18), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .installHead{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .installCtaRow .btn{
+    width:100%;
   }
 
   [data-theme="light"] .navItem[aria-current="page"]{
