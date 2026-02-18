@@ -499,6 +499,20 @@ select:focus-visible{
   margin-top:2px;
 }
 
+.metaRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:8px;
+  margin-top:2px;
+}
+
+.roomLabel{
+  text-align:right;
+  flex-shrink:0;
+  margin-top:0;
+}
+
 /* Lists */
 .bullets{
   margin:10px 0 0;
