@@ -731,8 +731,13 @@ function updateCountdown() {
   // Innerhalb einer Stunde?
   const current = ranges.find((r) => now >= r.start && now < r.end);
   if (current) {
-    const mins = diffMinutesCeil(now, current.end);
-    textEl.textContent = `Stunde endet in ${mins} Min`;
+    // Doppelstunden-Ende: bei Stunde 1→2, 3→4, 5→6, 8→9 bis zur zweiten Stunde zählen
+    const doubleEnd = { '1': '2', '3': '4', '5': '6', '8': '9' };
+    const partnerId = doubleEnd[current.slotId];
+    const partner = partnerId ? ranges.find((r) => r.slotId === partnerId) : null;
+    const endTarget = partner ? partner.end : current.end;
+    const mins = diffMinutesCeil(now, endTarget);
+    textEl.textContent = `Pause in ${mins} Min`;
     return;
   }
 
