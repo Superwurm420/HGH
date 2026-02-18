@@ -399,7 +399,7 @@ function render() {
  */
 function formatTeacherRoom(teacher, room) {
   const parts = [];
-  if (teacher) parts.push(String(teacher));
+  if (teacher) parts.push(formatTeacherName(teacher));
   if (room) parts.push(String(room));
   return parts.join(' / ');
 }
@@ -1150,16 +1150,8 @@ async function loadInstagramPreviews() {
       // Profile picture as avatar (replace logo)
       if (profile.profilePic) {
         const card = qs(`[data-ig="${id}"]`);
-        if (card) {
-          const avatar = qs('.igAvatar', card);
-          if (avatar) {
-            const img = new Image();
-            img.onload = () => {
-              avatar.src = profile.profilePic;
-            };
-            img.src = profile.profilePic;
-          }
-        }
+        const avatar = card ? qs('.igAvatar', card) : null;
+        if (avatar) avatar.src = profile.profilePic;
       }
     }
   } catch {

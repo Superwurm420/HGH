@@ -667,8 +667,6 @@ select:focus-visible{
 .timetableHeader{
   background:rgba(255,255,255,.08);
   font-weight:750;
-  position:sticky;
-  top:0;
 }
 
 .tr:nth-child(even){
