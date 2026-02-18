@@ -97,10 +97,13 @@
         <!-- Countdown -->
         <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
           <div class="countdownTop">
-            <div class="small muted">Aktuelle Uhrzeit</div>
-            <div id="nowTime" class="nowTime" aria-live="polite">—</div>
+            <div class="countdownTimeBlock">
+              <div class="small muted">Aktuelle Uhrzeit</div>
+              <div id="nowTime" class="nowTime" aria-live="polite">—</div>
+            </div>
+            <div id="countdownText" class="countdownText" aria-live="polite">—</div>
           </div>
-          <div id="countdownText" class="countdownText" aria-live="polite">—</div>
+          <div class="countdownDivider"></div>
           <div id="funMessage" class="funMessage" aria-live="polite">&nbsp;</div>
         </div>
 
