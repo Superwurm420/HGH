@@ -368,13 +368,6 @@ function initNav() {
     });
   });
 
-  qsa('[data-route-jump]').forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      setRoute(el.dataset.routeJump);
-    });
-  });
-
   // Handle hash changes (browser back/forward)
   window.addEventListener('hashchange', () => {
     const route = (location.hash || '#home').replace('#', '');
@@ -509,6 +502,9 @@ function renderTodayPreview() {
       const subject = r?.subject ?? '—';
       const meta = formatTeacherRoom(r?.teacher, r?.room);
       const secondId = DOUBLE_LESSON_PAIRS[r.slotId];
+      const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
+      const noteClass = r.note ? ' note' : '';
+      const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
       let time;
       if (secondId) {
         const timeFrom = slotTime(r.slotId).split('–')[0];
@@ -518,13 +514,15 @@ function renderTodayPreview() {
         time = slotTime(r.slotId);
       }
       return `
-    <div class="listItem">
+    <div class="listItem${noteClass}">
       <div>
+        <div class="small muted">Std. ${escapeHtml(slotLabel)}</div>
         <div class="time">${escapeHtml(time)}</div>
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
         <div class="sub">${escapeHtml(meta || '—')}</div>
+        ${noteHtml}
       </div>
     </div>
   `;
