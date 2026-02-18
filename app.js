@@ -256,7 +256,21 @@ function applyTimetableData(data) {
     state.timeslots = DEFAULT_TIMESLOTS;
   }
 
-  state.timetable = data?.classes || ensureEmptyTimetable();
+  const classes = data?.classes || ensureEmptyTimetable();
+
+  // Resolve sameAs references: { sameAs: "ClassName" } on a day copies that class's day
+  const DAYS = ['mo', 'di', 'mi', 'do', 'fr'];
+  for (const cls of Object.keys(classes)) {
+    for (const day of DAYS) {
+      const entry = classes[cls][day];
+      if (entry && !Array.isArray(entry) && entry.sameAs) {
+        const ref = classes[entry.sameAs]?.[day];
+        classes[cls][day] = Array.isArray(ref) ? ref : [];
+      }
+    }
+  }
+
+  state.timetable = classes;
 
   // Update PDF links to match actual file name from meta.source
   if (data?.meta?.source) {
