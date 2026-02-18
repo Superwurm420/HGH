@@ -273,12 +273,6 @@ select:focus-visible{
 }
 
 /* Buttons */
-.ctaRow{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
 .btn{
   appearance:none;
   cursor:pointer;

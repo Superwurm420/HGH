@@ -306,19 +306,14 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     const cached = localStorage.getItem(APP.storageKeys.timetableCache);
     if (cached) {
       const data = JSON.parse(cached);
-      
+
       // Validiere Cache-Daten
       if (!isValidTimetableData(data)) {
         throw new Error('Ungültige Cache-Daten');
       }
-      
+
       applyTimetableData(data);
-      
-      const errorMsg = lastError?.message === 'offline' 
-        ? 'Offline-Modus: Zeige letzte gespeicherte Daten.'
-        : 'Netzwerk-Fehler: Zeige Cache-Daten.';
-      
-      showTimetableError(errorMsg, lastError?.message === 'offline' ? 'offline' : 'cache');
+      hideTimetableError(); // Daten geladen – kein Fehler anzeigen
       state.isLoading = false;
       return { source: 'cache' };
     }
@@ -549,7 +544,7 @@ function setActiveDayButton(dayId) {
  * Initialisiert Klassen- und Tages-Auswahl
  */
 function initSelects() {
-  const { classSelect, todayBtn } = state.els;
+  const { classSelect } = state.els;
   if (!classSelect) return;
 
   classSelect.innerHTML = CLASSES.map((c) => 
@@ -595,19 +590,6 @@ function initSelects() {
     });
   }
 
-  todayBtn?.addEventListener('click', () => {
-    const today = getTodayId();
-    state.selectedDayId = today;
-    
-    try {
-      localStorage.setItem(APP.storageKeys.dayId, today);
-    } catch (e) {
-      console.warn('Tag konnte nicht gespeichert werden:', e);
-    }
-    
-    setActiveDayButton(today);
-    renderTimetable();
-  });
 }
 
 // --- Countdown (Home) ---------------------------------------------------
@@ -1045,7 +1027,6 @@ function cacheEls() {
 
     classSelect: qs('#classSelect'),
     dayButtons: qsa('#daySelectGroup .dayBtn'),
-    todayBtn: qs('#todayBtn'),
 
     timetableBody: qs('#timetableBody'),
     todayLabel: qs('#todayLabel'),
