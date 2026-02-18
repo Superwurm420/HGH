@@ -1285,8 +1285,11 @@ function renderWeek() {
       return `
         <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.firstId)}+${escapeHtml(pair.secondId)}">
           <div class="weekCell weekSlot" role="rowheader">
-            <div class="weekSlotNum">${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</div>
-            <div class="weekSlotTime"><span>${escapeHtml(timeFrom)}</span><span>${escapeHtml(timeTo)}</span></div>
+            <div class="tdTime">
+              <span class="small muted">Std. ${escapeHtml(pair.firstId)}/${escapeHtml(pair.secondId)}</span>
+              <span class="timeFrom">${escapeHtml(timeFrom)}</span>
+              <span class="small muted">${escapeHtml(timeTo)}</span>
+            </div>
           </div>
           ${dayCells}
         </div>
