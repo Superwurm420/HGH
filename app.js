@@ -7,7 +7,6 @@ const APP = {
     theme: 'hgh_theme',
     classId: 'hgh_class',
     dayId: 'hgh_day',
-    installHintShown: 'hgh_install_hint_shown',
     timetableCache: 'hgh_timetable_cache_v1',
     timetableCacheTs: 'hgh_timetable_cache_ts'
   },
@@ -63,6 +62,18 @@ const MONTH_NAMES = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ];
 const CORS_PROXY = 'https://corsproxy.io/?url=';
+const FUN_MESSAGES_URL = './data/fun-messages.json';
+const DEFAULT_FUN_MESSAGES = {
+  default: {
+    beforeSchool: ['{classId}: Guten Morgen – dein Tag startet gleich. ☀️'],
+    beforeLesson: ['{classId}: Gleich geht die nächste Stunde los. ⏱️'],
+    duringLesson: ['{classId}: Volle Konzentration in {subject}. 📚'],
+    betweenBlocks: ['{classId}: Kleine Pause – dann weiter. 💪'],
+    lunch: ['{classId}: Mittagspause – lass es dir schmecken! 🍽️'],
+    afterSchool: ['{classId}: Unterricht vorbei – guten Feierabend! 👋']
+  },
+  classes: {}
+};
 
 // --- Calendar config ----------------------------------------------------
 
@@ -96,6 +107,7 @@ const state = {
   lastRefreshAt: 0,
   installPromptEvent: null,
   countdownTimer: null,
+  funMessages: DEFAULT_FUN_MESSAGES,
   cal: {
     events: {},
     enabled: {},
@@ -698,17 +710,98 @@ function updateCountdown() {
   textEl.textContent = 'Schultag vorbei 👋';
 }
 
+function chooseMessage(list) {
+  if (!Array.isArray(list) || !list.length) return '';
+  const daySeed = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+  return list[Number(daySeed) % list.length] || list[0];
+}
+
+function normalizeMessageBuckets(raw) {
+  const fallback = DEFAULT_FUN_MESSAGES.default;
+  return {
+    beforeSchool: raw?.beforeSchool || fallback.beforeSchool,
+    beforeLesson: raw?.beforeLesson || fallback.beforeLesson,
+    duringLesson: raw?.duringLesson || fallback.duringLesson,
+    betweenBlocks: raw?.betweenBlocks || fallback.betweenBlocks,
+    lunch: raw?.lunch || fallback.lunch,
+    afterSchool: raw?.afterSchool || fallback.afterSchool
+  };
+}
+
+function formatFunMessage(msg, ctx) {
+  return String(msg)
+    .replaceAll('{classId}', ctx.classId)
+    .replaceAll('{subject}', ctx.subject)
+    .replaceAll('{nextSubject}', ctx.nextSubject)
+    .replaceAll('{slotLabel}', ctx.slotLabel);
+}
+
+function getMessagePhase(now, scheduleRows) {
+  if (!isWeekday()) return 'afterSchool';
+  if (!scheduleRows.length) return now.getHours() < 15 ? 'beforeSchool' : 'afterSchool';
+
+  const parsed = scheduleRows
+    .map(r => ({ row: r, range: parseSlotRange(state.timeslotMap.get(String(r.slotId))?.time || '', now) }))
+    .filter(x => x.range)
+    .sort((a, b) => a.range.start - b.range.start);
+
+  if (!parsed.length) return now.getHours() < 15 ? 'beforeSchool' : 'afterSchool';
+
+  if (now < parsed[0].range.start) return 'beforeSchool';
+  if (now >= parsed[parsed.length - 1].range.end) return 'afterSchool';
+
+  const current = parsed.find(x => now >= x.range.start && now < x.range.end);
+  if (current) return 'duringLesson';
+
+  const next = parsed.find(x => now < x.range.start);
+  if (next) {
+    const minutesToNext = diffMinsCeil(now, next.range.start);
+    if (minutesToNext >= 25) return 'lunch';
+    return 'beforeLesson';
+  }
+
+  return 'betweenBlocks';
+}
+
 function getFunMessage(now = new Date()) {
-  const day = now.getDay(), hour = now.getHours();
-  if (day === 0 || day === 6) return 'Wochenende! Zeit zum Entspannen 🌴';
-  if (day === 1) return 'Montag – neue Woche, neues Glück! 💪';
-  if (day === 5) return 'Freitag! Schnell noch durchziehen… 🎉';
-  if (day === 3) return 'Bergfest! Halbzeit der Woche! ⛰️';
-  if (hour >= 16) return 'Fast geschafft – gleich ist Feierabend! 🏠';
-  if (hour >= 15) return 'Noch ein bisschen – du schaffst das! 💪';
-  if (hour >= 12 && hour < 14) return 'Mittagspause – guten Appetit! 🍽️';
-  if (hour < 8) return 'Guten Morgen – Kaffee schon am Start? ☕';
-  return 'Viel Erfolg heute! 🚀';
+  const classId = state.els.todayClassSelect?.value || state.els.classSelect?.value || 'HT11';
+  const todayId = getTodayId();
+  const rows = (state.timetable?.[classId]?.[todayId] || []).filter(r => r && r.subject);
+  const parsed = rows
+    .map(r => ({ row: r, range: parseSlotRange(state.timeslotMap.get(String(r.slotId))?.time || '', now) }))
+    .filter(x => x.range)
+    .sort((a, b) => a.range.start - b.range.start);
+
+  const phase = getMessagePhase(now, rows);
+  const classBuckets = normalizeMessageBuckets(state.funMessages?.classes?.[classId]);
+  const defaultBuckets = normalizeMessageBuckets(state.funMessages?.default);
+  const pool = classBuckets[phase] || defaultBuckets[phase];
+
+  const current = parsed.find(x => now >= x.range.start && now < x.range.end);
+  const next = parsed.find(x => now < x.range.start);
+  const slotLabel = current ? `Std. ${current.row.slotId}` : (next ? `Std. ${next.row.slotId}` : 'heute');
+  const ctx = {
+    classId,
+    subject: current?.row?.subject || next?.row?.subject || 'dem Unterricht',
+    nextSubject: next?.row?.subject || 'deiner nächsten Stunde',
+    slotLabel
+  };
+
+  return formatFunMessage(chooseMessage(pool), ctx);
+}
+
+async function loadFunMessages() {
+  try {
+    const res = await fetch(FUN_MESSAGES_URL, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const json = await res.json();
+    state.funMessages = {
+      default: normalizeMessageBuckets(json?.default),
+      classes: json?.classes || {}
+    };
+  } catch {
+    state.funMessages = DEFAULT_FUN_MESSAGES;
+  }
 }
 
 function initCountdown() {
@@ -1097,78 +1190,6 @@ function renderWeek() {
   if (kwEl) kwEl.textContent = `KW\u00a0${getISOWeek()}`;
 }
 
-// --- Install hint -------------------------------------------------------
-
-function isStandalone() {
-  return !!window.matchMedia?.('(display-mode: standalone)').matches;
-}
-
-function initInstallHint() {
-  const { installHint: hint, installBanner: banner, installBannerClose: closeBtn, installButton } = state.els;
-
-  const ua = navigator.userAgent || '';
-  const isIOS = /iPhone|iPod/i.test(ua);
-  const isAndroid = /Android/i.test(ua);
-
-  if (hint) {
-    if (isIOS) {
-      safeSetText(hint, 'iPhone: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
-    } else if (isAndroid) {
-      safeSetText(hint, 'Android: Über Browser-Menü oder den Button installieren.');
-    } else {
-      safeSetText(hint, 'Öffne die App auf Android oder iOS für die Installationsanleitung.');
-    }
-  }
-
-  if (installButton) {
-    installButton.addEventListener('click', async () => {
-      if (!state.installPromptEvent) return;
-      try {
-        await state.installPromptEvent.prompt();
-        await state.installPromptEvent.userChoice;
-      } catch (e) {
-        console.warn('Installationsdialog:', e);
-      } finally {
-        state.installPromptEvent = null;
-        installButton.disabled = true;
-        installButton.setAttribute('aria-disabled', 'true');
-      }
-    });
-  }
-
-  if (!isStandalone() && storageGet(APP.storageKeys.installHintShown) !== '1' && banner) {
-    banner.hidden = false;
-  }
-
-  closeBtn?.addEventListener('click', () => {
-    if (banner) banner.hidden = true;
-    storageSet(APP.storageKeys.installHintShown, '1');
-  });
-
-  if (hint) {
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      state.installPromptEvent = e;
-      if (installButton) {
-        installButton.disabled = false;
-        installButton.setAttribute('aria-disabled', 'false');
-      }
-      safeSetText(hint, 'Installierbar: Du kannst jetzt direkt über den Button installieren.');
-    });
-
-    window.addEventListener('appinstalled', () => {
-      safeSetText(hint, 'App installiert – läuft auch offline! 🎉');
-      if (banner) banner.hidden = true;
-      if (installButton) {
-        installButton.disabled = true;
-        installButton.setAttribute('aria-disabled', 'true');
-      }
-      state.installPromptEvent = null;
-      storageSet(APP.storageKeys.installHintShown, '1');
-    });
-  }
-}
-
 // --- Service worker -----------------------------------------------------
 
 async function initServiceWorker() {
@@ -1256,10 +1277,6 @@ function cacheEls() {
     calEvents: qs('#calEvents'),
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
-    installButton: qs('#installButton'),
-    installHint: qs('#installHint'),
-    installBanner: qs('#installBanner'),
-    installBannerClose: qs('#installBannerClose'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
     darkToggle: qs('#darkToggle')
@@ -1277,11 +1294,11 @@ async function boot() {
     initNetworkIndicator();
 
     await refreshTimetableIfNeeded();
+    await loadFunMessages();
 
     initCountdown();
     initAutoRefresh();
     initCalendar();
-    initInstallHint();
     initServiceWorker();
     safeSetText(state.els.year, String(new Date().getFullYear()));
     loadInstagramPreviews();
