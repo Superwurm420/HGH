@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="HT21 Klassenfoto Platzhalter">
+  <defs>
+    <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff512f"/>
+      <stop offset="100%" stop-color="#dd2476"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#g5)"/>
+  <circle cx="120" cy="92" r="40" fill="rgba(255,255,255,.92)"/>
+  <rect x="54" y="146" width="132" height="56" rx="28" fill="rgba(255,255,255,.92)"/>
+  <text x="120" y="224" text-anchor="middle" font-size="26" font-family="Arial,sans-serif" fill="#fff" font-weight="700">HT21</text>
+</svg>
