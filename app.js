@@ -118,6 +118,21 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
+// Fachname bei '/' umbrechen → zwei Zeilen
+function formatSubject(str) {
+  if (!str) return '—';
+  return str.split('/').map(p => escapeHtml(p.trim())).join('<br>');
+}
+
+// ISO-Kalenderwoche berechnen
+function getISOWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 function getTodayId() {
   return DAY_NUM_MAP[new Date().getDay()] || 'mo';
 }
@@ -421,7 +436,7 @@ function renderTimetable() {
       return `
         <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
           <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
-          <div class="td">${escapeHtml(r?.subject || '—')}</div>
+          <div class="td">${formatSubject(r?.subject)}</div>
           ${metaCell(r?.teacher, r?.room)}
         </div>`;
     }
@@ -430,7 +445,7 @@ function renderTimetable() {
     return `
       <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
-        <div class="td">${escapeHtml(r?.subject || '—')}</div>
+        <div class="td">${formatSubject(r?.subject)}</div>
         ${metaCell(r?.teacher, r?.room)}
       </div>`;
   }).join('');
@@ -484,7 +499,7 @@ function renderTodayPreview() {
         ${timeTo ? `<div class="small muted">${escapeHtml(timeTo)}</div>` : ''}
       </div>
       <div>
-        <div>${escapeHtml(subject)}</div>
+        <div>${formatSubject(subject)}</div>
         ${noteHtml}
       </div>
       <div class="metaCol">
@@ -979,7 +994,7 @@ function renderWeek() {
 
       return `
         <div class="weekCell${noteClass}" role="cell">
-          <div class="weekSubject">${escapeHtml(r.subject || '—')}</div>
+          <div class="weekSubject">${formatSubject(r.subject)}</div>
           ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : ''}
         </div>`;
     }).join('');
@@ -998,6 +1013,9 @@ function renderWeek() {
   }).join('');
 
   grid.innerHTML = `<div class="weekTable" role="rowgroup">${header}${body}</div>`;
+
+  const kwEl = qs('#weekKwLabel');
+  if (kwEl) kwEl.textContent = `KW\u00a0${getISOWeek()}`;
 }
 
 // --- Install hint -------------------------------------------------------

@@ -1048,6 +1048,8 @@ select:focus-visible{
   border:1px solid var(--line);
 }
 
+.weekKwBadge{font-size:.7em;font-weight:500;color:var(--muted);vertical-align:middle;}
+
 /* weekTable ist der einzige Grid-Container → alle Zeilen teilen dieselbe Spaltenbreite */
 .weekTable{
   min-width:520px;
