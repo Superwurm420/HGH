@@ -45,19 +45,5 @@
       "Leerer Plan am {weekdayLabel} – seltene Ruhephase entdeckt. 🧘",
       "Keine Einträge für heute. Vielleicht ein geheimer Studientag? 🕵️"
     ]
-  },
-  "classes": {
-    "HT11": {
-      "duringLesson": [
-        "HT11 in {subject}: Werkzeug im Kopfkasten schärfen! 🛠️",
-        "HT11-Modus aktiv – {subject} sitzt heute besonders sauber. 🔧"
-      ]
-    },
-    "HT22": {
-      "afterSchool": [
-        "HT22 hat geliefert – Feierabend mit Ehrenrunde. 🏁",
-        "Tag abgehakt, HT22. Morgen wieder Vollgas. ⚡"
-      ]
-    }
   }
 }

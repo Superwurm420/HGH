@@ -87,8 +87,7 @@ const DEFAULT_FUN_MESSAGES = {
     weekend: ['Wochenende-Modus aktiv – {weekdayLabel} gehört dir. 😎'],
     holiday: ['{holidayName} heute – genieße den freien Tag! 🎉'],
     noLessons: ['Für {weekdayLabel} sind keine Stunden geplant. 📅']
-  },
-  classes: {}
+  }
 };
 
 // --- Calendar config ----------------------------------------------------
@@ -861,9 +860,8 @@ function getFunMessage(now = new Date()) {
     .sort((a, b) => a.range.start - b.range.start);
 
   const phase = getMessagePhase(now, rows);
-  const classBuckets = normalizeMessageBuckets(state.funMessages?.classes?.[classId]);
   const defaultBuckets = normalizeMessageBuckets(state.funMessages?.default);
-  const pool = classBuckets[phase] || defaultBuckets[phase];
+  const pool = defaultBuckets[phase];
 
   const current = parsed.find(x => now >= x.range.start && now < x.range.end);
   const next = parsed.find(x => now < x.range.start);
@@ -886,8 +884,7 @@ async function loadFunMessages() {
     if (!res.ok) return;
     const json = await res.json();
     state.funMessages = {
-      default: normalizeMessageBuckets(json?.default),
-      classes: json?.classes || {}
+      default: normalizeMessageBuckets(json?.default)
     };
   } catch {
     state.funMessages = DEFAULT_FUN_MESSAGES;
