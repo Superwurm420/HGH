@@ -1,39 +1,39 @@
 {
   "default": {
     "beforeSchool": [
-      "{classId}: Gleich geht's los – starte fokussiert in den Tag. 🎯",
-      "Frühstart für {classId}: Kurz Plan checken, dann entspannt los. ☕"
+      "Gleich geht's los – starte fokussiert in den Tag. 🎯",
+      "Kurz Plan checken, dann entspannt los. ☕"
     ],
     "beforeLesson": [
-      "{classId}: Nächste Stunde in Kürze – Material bereithalten. 📘",
-      "{classId}: Kurze Pause, dann geht's weiter. 💡"
+      "Nächste Stunde in Kürze – Material bereithalten. 📘",
+      "Kurze Pause, dann geht's weiter. 💡"
     ],
     "duringLesson": [
-      "{classId}: Du bist gerade in {subject} ({slotLabel}). Weiter so! 🚀",
-      "{classId}: Fokus in {subject} – kleine Schritte, großer Fortschritt. ✅"
+      "Du bist gerade in {subject} ({slotLabel}). Weiter so! 🚀",
+      "Fokus in {subject} – kleine Schritte, großer Fortschritt. ✅"
     ],
     "betweenBlocks": [
-      "{classId}: Verschnaufpause – gleich startet {nextSubject}. 🌬️",
-      "{classId}: Nutze die Pause kurz zum Durchatmen. 🙌"
+      "Verschnaufpause – gleich startet {nextSubject}. 🌬️",
+      "Nutze die Pause kurz zum Durchatmen. 🙌"
     ],
     "lunch": [
-      "{classId}: Mittagspause – guten Appetit! 🍽️",
-      "{classId}: Zeit zum Auftanken für den Nachmittag. 🔋"
+      "Mittagspause – guten Appetit! 🍽️",
+      "Zeit zum Auftanken für den Nachmittag. 🔋"
     ],
     "afterSchool": [
-      "{classId}: Schultag geschafft – Feierabend! 👋",
-      "{classId}: Für heute erledigt. Stark durchgezogen! 🎉"
+      "Schultag geschafft – Feierabend! 👋",
+      "Für heute erledigt. Stark durchgezogen! 🎉"
     ]
   },
   "classes": {
     "HT11": {
       "duringLesson": [
-        "HT11: Praxisnah dranbleiben – {subject} sitzt! 🪚"
+        "Praxisnah dranbleiben – {subject} sitzt! 🪚"
       ]
     },
     "HT22": {
       "afterSchool": [
-        "HT22: Tagesziel erreicht – morgen geht's weiter. 🧠"
+        "Tagesziel erreicht – morgen geht's weiter. 🧠"
       ]
     }
   }
