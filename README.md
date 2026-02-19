@@ -16,6 +16,14 @@ Die HGH Schüler App soll:
 
 Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, CSS und JavaScript (keine Framework-Abhängigkeiten).
 
+
+⸻
+
+📱 Installation (minimal)
+
+- **Android:** Browser-Menü öffnen → **„App installieren“** wählen.
+- **iOS (Safari):** **Teilen** tippen → **„Zum Home-Bildschirm“** wählen.
+
 ⸻
 
 📄 Stundenplan per PDF aktualisieren
