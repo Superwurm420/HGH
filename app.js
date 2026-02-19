@@ -112,6 +112,8 @@ const state = {
   installPromptEvent: null,
   countdownTimer: null,
   funMessages: DEFAULT_FUN_MESSAGES,
+  currentPdfHref: null,
+  hasTimetableData: false,
   cal: {
     events: {},
     enabled: {},
@@ -265,11 +267,20 @@ function applyTimetableData(data) {
   }
 
   state.timetable = classes;
+  state.hasTimetableData = Object.values(classes).some(cls =>
+    Object.values(cls || {}).some(day => Array.isArray(day) && day.length > 0)
+  );
 
   // PDF-Links aktualisieren
-  if (data?.meta?.source) {
-    const href = `./plan/${data.meta.source}`;
-    for (const link of qsa('a[data-pdf-link]')) link.href = href;
+  state.currentPdfHref = data?.meta?.source ? `./plan/${data.meta.source}` : null;
+  for (const link of qsa('a[data-pdf-link]')) {
+    if (state.currentPdfHref) {
+      link.href = state.currentPdfHref;
+      link.removeAttribute('aria-disabled');
+    } else {
+      link.href = '#';
+      link.setAttribute('aria-disabled', 'true');
+    }
   }
 
   // Aktualisierungsdatum anzeigen
@@ -417,11 +428,7 @@ function renderTimetable() {
   const body = state.els.timetableBody;
   if (!body) return;
 
-  const hasData = state.timetable && Object.values(state.timetable).some(
-    cls => Object.values(cls).some(day => day.length > 0)
-  );
-
-  if (!hasData) {
+  if (!state.hasTimetableData) {
     body.innerHTML = `
       <div class="timetableEmpty" role="status">
         <p>Keine Stundenplan-Daten verfügbar.</p>
@@ -580,7 +587,9 @@ function updateCurrentDayInfo() {
     day: '2-digit', month: '2-digit', year: 'numeric'
   });
 
-  el.innerHTML = `<a href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf" target="_blank" rel="noopener" data-pdf-link>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
+  const href = state.currentPdfHref || '#';
+  const disabledAttr = state.currentPdfHref ? '' : ' aria-disabled="true"';
+  el.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" data-pdf-link${disabledAttr}>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
 }
 
 // Synchronisiert beide Klassen-Selects und speichert
@@ -658,7 +667,7 @@ function diffMinsCeil(a, b) {
   return Math.max(0, Math.ceil((b - a) / 60000));
 }
 
-function getDayRanges(dayId, base = new Date()) {
+function getDayRanges(base = new Date()) {
   const ranges = [];
   for (const s of state.timeslots) {
     if (s.id === '7') continue;
@@ -670,7 +679,7 @@ function getDayRanges(dayId, base = new Date()) {
 
 function getCurrentPairStartSlot(dayId, now = new Date()) {
   if (!isWeekday() || dayId !== getTodayId()) return null;
-  const ranges = getDayRanges(dayId, now);
+  const ranges = getDayRanges(now);
   const current = ranges.find(r => now >= r.start && now < r.end);
   if (!current) return null;
 
@@ -689,7 +698,7 @@ function updateCountdown() {
 
   if (!isWeekday()) { textEl.textContent = 'Schönes Wochenende! 🎉'; return; }
 
-  const ranges = getDayRanges(getTodayId(), now);
+  const ranges = getDayRanges(now);
   if (!ranges.length || now >= ranges[ranges.length - 1].end) {
     textEl.textContent = 'Schultag vorbei 👋';
     return;
@@ -834,6 +843,16 @@ function initNetworkIndicator() {
   window.addEventListener('offline', updateNetworkIndicator);
 }
 
+function initPdfLinkGuards() {
+  const disabledLinkSelector = 'a[data-pdf-link][aria-disabled="true"]';
+    const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
+    if (disabledPdfLink) e.preventDefault();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
+
 // --- Calendar -----------------------------------------------------------
 
 function parseICSDate(s) {
@@ -930,6 +949,18 @@ function calEventCoversDate(ev, date) {
     endDay = startDay;
   }
   return date >= startDay && date <= endDay;
+}
+
+function normalizeEventDateRange(ev) {
+  const startDay = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+  let endDay = new Date(startDay);
+  if (ev.end) endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
+
+  if (ev.allDay && endDay.getTime() > startDay.getTime()) {
+    endDay = new Date(endDay.getTime() - 864e5);
+  }
+
+  return { startDay, endDay };
 }
 
 function formatCalDateRange(start, end, allDay) {
@@ -1034,16 +1065,24 @@ function renderCalendar() {
   // Event-Map vorberechnen: dateStr → Set von Farben
   // Statt O(cells × events) nur O(cells + events)
   const eventColorMap = new Map();
+  const visibleStart = new Date(cells[0].date.getFullYear(), cells[0].date.getMonth(), cells[0].date.getDate());
+  const visibleEnd = new Date(cells[cells.length - 1].date.getFullYear(), cells[cells.length - 1].date.getMonth(), cells[cells.length - 1].date.getDate());
+
   for (const cfg of CAL_CONFIGS) {
     if (state.cal.enabled[cfg.id] === false) continue;
     for (const ev of (state.cal.events[cfg.id] || [])) {
-      // Nur Events prüfen, die den sichtbaren Zeitraum überlappen
-      for (const cell of cells) {
-        if (calEventCoversDate(ev, cell.date)) {
-          const key = calDateStr(cell.date);
-          if (!eventColorMap.has(key)) eventColorMap.set(key, new Set());
-          eventColorMap.get(key).add(cfg.color);
-        }
+      const { startDay, endDay } = normalizeEventDateRange(ev);
+      if (endDay < visibleStart || startDay > visibleEnd) continue;
+
+      const iterStart = startDay < visibleStart ? visibleStart : startDay;
+      const iterEnd = endDay > visibleEnd ? visibleEnd : endDay;
+      const cursor = new Date(iterStart);
+
+      while (cursor <= iterEnd) {
+        const key = calDateStr(cursor);
+        if (!eventColorMap.has(key)) eventColorMap.set(key, new Set());
+        eventColorMap.get(key).add(cfg.color);
+        cursor.setDate(cursor.getDate() + 1);
       }
     }
   }
@@ -1317,6 +1356,7 @@ async function boot() {
     initSelects();
     initWeekSelect();
     initNetworkIndicator();
+    initPdfLinkGuards();
 
     await refreshTimetableIfNeeded();
     await loadFunMessages();
