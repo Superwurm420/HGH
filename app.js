@@ -412,6 +412,10 @@ function renderTimetable() {
   }
 
   const rows = state.timetable?.[classId]?.[dayId] || [];
+  if (!rows.length) {
+    body.innerHTML = '<div class="small muted">Keine Stunden für diesen Tag.</div>';
+    return;
+  }
   const bySlot = new Map(rows.map(r => [r.slotId, r]));
   const skip = new Set();
   const currentPairStart = getCurrentPairStartSlot(dayId);
@@ -422,16 +426,19 @@ function renderTimetable() {
     return `<div class="td tdMeta"><div>${t}</div><div>${r}</div></div>`;
   };
 
-  body.innerHTML = state.timeslots.map(s => {
+  const slotsToRender = state.timeslots.filter(s => s.id !== '7' && rows.some(r => r.slotId === s.id || r.slotId === DOUBLE_PAIRS[s.id]));
+
+  body.innerHTML = slotsToRender.map(s => {
     if (skip.has(s.id)) return '';
 
     const r = bySlot.get(s.id);
     const secondId = DOUBLE_PAIRS[s.id];
     const secondSlot = secondId ? state.timeslotMap.get(secondId) : null;
+    const hasSecondRow = secondId ? bySlot.has(secondId) : false;
     const noteClass = r?.note ? ' note' : '';
     const currentClass = currentPairStart === s.id ? ' current' : '';
 
-    if (secondSlot) {
+    if (r && secondSlot && hasSecondRow) {
       skip.add(secondId);
       const timeFrom = s.time.split('–')[0];
       const timeTo = secondSlot.time.split('–')[1];
@@ -455,12 +462,12 @@ function renderTimetable() {
 
 function renderTodayPreview() {
   const todayId = getTodayId();
-  const { todayLabel, todayPreview: list } = state.els;
-  if (!todayLabel || !list) return;
+  const { todayWeekday, todayPreview: list } = state.els;
+  if (!list) return;
 
-  const classId = storageGet(APP.storageKeys.classId) || 'HT11';
+  const classId = state.els.todayClassSelect?.value || storageGet(APP.storageKeys.classId) || 'HT11';
   const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find(d => d.id === todayId)?.label || 'Heute');
-  todayLabel.textContent = `${dayName} · Klasse ${classId}`;
+  safeSetText(todayWeekday, dayName);
 
   const allRows = (state.timetable?.[classId]?.[todayId] || [])
     .filter(r => r.slotId !== '7');
@@ -522,6 +529,13 @@ function setActiveDayButton(dayId) {
   }
 }
 
+function updateCurrentDayInfo() {
+  const el = state.els.currentDayInfo;
+  if (!el) return;
+  const day = DAYS.find(d => d.id === (state.selectedDayId || getTodayId()));
+  el.textContent = `Ausgewählter Tag: ${day ? day.label : '—'}`;
+}
+
 // Synchronisiert beide Klassen-Selects und speichert
 function syncClassSelects(changedSel) {
   const val = changedSel.value;
@@ -529,24 +543,39 @@ function syncClassSelects(changedSel) {
 
   const other = (changedSel === state.els.classSelect) ? state.els.weekClassSelect : state.els.classSelect;
   if (other) other.value = val;
+  if (state.els.todayClassSelect && state.els.todayClassSelect !== changedSel) {
+    state.els.todayClassSelect.value = val;
+  }
 
   render();
 }
 
 function initSelects() {
-  const { classSelect } = state.els;
+  const { classSelect, todayClassSelect } = state.els;
   if (!classSelect) return;
 
   populateClassSelect(classSelect);
+  populateClassSelect(todayClassSelect);
 
   const savedClass = storageGet(APP.storageKeys.classId) || 'HT11';
   const savedDay = storageGet(APP.storageKeys.dayId) || getTodayId();
 
-  classSelect.value = CLASSES.includes(savedClass) ? savedClass : 'HT11';
+  const initialClass = CLASSES.includes(savedClass) ? savedClass : 'HT11';
+  classSelect.value = initialClass;
+  if (todayClassSelect) todayClassSelect.value = initialClass;
+
   state.selectedDayId = DAY_IDS.includes(savedDay) ? savedDay : 'mo';
   setActiveDayButton(state.selectedDayId);
+  updateCurrentDayInfo();
 
   classSelect.addEventListener('change', () => syncClassSelects(classSelect));
+  todayClassSelect?.addEventListener('change', () => {
+    const val = todayClassSelect.value;
+    storageSet(APP.storageKeys.classId, val);
+    classSelect.value = val;
+    if (state.els.weekClassSelect) state.els.weekClassSelect.value = val;
+    render();
+  });
 
   for (const btn of state.els.dayButtons || []) {
     btn.addEventListener('click', () => {
@@ -555,17 +584,11 @@ function initSelects() {
       state.selectedDayId = dayId;
       storageSet(APP.storageKeys.dayId, dayId);
       setActiveDayButton(dayId);
+      updateCurrentDayInfo();
       renderTimetable();
     });
   }
 
-  state.els.todayBtn?.addEventListener('click', () => {
-    const todayId = getTodayId();
-    state.selectedDayId = todayId;
-    storageSet(APP.storageKeys.dayId, todayId);
-    setActiveDayButton(todayId);
-    renderTimetable();
-  });
 }
 
 // --- Countdown ----------------------------------------------------------
@@ -619,7 +642,7 @@ function updateCountdown() {
 
   const ranges = getDayRanges(getTodayId(), now);
   if (!ranges.length || now >= ranges[ranges.length - 1].end) {
-    textEl.textContent = 'Schultag beendet – bis morgen! 👋';
+    textEl.textContent = 'Schultag vorbei 👋';
     return;
   }
 
@@ -639,7 +662,7 @@ function updateCountdown() {
     return;
   }
 
-  textEl.textContent = 'Schultag beendet – bis morgen! 👋';
+  textEl.textContent = 'Schultag vorbei 👋';
 }
 
 function getFunMessage(now = new Date()) {
@@ -1047,12 +1070,12 @@ function initInstallHint() {
   const { installHint: hint, installBanner: banner, installBannerClose: closeBtn, installButton } = state.els;
 
   const ua = navigator.userAgent || '';
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isIOS = /iPhone|iPod/i.test(ua);
   const isAndroid = /Android/i.test(ua);
 
   if (hint) {
     if (isIOS) {
-      safeSetText(hint, 'iPhone/iPad: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
+      safeSetText(hint, 'iPhone: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
     } else if (isAndroid) {
       safeSetText(hint, 'Android: Über Browser-Menü oder den Button installieren.');
     } else {
@@ -1154,6 +1177,11 @@ async function loadInstagramPreviews() {
         const el = qs(`[data-ig-followers="${id}"]`);
         if (el) el.textContent = `${profile.followers} Follower`;
       }
+      const linkCard = qs(`.linkCardBig[data-ig="${id}"]`);
+      if (linkCard) {
+        const urlEl = qs('.linkUrl', linkCard);
+        if (urlEl && profile.handle) urlEl.textContent = `@${profile.handle}`;
+      }
       if (profile.profilePic) {
         const card = qs(`[data-ig="${id}"]`);
         const avatar = card ? qs('.igAvatar', card) : null;
@@ -1173,9 +1201,10 @@ function cacheEls() {
     views: qsa('.view'),
     classSelect: qs('#classSelect'),
     dayButtons: qsa('#daySelectGroup .dayBtn'),
-    todayBtn: qs('#todayBtn'),
+    todayClassSelect: qs('#todayClassSelect'),
+    currentDayInfo: qs('#currentDayInfo'),
     timetableBody: qs('#timetableBody'),
-    todayLabel: qs('#todayLabel'),
+    todayWeekday: qs('#todayWeekday'),
     todayPreview: qs('#todayPreview'),
     nowTime: qs('#nowTime'),
     countdownText: qs('#countdownText'),

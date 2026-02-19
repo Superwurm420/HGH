@@ -166,7 +166,8 @@ select:focus-visible{
   font-weight:750;
   font-size:15px;
   line-height:1.1;
-  white-space:nowrap;
+  white-space:normal;
+  overflow-wrap:anywhere;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -504,7 +505,8 @@ select:focus-visible{
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   color:#fff;
   text-align:center;
-  white-space:nowrap;
+  white-space:normal;
+  overflow-wrap:anywhere;
   box-shadow:0 4px 14px rgba(0,122,255,.35);
 }
 
@@ -578,6 +580,32 @@ select:focus-visible{
   flex-direction:column;
   justify-content:center;
 }
+
+
+.todayMetaRow{
+  display:grid;
+  grid-template-columns:minmax(160px,220px) 1fr;
+  align-items:end;
+  gap:12px;
+  margin-top:8px;
+}
+
+.control--homeClass{
+  margin:0;
+}
+
+.dayInfoBadge{
+  display:inline-flex;
+  align-items:center;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.06);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
+
 
 /* Install Card */
 .installCard{
@@ -1456,6 +1484,43 @@ select:focus-visible{
   background:rgba(0,0,0,.02);
 }
 
+
+.classPhotosGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin-top:12px;
+}
+
+.classPhotoItem{
+  display:block;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  text-decoration:none;
+  color:var(--text);
+}
+
+.classPhotoItem:hover{
+  border-color:rgba(0,122,255,.4);
+  background:rgba(0,122,255,.06);
+}
+
+.classPhotoTitle{
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+.classPhotoLarge{
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+}
+
 /* Footer */
 .footer{
   margin-top:14px;
@@ -1490,6 +1555,10 @@ select:focus-visible{
   }
 
   .igProfiles{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .classPhotosGrid{
     grid-template-columns:1fr 1fr;
   }
 }
@@ -1555,6 +1624,22 @@ select:focus-visible{
     background:rgba(255,255,255,.76);
     border-color:rgba(0,0,0,.09);
     box-shadow:0 10px 40px rgba(10,30,100,.18), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+
+  .todayMetaRow{
+    grid-template-columns:1fr;
+    align-items:stretch;
+  }
+
+  .countdownTop{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .countdownText{
+    width:100%;
+    text-align:left;
   }
 
   .installHead{
@@ -1637,17 +1722,3 @@ select:focus-visible{
   }
 }
 
-
-.classPhotoCard{
-  cursor:default;
-}
-
-.classPhotoCard:hover{
-  border-color:var(--line);
-  background:rgba(255,255,255,.04);
-  transform:none;
-}
-
-.classPhotoRing{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-}

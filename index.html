@@ -108,6 +108,7 @@
             <div class="countdownTimeBlock">
               <div class="small muted">Aktuelle Uhrzeit</div>
               <div id="nowTime" class="nowTime" aria-live="polite">—</div>
+              <div id="todayWeekday" class="small muted">—</div>
             </div>
             <div id="countdownText" class="countdownText" aria-live="polite">—</div>
           </div>
@@ -116,14 +117,21 @@
         </div>
 
         <!-- Heute-Vorschau -->
-        <p class="muted" id="todayLabel">—</p>
+        <div class="todayMetaRow">
+          <label class="control control--class control--homeClass">
+            <span class="controlLabel">Klasse</span>
+            <span class="selectWrap">
+              <select id="todayClassSelect" class="select" aria-label="Klasse für Heute-Widget auswählen"></select>
+            </span>
+          </label>
+          <p class="muted" id="todayLabel">Stunden heute</p>
+        </div>
         <div
           id="todayPreview"
           class="list"
           role="region"
           aria-label="Heutiger Stundenplan (Vorschau)"
         ></div>
-        <div class="small muted">Tipp: In „Stundenplan" Klasse auswählen.</div>
 
         <!-- Netzwerkstatus -->
         <div class="netRow" role="status" aria-label="Netzwerkstatus">
@@ -212,7 +220,7 @@
             <span class="installStepNumber" aria-hidden="true">2</span>
             <div>
               <h3>iPhone / Safari</h3>
-              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen.</p>
+              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen. (Nur iPhone)</p>
             </div>
           </article>
           <article class="installStep" role="listitem">
@@ -289,12 +297,7 @@
                 ></select>
               </span>
             </label>
-            <button
-              type="button"
-              class="btn secondary"
-              id="todayBtn"
-              aria-label="Heute anzeigen"
-            >Heute</button>
+            <span class="dayInfoBadge" id="currentDayInfo" aria-live="polite">Heute: —</span>
           </div>
         </div>
 
@@ -341,7 +344,6 @@
     <section class="view" data-view="links" hidden>
       <div class="card surface">
         <h2>Links</h2>
-        <p class="muted">Wichtige Schnellzugriffe.</p>
 
         <nav class="linkCards" aria-label="Wichtige Links">
           <a
@@ -377,113 +379,89 @@
           </a>
         </nav>
 
-        <h2 style="margin-top:20px">Klassenfotos & Instagram</h2>
-        <p class="muted">Für HT21 und HT22 sind Instagram-Links verfügbar. Für alle Klassen gibt es hier ein Klassenfoto.</p>
-        <div class="igProfiles" id="igProfiles">
-          <!-- HT11 -->
-          <article class="igProfile classPhotoCard" data-class="ht11">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht11.svg" alt="Klassenfoto HT11" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT11</div>
-                <div class="igHandle">Klassenfoto</div>
-              </div>
+        <nav class="linkCards" aria-label="Instagram Links" style="margin-top:10px;">
+          <a
+            class="linkCardBig"
+            href="https://www.instagram.com/hgh.hildesheim/"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-ig="schule"
+          >
+            <span class="linkCardIcon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            </span>
+            <div class="linkCardBody">
+              <div class="linkTitle">Instagram Schule</div>
+              <div class="linkUrl">@hgh.hildesheim</div>
             </div>
-          </article>
-
-          <!-- HT12 -->
-          <article class="igProfile classPhotoCard" data-class="ht12">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht12.svg" alt="Klassenfoto HT12" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT12</div>
-                <div class="igHandle">Klassenfoto</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- HT21 Klassenfoto -->
-          <article class="igProfile classPhotoCard" data-class="ht21-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht21.svg" alt="Klassenfoto HT21" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT21</div>
-                <div class="igHandle">Klassenfoto</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- HT21 -->
-          <a class="igProfile" href="https://www.instagram.com/usf_ht21" target="_blank" rel="noopener noreferrer" data-ig="ht21">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing">
-                <img src="./icons/logo-lunido.svg" alt="LUNIDO" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT21 – Lunido</div>
-                <div class="igHandle">@usf_ht21</div>
-                <div class="igFollowers" data-ig-followers="ht21"></div>
-              </div>
-            </div>
-            <div class="igPreviewGrid" data-ig-grid="ht21">
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
-            </div>
-            <span class="igOpenLabel">Auf Instagram öffnen</span>
+            <span class="linkCardArrow" aria-hidden="true">↗</span>
           </a>
 
-          <!-- HT22 -->
-          <a class="igProfile" href="https://www.instagram.com/usf_ht22" target="_blank" rel="noopener noreferrer" data-ig="ht22">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing">
-                <img src="./icons/logo-lys.svg" alt="LYS" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT22 – LYS</div>
-                <div class="igHandle">@usf_ht22</div>
-                <div class="igFollowers" data-ig-followers="ht22"></div>
-              </div>
+          <a
+            class="linkCardBig"
+            href="https://www.instagram.com/usf_ht21"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-ig="ht21"
+          >
+            <span class="linkCardIcon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            </span>
+            <div class="linkCardBody">
+              <div class="linkTitle">Instagram HT21</div>
+              <div class="linkUrl">@usf_ht21</div>
             </div>
-            <div class="igPreviewGrid" data-ig-grid="ht22">
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
-            </div>
-            <span class="igOpenLabel">Auf Instagram öffnen</span>
+            <span class="linkCardArrow" aria-hidden="true">↗</span>
           </a>
 
-          <!-- HT22 Klassenfoto -->
-          <article class="igProfile classPhotoCard" data-class="ht22-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht22.svg" alt="Klassenfoto HT22" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT22</div>
-                <div class="igHandle">Klassenfoto</div>
-              </div>
+          <a
+            class="linkCardBig"
+            href="https://www.instagram.com/usf_ht22"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-ig="ht22"
+          >
+            <span class="linkCardIcon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            </span>
+            <div class="linkCardBody">
+              <div class="linkTitle">Instagram HT22</div>
+              <div class="linkUrl">@usf_ht22</div>
             </div>
-          </article>
+            <span class="linkCardArrow" aria-hidden="true">↗</span>
+          </a>
+        </nav>
 
-          <!-- Schule -->
-          <article class="igProfile classPhotoCard" data-class="schule-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-school.svg" alt="Klassenfoto Schule" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">Schule</div>
-                <div class="igHandle">Klassenfoto</div>
-              </div>
-            </div>
-          </article>
+        <h2 style="margin-top:20px">Klassenfotos</h2>
+        <div class="classPhotosGrid" id="classPhotos">
+          <a class="classPhotoItem" href="./images/class-ht11.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT11</div>
+            <img src="./icons/class-ht11.svg" alt="Klassenfoto HT11" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht12.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT12</div>
+            <img src="./icons/class-ht12.svg" alt="Klassenfoto HT12" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht21.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT21</div>
+            <img src="./icons/class-ht21.svg" alt="Klassenfoto HT21" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht22.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT22</div>
+            <img src="./icons/class-ht22.svg" alt="Klassenfoto HT22" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-g11.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">G11</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G11" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-g12.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">G12</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G12" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-gt01.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">GT01</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto GT01" class="classPhotoLarge" loading="lazy" />
+          </a>
         </div>
       </div>
     </section>
