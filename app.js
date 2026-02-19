@@ -113,6 +113,7 @@ const state = {
   countdownTimer: null,
   funMessages: DEFAULT_FUN_MESSAGES,
   currentPdfHref: null,
+  hasTimetableData: false,
   cal: {
     events: {},
     enabled: {},
@@ -266,6 +267,9 @@ function applyTimetableData(data) {
   }
 
   state.timetable = classes;
+  state.hasTimetableData = Object.values(classes).some(cls =>
+    Object.values(cls || {}).some(day => Array.isArray(day) && day.length > 0)
+  );
 
   // PDF-Links aktualisieren
   state.currentPdfHref = data?.meta?.source ? `./plan/${data.meta.source}` : null;
@@ -424,11 +428,7 @@ function renderTimetable() {
   const body = state.els.timetableBody;
   if (!body) return;
 
-  const hasData = state.timetable && Object.values(state.timetable).some(
-    cls => Object.values(cls).some(day => day.length > 0)
-  );
-
-  if (!hasData) {
+  if (!state.hasTimetableData) {
     body.innerHTML = `
       <div class="timetableEmpty" role="status">
         <p>Keine Stundenplan-Daten verfügbar.</p>
@@ -667,7 +667,7 @@ function diffMinsCeil(a, b) {
   return Math.max(0, Math.ceil((b - a) / 60000));
 }
 
-function getDayRanges(dayId, base = new Date()) {
+function getDayRanges(base = new Date()) {
   const ranges = [];
   for (const s of state.timeslots) {
     if (s.id === '7') continue;
@@ -679,7 +679,7 @@ function getDayRanges(dayId, base = new Date()) {
 
 function getCurrentPairStartSlot(dayId, now = new Date()) {
   if (!isWeekday() || dayId !== getTodayId()) return null;
-  const ranges = getDayRanges(dayId, now);
+  const ranges = getDayRanges(now);
   const current = ranges.find(r => now >= r.start && now < r.end);
   if (!current) return null;
 
@@ -698,7 +698,7 @@ function updateCountdown() {
 
   if (!isWeekday()) { textEl.textContent = 'Schönes Wochenende! 🎉'; return; }
 
-  const ranges = getDayRanges(getTodayId(), now);
+  const ranges = getDayRanges(now);
   if (!ranges.length || now >= ranges[ranges.length - 1].end) {
     textEl.textContent = 'Schultag vorbei 👋';
     return;
@@ -842,6 +842,16 @@ function initNetworkIndicator() {
   window.addEventListener('online', updateNetworkIndicator);
   window.addEventListener('offline', updateNetworkIndicator);
 }
+
+function initPdfLinkGuards() {
+  const disabledLinkSelector = 'a[data-pdf-link][aria-disabled="true"]';
+    const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
+    if (disabledPdfLink) e.preventDefault();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
 
 // --- Calendar -----------------------------------------------------------
 
@@ -1346,6 +1356,7 @@ async function boot() {
     initSelects();
     initWeekSelect();
     initNetworkIndicator();
+    initPdfLinkGuards();
 
     await refreshTimetableIfNeeded();
     await loadFunMessages();
