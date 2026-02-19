@@ -414,6 +414,7 @@ function renderTimetable() {
   const rows = state.timetable?.[classId]?.[dayId] || [];
   const bySlot = new Map(rows.map(r => [r.slotId, r]));
   const skip = new Set();
+  const currentPairStart = getCurrentPairStartSlot(dayId);
 
   const metaCell = (teacher, room) => {
     const t = teacher ? teacher.split('/').map(x => `<small>${escapeHtml(x.trim())}</small>`).join('<br>') : '<small>—</small>';
@@ -428,13 +429,14 @@ function renderTimetable() {
     const secondId = DOUBLE_PAIRS[s.id];
     const secondSlot = secondId ? state.timeslotMap.get(secondId) : null;
     const noteClass = r?.note ? ' note' : '';
+    const currentClass = currentPairStart === s.id ? ' current' : '';
 
     if (secondSlot) {
       skip.add(secondId);
       const timeFrom = s.time.split('–')[0];
       const timeTo = secondSlot.time.split('–')[1];
       return `
-        <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
+        <div class="tr${noteClass}${currentClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
           <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
           <div class="td">${formatSubject(r?.subject)}</div>
           ${metaCell(r?.teacher, r?.room)}
@@ -443,7 +445,7 @@ function renderTimetable() {
 
     const [tFrom, tTo] = s.time.split('–');
     return `
-      <div class="tr${noteClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
+      <div class="tr${noteClass}${currentClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
         <div class="td">${formatSubject(r?.subject)}</div>
         ${metaCell(r?.teacher, r?.room)}
@@ -592,6 +594,18 @@ function getDayRanges(dayId, base = new Date()) {
     if (r) ranges.push({ slotId: s.id, ...r });
   }
   return ranges.sort((a, b) => a.start - b.start);
+}
+
+function getCurrentPairStartSlot(dayId, now = new Date()) {
+  if (!isWeekday() || dayId !== getTodayId()) return null;
+  const ranges = getDayRanges(dayId, now);
+  const current = ranges.find(r => now >= r.start && now < r.end);
+  if (!current) return null;
+
+  for (const pair of WEEK_PAIRS) {
+    if (current.slotId === pair.first || current.slotId === pair.second) return pair.first;
+  }
+  return current.slotId;
 }
 
 function updateCountdown() {
@@ -964,12 +978,14 @@ function renderWeek() {
   if (!grid || !sel) return;
 
   const classId = sel.value || 'HT11';
+  const todayId = getTodayId();
+  const currentPairStart = getCurrentPairStartSlot(todayId);
 
   const header = `
     <div class="weekRow weekHeader" role="row">
       <div class="weekCell weekCorner" role="columnheader">Zeit</div>
       ${DAYS.map(d =>
-        `<div class="weekCell" role="columnheader">${escapeHtml(d.label.slice(0, 2))}</div>`
+        `<div class="weekCell${d.id === todayId ? ' weekDayToday' : ''}" role="columnheader">${escapeHtml(d.label.slice(0, 2))}</div>`
       ).join('')}
     </div>`;
 
@@ -991,9 +1007,10 @@ function renderWeek() {
 
       const meta = formatTeacherRoom(r.teacher, r.room);
       const noteClass = r.note ? ' note' : '';
+      const currentClass = d.id === todayId && currentPairStart === pair.first ? ' current' : '';
 
       return `
-        <div class="weekCell${noteClass}" role="cell">
+        <div class="weekCell${noteClass}${currentClass}" role="cell">
           <div class="weekSubject">${formatSubject(r.subject)}</div>
           ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : ''}
         </div>`;
@@ -1026,6 +1043,20 @@ function isStandalone() {
 
 function initInstallHint() {
   const { installHint: hint, installBanner: banner, installBannerClose: closeBtn, installButton } = state.els;
+
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+
+  if (hint) {
+    if (isIOS) {
+      safeSetText(hint, 'iPhone/iPad: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
+    } else if (isAndroid) {
+      safeSetText(hint, 'Android: Über Browser-Menü oder den Button installieren.');
+    } else {
+      safeSetText(hint, 'Desktop: Installationssymbol in der Adressleiste nutzen oder den Button verwenden.');
+    }
+  }
 
   if (installButton) {
     installButton.addEventListener('click', async () => {
