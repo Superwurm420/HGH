@@ -845,6 +845,8 @@ function initNetworkIndicator() {
 
 function initPdfLinkGuards() {
   const disabledLinkSelector = 'a[data-pdf-link][aria-disabled="true"]';
+
+  document.addEventListener('click', (e) => {
     const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
     if (disabledPdfLink) e.preventDefault();
   });
@@ -852,6 +854,10 @@ function initPdfLinkGuards() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const disabledPdfLink = e.target.closest?.(disabledLinkSelector);
+    if (!disabledPdfLink) return;
+    e.preventDefault();
+  });
+}
 
 // --- Calendar -----------------------------------------------------------
 
