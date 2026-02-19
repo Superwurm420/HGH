@@ -2,8 +2,8 @@
   "meta": {
     "school": "HGH",
     "validFrom": "2026-02-19",
-    "updatedAt": "2026-02-19T15:46:20.285Z",
-    "source": "Stundenplan_kw_07_Hj2_2025_26.pdf"
+    "updatedAt": "2026-02-19T15:50:13.051Z",
+    "source": "Stundenplan_kw_08_Hj2_2025_26.pdf"
   },
   "timeslots": [
     {
@@ -50,37 +50,37 @@
           "slotId": "1",
           "subject": null,
           "teacher": null,
-          "room": "1"
+          "room": "6"
         },
         {
           "slotId": "2",
           "subject": null,
           "teacher": null,
-          "room": "1"
+          "room": "6"
         },
         {
           "slotId": "3",
           "subject": null,
           "teacher": null,
-          "room": "2"
+          "room": "6"
         },
         {
           "slotId": "4",
           "subject": null,
           "teacher": null,
-          "room": "2"
+          "room": "6"
         },
         {
           "slotId": "5",
           "subject": null,
           "teacher": null,
-          "room": "HS"
+          "room": "3"
         },
         {
           "slotId": "6",
           "subject": null,
           "teacher": null,
-          "room": "HS"
+          "room": "3"
         }
       ],
       "di": [
@@ -110,17 +110,17 @@
         },
         {
           "slotId": "8",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         },
         {
           "slotId": "9",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -201,25 +201,25 @@
       ],
       "fr": [
         {
+          "slotId": "1",
+          "subject": null,
+          "teacher": null,
+          "room": "4"
+        },
+        {
+          "slotId": "2",
+          "subject": null,
+          "teacher": null,
+          "room": "4"
+        },
+        {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
-          "room": "4"
-        },
-        {
-          "slotId": "4",
-          "subject": null,
-          "teacher": null,
-          "room": "4"
-        },
-        {
-          "slotId": "5",
           "subject": null,
           "teacher": null,
           "room": "8"
         },
         {
-          "slotId": "6",
+          "slotId": "4",
           "subject": null,
           "teacher": null,
           "room": "8"
@@ -230,27 +230,27 @@
       "mo": [
         {
           "slotId": "3",
-          "subject": "USF-Führung",
+          "subject": "Modul7/Excel",
           "teacher": "WED",
-          "room": "HS"
+          "room": "3"
         },
         {
           "slotId": "4",
-          "subject": "USF-Führung",
+          "subject": "Modul7/Excel",
           "teacher": "WED",
-          "room": "HS"
+          "room": "3"
         },
         {
           "slotId": "5",
           "subject": "Modul2/Statik",
           "teacher": "HOFF",
-          "room": "2"
+          "room": "1"
         },
         {
           "slotId": "6",
           "subject": "Modul2/Statik",
           "teacher": "HOFF",
-          "room": "2"
+          "room": "1"
         }
       ],
       "di": [
@@ -292,17 +292,17 @@
         },
         {
           "slotId": "8",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         },
         {
           "slotId": "9",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -395,25 +395,25 @@
       ],
       "fr": [
         {
-          "slotId": "1",
-          "subject": "Modul2/CNC",
-          "teacher": "HOFF",
-          "room": "4"
-        },
-        {
-          "slotId": "2",
-          "subject": "Modul2/CNC",
-          "teacher": "HOFF",
-          "room": "4"
-        },
-        {
           "slotId": "3",
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
+          "room": "4"
+        },
+        {
+          "slotId": "4",
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
+          "room": "4"
+        },
+        {
+          "slotId": "5",
           "subject": "Modul2/FT",
           "teacher": "STE",
           "room": "1"
         },
         {
-          "slotId": "4",
+          "slotId": "6",
           "subject": "Modul2/FT",
           "teacher": "STE",
           "room": "1"
@@ -482,134 +482,195 @@
       "di": [
         {
           "slotId": "1",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "2",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "3",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "4",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "5",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "6",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "8",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         },
         {
           "slotId": "9",
-          "subject": "USF",
+          "subject": "LUNIDO",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "LUNIDO"
         }
       ],
       "mi": [
         {
           "slotId": "1",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "2",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "3",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "4",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "5",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "6",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "8",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         },
         {
           "slotId": "9",
-          "subject": "USF",
+          "subject": "Übergabe USF",
           "teacher": null,
           "room": null,
-          "note": "USF"
+          "note": "Übergabe USF"
         }
       ],
       "do": [
         {
+          "slotId": "1",
+          "subject": "NAT/Chemie",
+          "teacher": "STI",
+          "room": "8"
+        },
+        {
+          "slotId": "2",
+          "subject": "NAT/Chemie",
+          "teacher": "STI",
+          "room": "8"
+        },
+        {
+          "slotId": "3",
+          "subject": "Englisch",
+          "teacher": "HOFF",
+          "room": "2"
+        },
+        {
+          "slotId": "4",
+          "subject": "Englisch",
+          "teacher": "HOFF",
+          "room": "2"
+        },
+        {
           "slotId": "5",
-          "subject": null,
-          "teacher": "\"LUNIDO\"",
-          "room": null
+          "subject": "Modul4/Obfl",
+          "teacher": "WED",
+          "room": "6"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": "\"LUNIDO\"",
-          "room": null
+          "subject": "Modul4/Obfl",
+          "teacher": "WED",
+          "room": "6"
         }
       ],
-      "fr": []
+      "fr": [
+        {
+          "slotId": "1",
+          "subject": "Modul3/MöKo",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
+          "slotId": "2",
+          "subject": "Modul3/MöKo",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
+          "slotId": "3",
+          "subject": "Modul3/MöKo",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
+          "slotId": "4",
+          "subject": "Modul3/MöKo",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
+          "slotId": "5",
+          "subject": "Modul4/CAD",
+          "teacher": "HOFF",
+          "room": "4"
+        },
+        {
+          "slotId": "6",
+          "subject": "Modul4/CAD",
+          "teacher": "HOFF",
+          "room": "4"
+        }
+      ]
     },
     "HT22": {
       "mo": [
@@ -636,18 +697,6 @@
           "subject": "Modul5/AV",
           "teacher": "TAM",
           "room": "5"
-        },
-        {
-          "slotId": "8",
-          "subject": "Buchführung",
-          "teacher": "TAM",
-          "room": null
-        },
-        {
-          "slotId": "9",
-          "subject": "Buchführung",
-          "teacher": "TAM",
-          "room": null
         }
       ],
       "di": [
@@ -674,132 +723,137 @@
           "subject": "NAT/Chemie",
           "teacher": "STI",
           "room": "8"
-        }
-      ],
-      "mi": [
-        {
-          "slotId": "3",
-          "subject": "Modul3/MöKo",
-          "teacher": "STE",
-          "room": "1"
-        },
-        {
-          "slotId": "4",
-          "subject": "Modul3/MöKo",
-          "teacher": "STE",
-          "room": "1"
-        },
-        {
-          "slotId": "5",
-          "subject": "Modul3/MöKo",
-          "teacher": "STE",
-          "room": "1"
-        },
-        {
-          "slotId": "6",
-          "subject": "Modul3/MöKo",
-          "teacher": "STE",
-          "room": "1"
         },
         {
           "slotId": "8",
-          "subject": "Geschäftskunde",
-          "teacher": "STE",
-          "room": "1"
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         },
         {
           "slotId": "9",
-          "subject": "Geschäftskunde",
-          "teacher": "STE",
-          "room": "1"
+          "subject": "KuSti-Exkursion",
+          "teacher": null,
+          "room": null,
+          "note": "KuSti-Exkursion"
         }
       ],
+      "mi": [],
       "do": [
         {
           "slotId": "1",
-          "subject": "Modul4/CAD",
-          "teacher": "HOFF",
-          "room": "4"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "2",
-          "subject": "Modul4/CAD",
-          "teacher": "HOFF",
-          "room": "4"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "3",
-          "subject": "Modul4/Obfl",
-          "teacher": "WED",
-          "room": "6"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "4",
-          "subject": "Modul4/Obfl",
-          "teacher": "WED",
-          "room": "6"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "5",
-          "subject": "Englisch",
-          "teacher": "HOFF",
-          "room": "1"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "6",
-          "subject": "Englisch",
-          "teacher": "HOFF",
-          "room": "1"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "8",
-          "subject": "Mathematik",
-          "teacher": "TAM",
-          "room": "5"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "9",
-          "subject": "Mathematik",
-          "teacher": "TAM",
-          "room": "5"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         }
       ],
       "fr": [
         {
           "slotId": "1",
-          "subject": "Modul8/BWL",
-          "teacher": "STI",
-          "room": "8"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "2",
-          "subject": "Modul8/BWL",
-          "teacher": "STI",
-          "room": "8"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "3",
-          "subject": "Modul8/ReWe",
-          "teacher": "STI",
-          "room": "8"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "4",
-          "subject": "Modul8/ReWe",
-          "teacher": "STI",
-          "room": "8"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "5",
-          "subject": "Modul4/Excel bis 21.3",
-          "teacher": "WED",
-          "room": "3"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         },
         {
           "slotId": "6",
-          "subject": "Modul4/Excel bis 21.3",
-          "teacher": "WED",
-          "room": "3"
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "8",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
+        },
+        {
+          "slotId": "9",
+          "subject": "USF",
+          "teacher": null,
+          "room": null,
+          "note": "USF"
         }
       ]
     },
@@ -881,17 +935,17 @@
         },
         {
           "slotId": "8",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         },
         {
           "slotId": "9",
-          "subject": "Serviceteam",
+          "subject": "KuSti-Exkursion",
           "teacher": null,
           "room": null,
-          "note": "Serviceteam"
+          "note": "KuSti-Exkursion"
         }
       ],
       "mi": [
@@ -987,6 +1041,18 @@
     "G21": {
       "mo": [
         {
+          "slotId": "1",
+          "subject": "MöKo-Meisterstück",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
+          "slotId": "2",
+          "subject": "MöKo-Meisterstück",
+          "teacher": "STE",
+          "room": "1"
+        },
+        {
           "slotId": "3",
           "subject": "Entwurf/Konstruktion",
           "teacher": "BER/WEZ",
@@ -1009,18 +1075,6 @@
           "subject": "Entwurf/Konstruktion",
           "teacher": "BER",
           "room": "7"
-        },
-        {
-          "slotId": "8",
-          "subject": "Buchführung",
-          "teacher": "TAM",
-          "room": null
-        },
-        {
-          "slotId": "9",
-          "subject": "Buchführung",
-          "teacher": "TAM",
-          "room": null
         }
       ],
       "di": [
@@ -1059,20 +1113,6 @@
           "subject": "Haustechnik",
           "teacher": "WEZ/PET",
           "room": "7"
-        },
-        {
-          "slotId": "8",
-          "subject": "Serviceteam",
-          "teacher": null,
-          "room": null,
-          "note": "Serviceteam"
-        },
-        {
-          "slotId": "9",
-          "subject": "Serviceteam",
-          "teacher": null,
-          "room": null,
-          "note": "Serviceteam"
         }
       ],
       "mi": [
@@ -1163,56 +1203,19 @@
           "room": "5"
         }
       ],
-      "fr": [
-        {
-          "slotId": "1",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        },
-        {
-          "slotId": "2",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        },
-        {
-          "slotId": "3",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        },
-        {
-          "slotId": "4",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        },
-        {
-          "slotId": "5",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        },
-        {
-          "slotId": "6",
-          "subject": "Entwurf/Konstruktion",
-          "teacher": "WEN",
-          "room": "9"
-        }
-      ]
+      "fr": []
     },
     "GT01": {
       "mo": [
         {
           "slotId": "1",
-          "subject": null,
+          "subject": "Materialkunde",
           "teacher": "BER/WEZ",
           "room": "7"
         },
         {
           "slotId": "2",
-          "subject": null,
+          "subject": "Materialkunde",
           "teacher": "BER/WEZ",
           "room": "7"
         },
@@ -1239,18 +1242,6 @@
           "subject": "Entwurf/Konstruktion",
           "teacher": "BER",
           "room": "7"
-        },
-        {
-          "slotId": "8",
-          "subject": "5",
-          "teacher": null,
-          "room": null
-        },
-        {
-          "slotId": "9",
-          "subject": "5",
-          "teacher": null,
-          "room": null
         }
       ],
       "di": [
