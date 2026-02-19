@@ -750,6 +750,8 @@ function parseICS(text) {
       const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
       return m ? m[1].trim() : '';
     };
+    const status = get('STATUS').toUpperCase();
+    if (status === 'CANCELLED') continue;
     const title = unescape(get('SUMMARY')) || '(Kein Titel)';
     const dtstart = get('DTSTART');
     if (!dtstart) continue;

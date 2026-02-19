@@ -104,9 +104,11 @@ function findColumns(items) {
     throw new Error(`Expected 7 R columns, found ${rXs.length}`);
   }
 
-  // Column boundaries: each class column spans from left edge to its R column
-  // The leftmost data starts around x=150 (before first class header)
-  const DATA_LEFT = 150;
+  // Column boundaries: each class column spans from left edge to its R column.
+  // Wichtig: Die erste Spalte (HT11) startet je nach PDF teils deutlich weiter
+  // links als x=150. Mit einem dynamischen Offset relativ zur ersten R-Markierung
+  // vermeiden wir abgeschnittene Fach-/Lehrerwerte in HT11.
+  const DATA_LEFT = Math.max(90, rXs[0] - 90);
   const DATA_RIGHT = rXs[6] + 50;
 
   // Build column definitions

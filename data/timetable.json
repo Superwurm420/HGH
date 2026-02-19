@@ -2,7 +2,7 @@
   "meta": {
     "school": "HGH",
     "validFrom": "2026-02-19",
-    "updatedAt": "2026-02-19T18:14:10.685Z",
+    "updatedAt": "2026-02-19T19:27:48.929Z",
     "source": "Stundenplan_kw_08_Hj2_2025_26.pdf"
   },
   "timeslots": [
@@ -48,64 +48,64 @@
       "mo": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Deutsch",
+          "teacher": "MEL",
           "room": "6"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Deutsch",
+          "teacher": "MEL",
           "room": "6"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/KuSti",
+          "teacher": "MEL",
           "room": "6"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/KuSti",
+          "teacher": "MEL",
           "room": "6"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/Excel",
+          "teacher": "WED",
           "room": "3"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/Excel",
+          "teacher": "WED",
           "room": "3"
         }
       ],
       "di": [
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Obfl",
+          "teacher": "WED",
           "room": "6"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Obfl",
+          "teacher": "WED",
           "room": "6"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Englisch",
+          "teacher": "WEN",
           "room": "9"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Englisch",
+          "teacher": "WEN",
           "room": "9"
         },
         {
@@ -126,102 +126,114 @@
       "mi": [
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Wsk",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Wsk",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/CAD",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/CAD",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "8",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Statik",
+          "teacher": "HOFF",
           "room": "2"
         },
         {
           "slotId": "9",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Statik",
+          "teacher": "HOFF",
           "room": "2"
         }
       ],
       "do": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/FT",
+          "teacher": "STE",
           "room": "1"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/FT",
+          "teacher": "STE",
           "room": "1"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Politik",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Politik",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Mathematik",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Mathematik",
+          "teacher": "TAM",
           "room": "5"
+        },
+        {
+          "slotId": "8",
+          "subject": "Modul6/Mark/DTP",
+          "teacher": "STI",
+          "room": null
+        },
+        {
+          "slotId": "9",
+          "subject": "Modul6/Mark/DTP",
+          "teacher": "STI",
+          "room": null
         }
       ],
       "fr": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/ReWe",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/ReWe",
+          "teacher": "STI",
           "room": "8"
         }
       ]
