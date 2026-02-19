@@ -72,6 +72,7 @@ const WEEKDAY_LABELS = {
 };
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
+const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = {
   past: 30,
   future: 400,
@@ -796,19 +797,26 @@ function chooseMessage(list) {
   return list[Number(daySeed) % list.length] || list[0];
 }
 
+function toMessageList(input, fallback = []) {
+  if (Array.isArray(input)) return input.filter(Boolean).map(x => String(x));
+  if (typeof input === 'string' && input.trim()) return [input.trim()];
+  return [...fallback];
+}
+
 function normalizeMessageBuckets(raw) {
   const fallback = DEFAULT_FUN_MESSAGES.default;
-  return {
-    beforeSchool: raw?.beforeSchool || fallback.beforeSchool,
-    beforeLesson: raw?.beforeLesson || fallback.beforeLesson,
-    duringLesson: raw?.duringLesson || fallback.duringLesson,
-    betweenBlocks: raw?.betweenBlocks || fallback.betweenBlocks,
-    lunch: raw?.lunch || fallback.lunch,
-    afterSchool: raw?.afterSchool || fallback.afterSchool,
-    weekend: raw?.weekend || fallback.weekend,
-    holiday: raw?.holiday || fallback.holiday,
-    noLessons: raw?.noLessons || fallback.noLessons
-  };
+  const common = toMessageList(raw?.all);
+  const normalized = {};
+
+  for (const phase of MESSAGE_PHASES) {
+    const merged = [
+      ...toMessageList(raw?.[phase], fallback[phase]),
+      ...common
+    ];
+    normalized[phase] = merged.length ? merged : [...fallback[phase]];
+  }
+
+  return normalized;
 }
 
 function formatFunMessage(msg, ctx) {
