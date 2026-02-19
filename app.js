@@ -418,8 +418,8 @@ function renderTimetable() {
 
   const metaCell = (teacher, room) => {
     const t = teacher ? teacher.split('/').map(x => `<small>${escapeHtml(x.trim())}</small>`).join('<br>') : '<small>—</small>';
-    const r = room ? `<small class="muted">${escapeHtml(String(room))}</small>` : '';
-    return `<div class="td tdMeta">${t}${r}</div>`;
+    const r = room ? `<small class="muted">${escapeHtml(String(room))}</small>` : '<small class="muted">&nbsp;</small>';
+    return `<div class="td tdMeta"><div>${t}</div><div>${r}</div></div>`;
   };
 
   body.innerHTML = state.timeslots.map(s => {
@@ -500,7 +500,7 @@ function renderTodayPreview() {
         <div class="timeFrom">${escapeHtml(timeFrom || '—')}</div>
         ${timeTo ? `<div class="small muted">${escapeHtml(timeTo)}</div>` : ''}
       </div>
-      <div>
+      <div class="subjectCol">
         <div>${formatSubject(subject)}</div>
         ${noteHtml}
       </div>
@@ -1005,14 +1005,16 @@ function renderWeek() {
         return `<div class="weekCell weekEmpty" role="cell"></div>`;
       }
 
-      const meta = formatTeacherRoom(r.teacher, r.room);
+      const teacher = r.teacher ? escapeHtml(r.teacher.split('/').map(x => x.trim()).join(' / ')) : '—';
+      const room = r.room ? escapeHtml(String(r.room)) : '&nbsp;';
       const noteClass = r.note ? ' note' : '';
       const currentClass = d.id === todayId && currentPairStart === pair.first ? ' current' : '';
 
       return `
         <div class="weekCell${noteClass}${currentClass}" role="cell">
+          <div class="weekMeta weekMetaTop">${teacher}</div>
           <div class="weekSubject">${formatSubject(r.subject)}</div>
-          ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : ''}
+          <div class="weekMeta weekMetaBottom">${room}</div>
         </div>`;
     }).join('');
 

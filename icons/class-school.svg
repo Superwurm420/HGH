@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Schule Klassenfoto Platzhalter">
+  <defs>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#11998e"/>
+      <stop offset="100%" stop-color="#38ef7d"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" fill="url(#g4)"/>
+  <path d="M45 120l75-42 75 42" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="58" y="118" width="124" height="64" rx="8" fill="rgba(255,255,255,.92)"/>
+  <rect x="108" y="140" width="24" height="42" rx="4" fill="rgba(17,153,142,.9)"/>
+  <text x="120" y="224" text-anchor="middle" font-size="24" font-family="Arial,sans-serif" fill="#fff" font-weight="700">SCHULE</text>
+</svg>

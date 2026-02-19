@@ -236,13 +236,15 @@
           </div>
 
           <div class="controls">
-            <label class="control">
+            <label class="control control--class">
               <span class="controlLabel">Klasse</span>
-              <select 
-                id="weekClassSelect" 
-                class="select" 
-                aria-label="Klasse für Wochenübersicht auswählen"
-              ></select>
+              <span class="selectWrap">
+                <select 
+                  id="weekClassSelect" 
+                  class="select" 
+                  aria-label="Klasse für Wochenübersicht auswählen"
+                ></select>
+              </span>
             </label>
 
             <a 
@@ -277,13 +279,15 @@
           </div>
 
           <div class="controls">
-            <label class="control">
+            <label class="control control--class">
               <span class="controlLabel">Klasse</span>
-              <select
-                id="classSelect"
-                class="select"
-                aria-label="Klasse auswählen"
-              ></select>
+              <span class="selectWrap">
+                <select
+                  id="classSelect"
+                  class="select"
+                  aria-label="Klasse auswählen"
+                ></select>
+              </span>
             </label>
             <button
               type="button"
@@ -346,7 +350,9 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span class="linkCardIcon" aria-hidden="true">🏫</span>
+            <span class="linkCardIcon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L12 4l9 6"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg>
+            </span>
             <div class="linkCardBody">
               <div class="linkTitle">Schul-Website</div>
               <div class="linkUrl">holztechnik-hildesheim.de</div>
@@ -360,7 +366,9 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span class="linkCardIcon" aria-hidden="true">☁️</span>
+            <span class="linkCardIcon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6-1.5A3.5 3.5 0 0 0 7 18z"/></svg>
+            </span>
             <div class="linkCardBody">
               <div class="linkTitle">Nextcloud</div>
               <div class="linkUrl">hgh-hi.regio-box.net</div>
@@ -369,9 +377,48 @@
           </a>
         </nav>
 
-        <h2 style="margin-top:20px">Instagram</h2>
-        <p class="muted">Schnellzugriff auf die wichtigsten Profile</p>
+        <h2 style="margin-top:20px">Klassenfotos & Instagram</h2>
+        <p class="muted">Für HT21 und HT22 sind Instagram-Links verfügbar. Für alle Klassen gibt es hier ein Klassenfoto.</p>
         <div class="igProfiles" id="igProfiles">
+          <!-- HT11 -->
+          <article class="igProfile classPhotoCard" data-class="ht11">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing classPhotoRing">
+                <img src="./icons/class-ht11.svg" alt="Klassenfoto HT11" class="igAvatar" loading="lazy" />
+              </div>
+              <div class="igProfileInfo">
+                <div class="igName">HT11</div>
+                <div class="igHandle">Klassenfoto</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HT12 -->
+          <article class="igProfile classPhotoCard" data-class="ht12">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing classPhotoRing">
+                <img src="./icons/class-ht12.svg" alt="Klassenfoto HT12" class="igAvatar" loading="lazy" />
+              </div>
+              <div class="igProfileInfo">
+                <div class="igName">HT12</div>
+                <div class="igHandle">Klassenfoto</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HT21 Klassenfoto -->
+          <article class="igProfile classPhotoCard" data-class="ht21-photo">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing classPhotoRing">
+                <img src="./icons/class-ht21.svg" alt="Klassenfoto HT21" class="igAvatar" loading="lazy" />
+              </div>
+              <div class="igProfileInfo">
+                <div class="igName">HT21</div>
+                <div class="igHandle">Klassenfoto</div>
+              </div>
+            </div>
+          </article>
+
           <!-- HT21 -->
           <a class="igProfile" href="https://www.instagram.com/usf_ht21" target="_blank" rel="noopener noreferrer" data-ig="ht21">
             <div class="igProfileHeader">
@@ -412,25 +459,31 @@
             <span class="igOpenLabel">Auf Instagram öffnen</span>
           </a>
 
-          <!-- Schule -->
-          <a class="igProfile" href="https://www.instagram.com/hgh.hildesheim" target="_blank" rel="noopener noreferrer" data-ig="schule">
+          <!-- HT22 Klassenfoto -->
+          <article class="igProfile classPhotoCard" data-class="ht22-photo">
             <div class="igProfileHeader">
-              <div class="igAvatarRing">
-                <img src="./icons/logo-hgh-grid.svg" alt="HGH" class="igAvatar" loading="lazy" />
+              <div class="igAvatarRing classPhotoRing">
+                <img src="./icons/class-ht22.svg" alt="Klassenfoto HT22" class="igAvatar" loading="lazy" />
               </div>
               <div class="igProfileInfo">
-                <div class="igName">HGH Hildesheim</div>
-                <div class="igHandle">@hgh.hildesheim</div>
-                <div class="igFollowers" data-ig-followers="schule"></div>
+                <div class="igName">HT22</div>
+                <div class="igHandle">Klassenfoto</div>
               </div>
             </div>
-            <div class="igPreviewGrid" data-ig-grid="schule">
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
-              <div class="igPreviewPlaceholder"></div>
+          </article>
+
+          <!-- Schule -->
+          <article class="igProfile classPhotoCard" data-class="schule-photo">
+            <div class="igProfileHeader">
+              <div class="igAvatarRing classPhotoRing">
+                <img src="./icons/class-school.svg" alt="Klassenfoto Schule" class="igAvatar" loading="lazy" />
+              </div>
+              <div class="igProfileInfo">
+                <div class="igName">Schule</div>
+                <div class="igHandle">Klassenfoto</div>
+              </div>
             </div>
-            <span class="igOpenLabel">Auf Instagram öffnen</span>
-          </a>
+          </article>
         </div>
       </div>
     </section>
