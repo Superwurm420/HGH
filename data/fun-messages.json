@@ -1,40 +1,79 @@
 {
   "default": {
+    "all": [
+      "Du packst das, {classId}! 💪"
+    ],
     "beforeSchool": [
-      "Gleich geht's los – starte fokussiert in den Tag. 🎯",
-      "Kurz Plan checken, dann entspannt los. ☕"
+      "Gleich geht's los – Kaffee-Level prüfen und {slotLabel} anpeilen. ☕",
+      "Moin! {weekdayLabel} startet gleich. Gehirn hochfahren in 3…2…1… 🧠",
+      "Noch kurz durchatmen: Heute wartet {nextSubject} auf dich. 🚀",
+      "Frühstart-Modus: Tasche checken, Playlist aus, Fokus an. 🎧",
+      "Der Stundenplan ruft – {classId} ist gleich live. 📣",
+      "Letzter Ruhe-Moment vor dem Gong. Du bist bereit. ⏰"
     ],
     "beforeLesson": [
-      "Nächste Stunde in Kürze – Material bereithalten. 📘",
-      "Kurze Pause, dann geht's weiter. 💡"
+      "Nächste Stunde in Kürze: {nextSubject}. Sprint zur Klasse aktiviert. 🏃",
+      "Kurze Pause – dann Bühne frei für {nextSubject}. 🎬",
+      "Timer läuft: {slotLabel} kommt, Material schnappen! ⏱️",
+      "Gleich geht's weiter mit {nextSubject}. Noch ein tiefer Atemzug. 🌬️",
+      "Pausen-Endboss nähert sich: {nextSubject}.",
+      "Schnell noch Wasser holen, dann startet {slotLabel}. 💧"
     ],
     "duringLesson": [
-      "Du bist gerade in {subject} ({slotLabel}). Weiter so! 🚀",
-      "Fokus in {subject} – kleine Schritte, großer Fortschritt. ✅"
+      "Du bist in {subject} ({slotLabel}) – Fokus an, Chaos aus. 🎯",
+      "Live aus dem Klassenzimmer: {subject} liefert heute den Plot-Twist. 📚",
+      "{subject} läuft gerade – Bonuspunkte für aktive Mitarbeit. ✅",
+      "Konzentriert bleiben: {subject} zahlt auf dein Zukunfts-Ich ein. 🛠️",
+      "In {subject} ist heute Präzision gefragt – und die hast du. 🔧",
+      "{slotLabel}: {subject}-Zeit. Notizen heute = Stress weniger morgen. 📝"
     ],
     "betweenBlocks": [
-      "Verschnaufpause – gleich startet {nextSubject}. 🌬️",
-      "Nutze die Pause kurz zum Durchatmen. 🙌"
+      "Mini-Pause! Gleich geht's weiter mit {nextSubject}. 🌬️",
+      "Kurz Wasser holen, Schultern lockern, dann {nextSubject}. 💧",
+      "Durchatmen erfolgreich – nächster Halt: {nextSubject}. 🙌",
+      "Kleine Verschnaufpause zwischen den Blöcken. Weiter geht's gleich.",
+      "Snack-Window offen. Nächster Programmpunkt: {nextSubject}. 🍎",
+      "Pause läuft. Ladebalken für Motivation bei 87 %."
     ],
     "lunch": [
-      "Mittagspause – guten Appetit! 🍽️",
-      "Zeit zum Auftanken für den Nachmittag. 🔋"
+      "Mittagspause! Akku laden, Snacks sichern, Legendenstatus aufbauen. 🔋",
+      "Guten Appetit – dein Gehirn bestellt gerade Nachschub. 🍽️",
+      "Essenszeit! Danach geht's mit Stil zurück in den Stundenplan. 😎",
+      "Mittagspause erkannt: Kalorien rein, Konzentration raus aus dem Energiesparmodus.",
+      "Zeit für den Klassiker: Essen, lachen, kurz abschalten. 🥪",
+      "Pausenbrot-Moment. Der Nachmittag kann kommen."
     ],
     "afterSchool": [
-      "Schultag geschafft – Feierabend! 👋",
-      "Für heute erledigt. Stark durchgezogen! 🎉"
+      "Schultag beendet – Feierabend verdient freigeschaltet. 👋",
+      "Mission abgeschlossen. Hausaufgaben-Bossfight optional. 🎮",
+      "Heute durchgezogen! Jetzt erst mal entspannen. 🌇",
+      "Stundenplan sagt: Ende. Sofa sagt: Willkommen. 🛋️",
+      "Abschluss für heute – starke Leistung, {classId}. 🏁",
+      "Feierabend-Modus aktiv. Morgen wieder Angriff. ⚡"
+    ],
+    "weekend": [
+      "{weekdayLabel} sagt: Kein Unterricht, nur gute Vibes. 😎",
+      "Wochenende aktiv – Stundenplan hat heute frei. 🛋️",
+      "Heute ist {weekdayLabel}. Lernmodus auf chillig gestellt. 🎉",
+      "Kein Klingeln, kein Stress, nur Wochenende. ✨",
+      "{weekdayLabel}: offiziell schulfreie Komfortzone.",
+      "Heute zählt nur: ausschlafen, auftanken, genießen. 😴"
+    ],
+    "holiday": [
+      "Heute ist {holidayName} – der Stundenplan macht Kurzurlaub. 🎊",
+      "{holidayName}! Offiziell genehmigte Pause vom Klingelton. 🔔",
+      "Feiertag ({holidayName}) erkannt: Schlaflevel darf steigen. 😴",
+      "Kalender bestätigt: {holidayName}. Bücher dürfen kurz Pause machen.",
+      "Heute wird nicht gepaukt, heute ist {holidayName}.",
+      "Feiertagsmodus bei {holidayName}: entspannt bleiben. 🌤️"
+    ],
+    "noLessons": [
+      "Für {weekdayLabel} stehen gerade keine Stunden drin. Zeit für Plan B. 📅",
+      "Leerer Plan am {weekdayLabel} – seltene Ruhephase entdeckt. 🧘",
+      "Keine Einträge für heute. Vielleicht ein geheimer Studientag? 🕵️",
+      "Heute ohne Unterricht laut Plan – sinnvoll frei nutzen. ✅",
+      "Stundenplan meldet Pause für {weekdayLabel}.",
+      "Keine Stunden eingetragen: Orga, Erholung oder Vorsprung – deine Wahl."
     ]
-  },
-  "classes": {
-    "HT11": {
-      "duringLesson": [
-        "Praxisnah dranbleiben – {subject} sitzt! 🪚"
-      ]
-    },
-    "HT22": {
-      "afterSchool": [
-        "Tagesziel erreicht – morgen geht's weiter. 🧠"
-      ]
-    }
   }
 }

@@ -50,3 +50,22 @@ Optional: Mit `npm run timetable:ingest:dry` kann der Ablauf ohne Schreiben/Lös
 	•	📱 Installierbar als Progressive Web App
 	•	🧰 PDF-Parser-Scaffold zur automatischen Generierung der Stundenplan-Daten
 	•	🧪 Linting für sauberen Code (htmlhint + jshint)
+
+
+⸻
+
+💬 Fun-Messages anpassen (einfach erweiterbar)
+
+Die dynamischen Meldungen liegen in `data/fun-messages.json` unter `default`.
+
+- Pro Phase einfach einen neuen String in das passende Array einfügen (`beforeSchool`, `duringLesson`, `afterSchool`, `weekend`, `holiday`, …).
+- Optional kannst du unter `default.all` Nachrichten eintragen, die **automatisch zu allen Phasen** hinzugefügt werden.
+- Du kannst statt Array auch einen einzelnen String pro Phase nutzen (wird automatisch als Liste behandelt).
+
+Verfügbare Platzhalter in Nachrichten:
+- `{classId}` – aktuell gewählte Klasse
+- `{subject}` – aktuelles Fach (oder nächstes)
+- `{nextSubject}` – nächstes Fach
+- `{slotLabel}` – z. B. `Std. 3`
+- `{weekdayLabel}` – Wochentag (Montag, Dienstag, …)
+- `{holidayName}` – Feiertagsname (falls zutreffend)
