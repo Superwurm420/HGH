@@ -24,11 +24,13 @@ Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, C
 
 	2.	`npm run timetable:ingest` ausführen.
 
-	3.	Das Script erkennt automatisch die neueste passende PDF (auch Sonderpläne), testet mehrere Parser-Varianten und schreibt das beste Ergebnis nach `data/timetable.json`.
+	3.	Das Script erkennt automatisch die neueste passende PDF (auch Sonderpläne), testet mehrere Parser-Varianten und übernimmt nur das qualitativ beste Ergebnis (mit Mindest-Qualitätsprüfung).
 
-	4.	Alte Stundenplan-PDFs werden dabei automatisch entfernt (standardmäßig bleibt nur die aktuelle Datei erhalten).
+	4.	`data/timetable.json` wird atomar geschrieben (kein halbgeschriebener Zustand bei Fehlern).
 
-	5.	App neu laden – der aktualisierte Stundenplan wird angezeigt.
+	5.	Alte Stundenplan-PDFs werden dabei automatisch entfernt (standardmäßig bleibt nur die aktuelle Datei erhalten).
+
+	6.	App neu laden – der aktualisierte Stundenplan wird angezeigt.
 
 Optional: Mit `npm run timetable:ingest:dry` kann der Ablauf ohne Schreiben/Löschen geprüft werden.
 
