@@ -440,6 +440,10 @@ select:focus-visible{
   margin:6px 0 12px;
 }
 
+.netRowInline{
+  margin:4px 0 0;
+}
+
 .netIndicator{
   width:10px;
   height:10px;
@@ -584,7 +588,7 @@ select:focus-visible{
 
 .todayMetaRow{
   display:grid;
-  grid-template-columns:minmax(160px,220px) 1fr;
+  grid-template-columns:minmax(160px,220px);
   align-items:end;
   gap:12px;
   margin-top:8px;
@@ -605,6 +609,18 @@ select:focus-visible{
   font-size:12px;
   font-weight:700;
 }
+
+.dayInfoBadge a{
+  color:inherit;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+
+.dayInfoBadge a:hover{
+  opacity:.9;
+}
+
+
 
 
 /* Install Card */

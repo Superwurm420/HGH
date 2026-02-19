@@ -466,8 +466,10 @@ function renderTodayPreview() {
   if (!list) return;
 
   const classId = state.els.todayClassSelect?.value || storageGet(APP.storageKeys.classId) || 'HT11';
-  const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find(d => d.id === todayId)?.label || 'Heute');
-  safeSetText(todayWeekday, dayName);
+  const displayDate = new Date();
+  const dayLabel = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find(d => d.id === todayId)?.label || 'Heute');
+  const dateLabel = displayDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  safeSetText(todayWeekday, `${dayLabel}, ${dateLabel} · KW ${getISOWeek(displayDate)}`);
 
   const allRows = (state.timetable?.[classId]?.[todayId] || [])
     .filter(r => r.slotId !== '7');
@@ -532,8 +534,28 @@ function setActiveDayButton(dayId) {
 function updateCurrentDayInfo() {
   const el = state.els.currentDayInfo;
   if (!el) return;
-  const day = DAYS.find(d => d.id === (state.selectedDayId || getTodayId()));
-  el.textContent = `Ausgewählter Tag: ${day ? day.label : '—'}`;
+
+  const selectedDayId = state.selectedDayId || getTodayId();
+  const day = DAYS.find(d => d.id === selectedDayId);
+  if (!day) {
+    el.textContent = 'Ausgewählter Tag: —';
+    return;
+  }
+
+  const today = new Date();
+  const todayDayNum = today.getDay();
+  const selectedDayNum = DAYS.findIndex(d => d.id === selectedDayId) + 1;
+  const diff = selectedDayNum - todayDayNum;
+
+  const selectedDate = new Date(today);
+  selectedDate.setHours(0, 0, 0, 0);
+  selectedDate.setDate(today.getDate() + diff);
+
+  const dateLabel = selectedDate.toLocaleDateString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+
+  el.innerHTML = `Ausgewählter Tag: <a href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf" target="_blank" rel="noopener" data-pdf-link>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
 }
 
 // Synchronisiert beide Klassen-Selects und speichert
@@ -1079,7 +1101,7 @@ function initInstallHint() {
     } else if (isAndroid) {
       safeSetText(hint, 'Android: Über Browser-Menü oder den Button installieren.');
     } else {
-      safeSetText(hint, 'Desktop: Installationssymbol in der Adressleiste nutzen oder den Button verwenden.');
+      safeSetText(hint, 'Öffne die App auf Android oder iOS für die Installationsanleitung.');
     }
   }
 

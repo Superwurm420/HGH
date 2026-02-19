@@ -109,6 +109,15 @@
               <div class="small muted">Aktuelle Uhrzeit</div>
               <div id="nowTime" class="nowTime" aria-live="polite">—</div>
               <div id="todayWeekday" class="small muted">—</div>
+              <div class="netRow netRowInline" role="status" aria-label="Netzwerkstatus">
+                <span
+                  id="netIndicator"
+                  class="netIndicator"
+                  data-status="unknown"
+                  aria-hidden="true"
+                ></span>
+                <span id="netLabel" class="small muted">—</span>
+              </div>
             </div>
             <div id="countdownText" class="countdownText" aria-live="polite">—</div>
           </div>
@@ -124,7 +133,6 @@
               <select id="todayClassSelect" class="select" aria-label="Klasse für Heute-Widget auswählen"></select>
             </span>
           </label>
-          <p class="muted" id="todayLabel">Stunden heute</p>
         </div>
         <div
           id="todayPreview"
@@ -133,16 +141,6 @@
           aria-label="Heutiger Stundenplan (Vorschau)"
         ></div>
 
-        <!-- Netzwerkstatus -->
-        <div class="netRow" role="status" aria-label="Netzwerkstatus">
-          <span
-            id="netIndicator"
-            class="netIndicator"
-            data-status="unknown"
-            aria-hidden="true"
-          ></span>
-          <span id="netLabel" class="small muted">—</span>
-        </div>
         <p id="ttLastUpdated" class="small muted"></p>
       </div>
 
@@ -212,22 +210,15 @@
           <article class="installStep" role="listitem">
             <span class="installStepNumber" aria-hidden="true">1</span>
             <div>
-              <h3>Android / Chrome</h3>
-              <p>Browser-Menü öffnen und <strong>„App installieren"</strong> auswählen.</p>
+              <h3>Android</h3>
+              <p><strong>Menü</strong> öffnen → <strong>„App installieren"</strong>.</p>
             </div>
           </article>
           <article class="installStep" role="listitem">
             <span class="installStepNumber" aria-hidden="true">2</span>
             <div>
-              <h3>iPhone / Safari</h3>
-              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen. (Nur iPhone)</p>
-            </div>
-          </article>
-          <article class="installStep" role="listitem">
-            <span class="installStepNumber" aria-hidden="true">3</span>
-            <div>
-              <h3>Desktop</h3>
-              <p>In der Adressleiste auf das <strong>Installationssymbol</strong> klicken.</p>
+              <h3>iOS</h3>
+              <p><strong>Teilen</strong> tippen → <strong>„Zum Home-Bildschirm"</strong>.</p>
             </div>
           </article>
         </div>
@@ -297,6 +288,16 @@
                 ></select>
               </span>
             </label>
+            <a
+              class="btn secondary"
+              href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
+              target="_blank"
+              rel="noopener"
+              aria-label="Stundenplan als PDF öffnen"
+              data-pdf-link
+            >
+              PDF-Stundenplan
+            </a>
             <span class="dayInfoBadge" id="currentDayInfo" aria-live="polite">Heute: —</span>
           </div>
         </div>
