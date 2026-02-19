@@ -485,11 +485,11 @@ function renderTodayPreview() {
       </div>
       <div>
         <div>${escapeHtml(subject)}</div>
-        <div class="metaRow">
-          <div class="sub">${teacherHtml}</div>
-          ${roomStr ? `<div class="sub roomLabel">${roomStr}</div>` : ''}
-        </div>
         ${noteHtml}
+      </div>
+      <div class="metaCol">
+        <div class="sub">${teacherHtml}</div>
+        ${roomStr ? `<div class="sub">${roomStr}</div>` : ''}
       </div>
     </div>`;
   }).join('');
