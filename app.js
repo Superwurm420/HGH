@@ -63,6 +63,10 @@ const MONTH_NAMES = [
 ];
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
+const CALENDAR_VISIBLE_WINDOW_DAYS = {
+  past: 30,
+  future: 400,
+};
 const DEFAULT_FUN_MESSAGES = {
   default: {
     beforeSchool: ['Guten Morgen – dein Tag startet gleich. ☀️'],
@@ -846,6 +850,9 @@ function parseICS(text) {
   const unfolded = text.replace(/\r?\n[ \t]/g, '');
   const unescape = s => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
   const events = [];
+  const now = new Date();
+  const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - CALENDAR_VISIBLE_WINDOW_DAYS.past);
+  const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + CALENDAR_VISIBLE_WINDOW_DAYS.future);
   const blocks = unfolded.split('BEGIN:VEVENT');
   for (let i = 1; i < blocks.length; i++) {
     const end = blocks[i].indexOf('END:VEVENT');
@@ -863,9 +870,21 @@ function parseICS(text) {
     const allDay = !dtstart.includes('T');
     const start = parseICSDate(dtstart);
     const end2 = dtend ? parseICSDate(dtend) : start;
-    if (start) events.push({ title, start, end: end2, allDay });
+    if (!start || Number.isNaN(start.getTime())) continue;
+
+    const eventEnd = end2 && !Number.isNaN(end2.getTime()) ? end2 : start;
+    if (eventEnd < minDate || start > maxDate) continue;
+
+    events.push({ title, start, end: eventEnd, allDay });
   }
-  return events;
+
+  const seen = new Set();
+  return events.filter(ev => {
+    const key = `${ev.title}|${ev.start.getTime()}|${ev.end?.getTime() || ''}|${ev.allDay}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 async function fetchCalendar(cfg) {
