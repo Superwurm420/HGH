@@ -983,19 +983,24 @@ function renderWeek() {
     const secondSlot = state.timeslotMap.get(pair.second);
     if (!firstSlot || !secondSlot) return '';
 
-    const timeFrom = firstSlot.time.split('–')[0];
-    const timeTo = secondSlot.time.split('–')[1];
+    const timeFrom = firstSlot.time.split('–')[0].trim();
+    const timeTo   = secondSlot.time.split('–')[1].trim();
 
     const dayCells = DAYS.map(d => {
       const rows = state.timetable?.[classId]?.[d.id] || [];
       const r = rows.find(x => String(x.slotId) === pair.first);
-      const meta = formatTeacherRoom(r?.teacher, r?.room);
-      const noteClass = r?.note ? ' note' : '';
+
+      if (!r) {
+        return `<div class="weekCell weekEmpty" role="cell"></div>`;
+      }
+
+      const meta = formatTeacherRoom(r.teacher, r.room);
+      const noteClass = r.note ? ' note' : '';
 
       return `
         <div class="weekCell${noteClass}" role="cell">
-          <div class="weekSubject">${escapeHtml(r?.subject || '—')}</div>
-          ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : '<div class="weekMeta muted">—</div>'}
+          <div class="weekSubject">${escapeHtml(r.subject || '—')}</div>
+          ${meta ? `<div class="weekMeta">${escapeHtml(meta)}</div>` : ''}
         </div>`;
     }).join('');
 
@@ -1003,9 +1008,8 @@ function renderWeek() {
       <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.first)}+${escapeHtml(pair.second)}">
         <div class="weekCell weekSlot" role="rowheader">
           <div class="tdTime">
-            <span class="small muted">Std. ${escapeHtml(pair.first)}/${escapeHtml(pair.second)}</span>
-            <span class="timeFrom">${escapeHtml(timeFrom)}</span>
-            <span class="small muted">${escapeHtml(timeTo)}</span>
+            <span class="weekTimeRange">${escapeHtml(timeFrom)}–${escapeHtml(timeTo)}</span>
+            <div class="weekSlotLabel">Std.&thinsp;${escapeHtml(pair.first)}&thinsp;+&thinsp;${escapeHtml(pair.second)}</div>
           </div>
         </div>
         ${dayCells}

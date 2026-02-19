@@ -1048,11 +1048,10 @@ select:focus-visible{
 
 /* Week Grid */
 .weekGrid{
-  margin-top:14px;
-  border-radius:16px;
+  margin-top:16px;
+  border-radius:var(--radius2);
   overflow:auto;
   border:1px solid var(--line);
-  background:rgba(255,255,255,.06);
 }
 
 /* weekTable ist der einzige Grid-Container → alle Zeilen teilen dieselbe Spaltenbreite */
@@ -1073,31 +1072,34 @@ select:focus-visible{
   border-right:1px solid var(--line);
   overflow:hidden;
   min-width:0;
+  vertical-align:top;
 }
 
 .weekRow .weekCell:last-child{
   border-right:none;
 }
 
-/* Letzte Daten-Zeile: kein border-bottom.
-   Da weekRow display:contents ist, hilft :last-child hier nicht —
-   stattdessen entfernen wir es via JS-Klasse oder lassen es weg (Grid-Rand übernimmt). */
+/* Leere Zellen – kein Inhalt, nur dezenter Platzhalter */
+.weekCell.weekEmpty{
+  background:transparent;
+}
 
 /* Header-Zellen: jede einzeln sticky-top, da weekHeader display:contents */
 .weekHeader .weekCell{
   position:sticky;
   top:0;
   z-index:3;
-  background:color-mix(in srgb, var(--bg0) 88%, white);
-  font-size:12px;
-  font-weight:750;
-  letter-spacing:.04em;
+  background:var(--surface2);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.07em;
   text-transform:uppercase;
   color:var(--muted);
-  padding:8px 12px;
+  padding:9px 12px;
   display:flex;
   align-items:center;
   justify-content:center;
+  border-bottom:1px solid var(--line);
 }
 
 /* Eck-Zelle: sticky top + left → höchster z-index */
@@ -1107,27 +1109,46 @@ select:focus-visible{
   z-index:4;
   justify-content:flex-start !important;
   color:var(--muted);
-  font-size:11px;
-  font-weight:500;
+  font-size:10px;
+  font-weight:600;
   text-transform:uppercase;
-  letter-spacing:.05em;
+  letter-spacing:.06em;
+  background:var(--surface2) !important;
 }
 
 /* Stunden-Spalte: sticky links, solider Hintergrund (kein Bleed-through) */
 .weekSlot{
-  background:color-mix(in srgb, var(--bg0) 94%, white);
+  background:var(--surface);
   border-right:1px solid var(--line) !important;
   position:sticky;
   left:0;
   z-index:2;
-  padding:10px 12px;
+  padding:10px 14px 10px 12px;
+  white-space:nowrap;
+}
+
+/* Zeitanzeige in der Slot-Spalte */
+.weekTimeRange{
+  font-size:13px;
+  font-weight:700;
+  line-height:1.2;
+  color:var(--text);
+  letter-spacing:-.1px;
+}
+
+.weekSlotLabel{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:3px;
+  font-weight:500;
+  letter-spacing:.03em;
 }
 
 /* Fach */
 .weekSubject{
   font-weight:700;
   font-size:13px;
-  line-height:1.25;
+  line-height:1.3;
   overflow-wrap:break-word;
   word-break:break-word;
   hyphens:auto;
@@ -1137,9 +1158,18 @@ select:focus-visible{
 /* Lehrer / Raum */
 .weekMeta{
   font-size:11px;
-  margin-top:3px;
+  margin-top:4px;
   color:var(--muted);
-  line-height:1.3;
+  line-height:1.4;
+}
+
+/* Light-Mode-Overrides */
+[data-theme="light"] .weekSlot{
+  background:rgba(0,0,0,.04);
+}
+[data-theme="light"] .weekHeader .weekCell,
+[data-theme="light"] .weekCorner{
+  background:rgba(0,0,0,.055) !important;
 }
 
 /* Link Cards */
