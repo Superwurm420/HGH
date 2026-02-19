@@ -434,10 +434,11 @@ function renderTimetable() {
     const r = bySlot.get(s.id);
     const secondId = DOUBLE_PAIRS[s.id];
     const secondSlot = secondId ? state.timeslotMap.get(secondId) : null;
+    const hasSecondRow = secondId ? bySlot.has(secondId) : false;
     const noteClass = r?.note ? ' note' : '';
     const currentClass = currentPairStart === s.id ? ' current' : '';
 
-    if (secondSlot) {
+    if (r && secondSlot && hasSecondRow) {
       skip.add(secondId);
       const timeFrom = s.time.split('–')[0];
       const timeTo = secondSlot.time.split('–')[1];
@@ -461,12 +462,12 @@ function renderTimetable() {
 
 function renderTodayPreview() {
   const todayId = getTodayId();
-  const { todayLabel, todayPreview: list } = state.els;
-  if (!todayLabel || !list) return;
+  const { todayWeekday, todayPreview: list } = state.els;
+  if (!list) return;
 
   const classId = state.els.todayClassSelect?.value || storageGet(APP.storageKeys.classId) || 'HT11';
   const dayName = !isWeekday() ? 'Nächster Schultag (Montag)' : (DAYS.find(d => d.id === todayId)?.label || 'Heute');
-  todayLabel.textContent = `${dayName}`;
+  safeSetText(todayWeekday, dayName);
 
   const allRows = (state.timetable?.[classId]?.[todayId] || [])
     .filter(r => r.slotId !== '7');
@@ -1069,12 +1070,12 @@ function initInstallHint() {
   const { installHint: hint, installBanner: banner, installBannerClose: closeBtn, installButton } = state.els;
 
   const ua = navigator.userAgent || '';
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isIOS = /iPhone|iPod/i.test(ua);
   const isAndroid = /Android/i.test(ua);
 
   if (hint) {
     if (isIOS) {
-      safeSetText(hint, 'iPhone/iPad: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
+      safeSetText(hint, 'iPhone: Über "Teilen" → "Zum Home-Bildschirm" installieren.');
     } else if (isAndroid) {
       safeSetText(hint, 'Android: Über Browser-Menü oder den Button installieren.');
     } else {
@@ -1203,7 +1204,7 @@ function cacheEls() {
     todayClassSelect: qs('#todayClassSelect'),
     currentDayInfo: qs('#currentDayInfo'),
     timetableBody: qs('#timetableBody'),
-    todayLabel: qs('#todayLabel'),
+    todayWeekday: qs('#todayWeekday'),
     todayPreview: qs('#todayPreview'),
     nowTime: qs('#nowTime'),
     countdownText: qs('#countdownText'),

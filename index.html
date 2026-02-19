@@ -108,6 +108,7 @@
             <div class="countdownTimeBlock">
               <div class="small muted">Aktuelle Uhrzeit</div>
               <div id="nowTime" class="nowTime" aria-live="polite">—</div>
+              <div id="todayWeekday" class="small muted">—</div>
             </div>
             <div id="countdownText" class="countdownText" aria-live="polite">—</div>
           </div>
@@ -123,7 +124,7 @@
               <select id="todayClassSelect" class="select" aria-label="Klasse für Heute-Widget auswählen"></select>
             </span>
           </label>
-          <p class="muted" id="todayLabel">—</p>
+          <p class="muted" id="todayLabel">Stunden heute</p>
         </div>
         <div
           id="todayPreview"
@@ -219,7 +220,7 @@
             <span class="installStepNumber" aria-hidden="true">2</span>
             <div>
               <h3>iPhone / Safari</h3>
-              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen.</p>
+              <p>Auf <strong>Teilen</strong> tippen und <strong>„Zum Home-Bildschirm"</strong> wählen. (Nur iPhone)</p>
             </div>
           </article>
           <article class="installStep" role="listitem">
@@ -343,7 +344,6 @@
     <section class="view" data-view="links" hidden>
       <div class="card surface">
         <h2>Links</h2>
-        <p class="muted">Wichtige Schnellzugriffe.</p>
 
         <nav class="linkCards" aria-label="Wichtige Links">
           <a
@@ -433,72 +433,35 @@
         </nav>
 
         <h2 style="margin-top:20px">Klassenfotos</h2>
-        <p class="muted">Hier kommen später die Klassenfotos als JPG/PNG-Dateien rein.</p>
-        <div class="igProfiles" id="igProfiles">
-          <!-- HT11 -->
-          <article class="igProfile classPhotoCard" data-class="ht11">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht11.svg" alt="Platzhalter Klassenfoto HT11" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT11</div>
-                <div class="igHandle">Bild folgt (JPG/PNG)</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- HT12 -->
-          <article class="igProfile classPhotoCard" data-class="ht12">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht12.svg" alt="Platzhalter Klassenfoto HT12" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT12</div>
-                <div class="igHandle">Bild folgt (JPG/PNG)</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- HT21 Klassenfoto -->
-          <article class="igProfile classPhotoCard" data-class="ht21-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht21.svg" alt="Platzhalter Klassenfoto HT21" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT21</div>
-                <div class="igHandle">Bild folgt (JPG/PNG)</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- HT22 Klassenfoto -->
-          <article class="igProfile classPhotoCard" data-class="ht22-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-ht22.svg" alt="Platzhalter Klassenfoto HT22" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">HT22</div>
-                <div class="igHandle">Bild folgt (JPG/PNG)</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- Schule -->
-          <article class="igProfile classPhotoCard" data-class="schule-photo">
-            <div class="igProfileHeader">
-              <div class="igAvatarRing classPhotoRing">
-                <img src="./icons/class-school.svg" alt="Platzhalter Klassenfoto Schule" class="igAvatar" loading="lazy" />
-              </div>
-              <div class="igProfileInfo">
-                <div class="igName">Schule</div>
-                <div class="igHandle">Bild folgt (JPG/PNG)</div>
-              </div>
-            </div>
-          </article>
+        <div class="classPhotosGrid" id="classPhotos">
+          <a class="classPhotoItem" href="./images/class-ht11.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT11</div>
+            <img src="./icons/class-ht11.svg" alt="Klassenfoto HT11" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht12.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT12</div>
+            <img src="./icons/class-ht12.svg" alt="Klassenfoto HT12" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht21.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT21</div>
+            <img src="./icons/class-ht21.svg" alt="Klassenfoto HT21" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-ht22.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">HT22</div>
+            <img src="./icons/class-ht22.svg" alt="Klassenfoto HT22" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-g11.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">G11</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G11" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-g12.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">G12</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G12" class="classPhotoLarge" loading="lazy" />
+          </a>
+          <a class="classPhotoItem" href="./images/class-gt01.jpg" target="_blank" rel="noopener noreferrer">
+            <div class="classPhotoTitle">GT01</div>
+            <img src="./icons/class-placeholder.svg" alt="Klassenfoto GT01" class="classPhotoLarge" loading="lazy" />
+          </a>
         </div>
       </div>
     </section>

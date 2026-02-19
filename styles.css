@@ -1484,6 +1484,43 @@ select:focus-visible{
   background:rgba(0,0,0,.02);
 }
 
+
+.classPhotosGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  margin-top:12px;
+}
+
+.classPhotoItem{
+  display:block;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  text-decoration:none;
+  color:var(--text);
+}
+
+.classPhotoItem:hover{
+  border-color:rgba(0,122,255,.4);
+  background:rgba(0,122,255,.06);
+}
+
+.classPhotoTitle{
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+.classPhotoLarge{
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.05);
+}
+
 /* Footer */
 .footer{
   margin-top:14px;
@@ -1518,6 +1555,10 @@ select:focus-visible{
   }
 
   .igProfiles{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .classPhotosGrid{
     grid-template-columns:1fr 1fr;
   }
 }
@@ -1681,17 +1722,3 @@ select:focus-visible{
   }
 }
 
-
-.classPhotoCard{
-  cursor:default;
-}
-
-.classPhotoCard:hover{
-  border-color:var(--line);
-  background:rgba(255,255,255,.04);
-  transform:none;
-}
-
-.classPhotoRing{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-}
