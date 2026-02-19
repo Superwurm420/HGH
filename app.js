@@ -1008,7 +1008,8 @@ function renderWeek() {
       <div class="weekRow" role="row" aria-label="Doppelstunde ${escapeHtml(pair.first)}+${escapeHtml(pair.second)}">
         <div class="weekCell weekSlot" role="rowheader">
           <div class="tdTime">
-            <span class="weekTimeRange">${escapeHtml(timeFrom)}–${escapeHtml(timeTo)}</span>
+            <span class="weekTimeRange">${escapeHtml(timeFrom)}</span>
+            <span class="weekTimeEnd">${escapeHtml(timeTo)}</span>
             <div class="weekSlotLabel">Std.&thinsp;${escapeHtml(pair.first)}&thinsp;+&thinsp;${escapeHtml(pair.second)}</div>
           </div>
         </div>

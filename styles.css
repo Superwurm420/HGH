@@ -1102,29 +1102,20 @@ select:focus-visible{
   border-bottom:1px solid var(--line);
 }
 
-/* Eck-Zelle: sticky top + left → höchster z-index */
+/* Eck-Zelle: scrollt mit Grid */
 .weekCorner{
-  position:sticky;
-  left:0;
-  z-index:4;
   justify-content:flex-start !important;
   color:var(--muted);
   font-size:10px;
   font-weight:600;
   text-transform:uppercase;
   letter-spacing:.06em;
-  background:var(--surface2) !important;
 }
 
-/* Stunden-Spalte: sticky links, solider Hintergrund (kein Bleed-through) */
+/* Stunden-Spalte: nicht fixiert, scrollt mit dem Grid */
 .weekSlot{
-  background:var(--surface);
   border-right:1px solid var(--line) !important;
-  position:sticky;
-  left:0;
-  z-index:2;
-  padding:10px 14px 10px 12px;
-  white-space:nowrap;
+  padding:10px 12px;
 }
 
 /* Zeitanzeige in der Slot-Spalte */
@@ -1136,10 +1127,17 @@ select:focus-visible{
   letter-spacing:-.1px;
 }
 
+.weekTimeEnd{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:1px;
+  line-height:1.2;
+}
+
 .weekSlotLabel{
   font-size:10px;
   color:var(--muted);
-  margin-top:3px;
+  margin-top:4px;
   font-weight:500;
   letter-spacing:.03em;
 }
@@ -1164,12 +1162,8 @@ select:focus-visible{
 }
 
 /* Light-Mode-Overrides */
-[data-theme="light"] .weekSlot{
-  background:rgba(0,0,0,.04);
-}
-[data-theme="light"] .weekHeader .weekCell,
-[data-theme="light"] .weekCorner{
-  background:rgba(0,0,0,.055) !important;
+[data-theme="light"] .weekHeader .weekCell{
+  background:rgba(0,0,0,.055);
 }
 
 /* Link Cards */
