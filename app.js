@@ -34,21 +34,6 @@ const DAYS = [
 
 const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
 
-const TEACHER_MAP = {
-  'STE': 'A. Steinau',
-  'WED': 'H. Westendorf',
-  'STI': 'J. Stille',
-  'BÜ': 'K. Bünte',
-  'HOFF': 'T. Hoffmann',
-  'GRO': 'A. Grotjahn',
-  'TAM': 'B. Tammen',
-  'WEN': 'J. Wendel',
-  'MEL': 'D. Mell',
-  'WEZ': 'Wenzel',
-  'HOG': 'Hogendorn',
-  'BER': 'A. Berenfeld',
-  'BER/WEZ': 'Berenfeld/Wenzel'
-};
 
 const DEFAULT_TIMESLOTS = [
   { id: '1', time: '08:00–08:45' },
@@ -157,14 +142,9 @@ function storageSet(key, value) {
   catch { /* quota/private mode */ }
 }
 
-function formatTeacherName(teacher) {
-  if (!teacher) return '—';
-  return TEACHER_MAP[teacher] || teacher;
-}
-
 function formatTeacherRoom(teacher, room) {
   const parts = [];
-  if (teacher) parts.push(formatTeacherName(teacher));
+  if (teacher) parts.push(teacher);
   if (room) parts.push(String(room));
   return parts.join(' / ');
 }
@@ -478,7 +458,7 @@ function renderTodayPreview() {
 
   list.innerHTML = merged.map(r => {
     const subject = r?.subject ?? '—';
-    const teacherLines = r?.teacher ? r.teacher.split('/').map(t => escapeHtml(formatTeacherName(t.trim()))) : [];
+    const teacherLines = r?.teacher ? r.teacher.split('/').map(t => escapeHtml(t.trim())) : [];
     const roomStr = r?.room ? escapeHtml(String(r.room)) : '';
     const teacherHtml = teacherLines.length ? teacherLines.join('<br>') : '—';
 
