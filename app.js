@@ -65,12 +65,12 @@ const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
 const DEFAULT_FUN_MESSAGES = {
   default: {
-    beforeSchool: ['{classId}: Guten Morgen – dein Tag startet gleich. ☀️'],
-    beforeLesson: ['{classId}: Gleich geht die nächste Stunde los. ⏱️'],
-    duringLesson: ['{classId}: Volle Konzentration in {subject}. 📚'],
-    betweenBlocks: ['{classId}: Kleine Pause – dann weiter. 💪'],
-    lunch: ['{classId}: Mittagspause – lass es dir schmecken! 🍽️'],
-    afterSchool: ['{classId}: Unterricht vorbei – guten Feierabend! 👋']
+    beforeSchool: ['Guten Morgen – dein Tag startet gleich. ☀️'],
+    beforeLesson: ['Gleich geht die nächste Stunde los. ⏱️'],
+    duringLesson: ['Volle Konzentration in {subject}. 📚'],
+    betweenBlocks: ['Kleine Pause – dann weiter. 💪'],
+    lunch: ['Mittagspause – lass es dir schmecken! 🍽️'],
+    afterSchool: ['Unterricht vorbei – guten Feierabend! 👋']
   },
   classes: {}
 };
@@ -80,7 +80,7 @@ const DEFAULT_FUN_MESSAGES = {
 const CAL_CONFIGS = [
   {
     id: 'jahreskalender',
-    label: 'HGH Jahreskalender',
+    label: 'Jahreskalender',
     icsUrl: 'https://calendar.google.com/calendar/ical/r1d6av3let2sjbfthapb5i87sg%40group.calendar.google.com/public/basic.ics',
     color: '#58b4ff',
   },
@@ -272,7 +272,7 @@ function applyTimetableData(data) {
   const lastUpdEl = qs('#ttLastUpdated');
   if (lastUpdEl && data?.meta?.updatedAt) {
     const d = new Date(data.meta.updatedAt);
-    lastUpdEl.textContent = `Stundenplan aktualisiert: ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+    lastUpdEl.textContent = `Aktualisiert ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
   }
 }
 
@@ -559,7 +559,7 @@ function updateCurrentDayInfo() {
   const selectedDayId = state.selectedDayId || getTodayId();
   const day = DAYS.find(d => d.id === selectedDayId);
   if (!day) {
-    el.textContent = 'Ausgewählter Tag: —';
+    el.textContent = '—';
     return;
   }
 
@@ -576,7 +576,7 @@ function updateCurrentDayInfo() {
     day: '2-digit', month: '2-digit', year: 'numeric'
   });
 
-  el.innerHTML = `Ausgewählter Tag: <a href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf" target="_blank" rel="noopener" data-pdf-link>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
+  el.innerHTML = `<a href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf" target="_blank" rel="noopener" data-pdf-link>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
 }
 
 // Synchronisiert beide Klassen-Selects und speichert
@@ -870,15 +870,18 @@ function parseICS(text) {
 
 async function fetchCalendar(cfg) {
   const tryFetch = async url => {
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.text();
   };
 
   try {
     let text;
-    try { text = await tryFetch(cfg.icsUrl); }
-    catch { text = await tryFetch(CORS_PROXY + encodeURIComponent(cfg.icsUrl)); }
+    try {
+      text = await tryFetch(`${cfg.icsUrl}${cfg.icsUrl.includes('?') ? '&' : '?'}_=${Date.now()}`);
+    } catch {
+      text = await tryFetch(`${CORS_PROXY}${encodeURIComponent(cfg.icsUrl)}&_=${Date.now()}`);
+    }
     state.cal.events[cfg.id] = parseICS(text);
   } catch (e) {
     console.warn(`[Cal] ${cfg.id}:`, e);
@@ -887,6 +890,7 @@ async function fetchCalendar(cfg) {
 }
 
 async function loadCalendars() {
+  state.cal.events = {};
   await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
   renderCalendar();
 }
@@ -1165,9 +1169,11 @@ function renderWeek() {
 
       return `
         <div class="weekCell${noteClass}${currentClass}" role="cell">
-          <div class="weekMeta weekMetaTop">${teacher}</div>
           <div class="weekSubject">${formatSubject(r.subject)}</div>
-          <div class="weekMeta weekMetaBottom">${room}</div>
+          <div class="weekMetaRow">
+            <div class="weekMeta weekMetaTeacher">${teacher}</div>
+            <div class="weekMeta weekMetaRoom">${room}</div>
+          </div>
         </div>`;
     }).join('');
 

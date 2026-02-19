@@ -715,6 +715,11 @@ select:focus-visible{
   background:linear-gradient(120deg, var(--accent), var(--accent2));
 }
 
+.installStepNumber svg{
+  width:16px;
+  height:16px;
+}
+
 .installStep h3{
   margin:0;
   font-size:14px;
@@ -1248,12 +1253,20 @@ select:focus-visible{
   line-height:1.4;
 }
 
-.weekMetaTop{
-  margin-top:0;
+.weekMetaRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:8px;
+  margin-top:auto;
 }
 
-.weekMetaBottom{
-  margin-top:auto;
+.weekMetaTeacher{
+  text-align:left;
+}
+
+.weekMetaRoom{
+  text-align:right;
 }
 
 /* Light-Mode-Overrides */
@@ -1562,6 +1575,35 @@ select:focus-visible{
 }
 
 
+
+@media (min-width:740px) and (max-width:1023px){
+  .row.wrap{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  .controls{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:end;
+  }
+
+  .controls .btn.secondary,
+  .controls .dayInfoBadge{
+    justify-content:center;
+    width:100%;
+  }
+
+  .dayRow{
+    display:grid;
+    grid-template-columns:56px 1fr;
+    align-items:center;
+    gap:12px;
+  }
+}
+
 @media (min-width:1024px){
   .view[data-view="home"]{
     display:grid;
@@ -1645,8 +1687,15 @@ select:focus-visible{
 
 
   .todayMetaRow{
-    grid-template-columns:1fr;
-    align-items:stretch;
+    grid-template-columns:minmax(136px,180px) 1fr;
+    align-items:end;
+    gap:10px;
+  }
+
+  .ttLastUpdated{
+    justify-self:end;
+    text-align:right;
+    font-size:11px;
   }
 
   .countdownTop{
@@ -1666,6 +1715,19 @@ select:focus-visible{
   .installHead{
     flex-direction:column;
     align-items:flex-start;
+  }
+
+
+  .weekCell{
+    justify-content:flex-start;
+  }
+
+  .weekSubject{
+    margin:0;
+  }
+
+  .weekMetaRow{
+    margin-top:auto;
   }
 
   [data-theme="light"] .navItem[aria-current="page"]{
