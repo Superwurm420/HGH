@@ -20,16 +20,17 @@ Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, C
 
 📄 Stundenplan per PDF aktualisieren
 
-	1.	Neue Stundenplan-PDF hochladen (bestehende Datei ersetzen).
+	1.	Neue Stundenplan-PDF in `plan/` hochladen.
 
-	2.	Das Upload-Script verarbeitet die PDF automatisch.
+	2.	`npm run timetable:ingest` ausführen.
 
-	3.	Die Datei data/timetable.json wird dabei automatisch neu generiert.
+	3.	Das Script erkennt automatisch die neueste passende PDF (auch Sonderpläne), testet mehrere Parser-Varianten und schreibt das beste Ergebnis nach `data/timetable.json`.
 
-	4.	App neu laden – der aktualisierte Stundenplan wird angezeigt.
+	4.	Alte Stundenplan-PDFs werden dabei automatisch entfernt (standardmäßig bleibt nur die aktuelle Datei erhalten).
 
-Es ist kein manueller Befehl notwendig.
-Die Umwandlung von PDF → JSON erfolgt automatisch nach dem Upload.
+	5.	App neu laden – der aktualisierte Stundenplan wird angezeigt.
+
+Optional: Mit `npm run timetable:ingest:dry` kann der Ablauf ohne Schreiben/Löschen geprüft werden.
 
 ⸻
 
