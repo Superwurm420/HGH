@@ -1,11 +1,11 @@
 {
-  "fetchedAt": "2026-02-19T17:00:53.057Z",
+  "fetchedAt": "2026-02-19T18:14:10.760Z",
   "profiles": {
     "ht21": {
       "handle": "usf_ht21",
       "label": "HT21 – Lunido",
       "url": "https://www.instagram.com/usf_ht21/",
-      "profilePic": null,
+      "profilePic": "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png",
       "followers": null,
       "description": null
     },
@@ -13,7 +13,7 @@
       "handle": "usf_ht22",
       "label": "HT22 – LYS",
       "url": "https://www.instagram.com/usf_ht22/",
-      "profilePic": null,
+      "profilePic": "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png",
       "followers": null,
       "description": null
     },
@@ -21,7 +21,7 @@
       "handle": "hgh.hildesheim",
       "label": "HGH Hildesheim",
       "url": "https://www.instagram.com/hgh.hildesheim/",
-      "profilePic": null,
+      "profilePic": "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png",
       "followers": null,
       "description": null
     }
