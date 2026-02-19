@@ -87,6 +87,7 @@ const state = {
   timeslots: DEFAULT_TIMESLOTS,
   timeslotMap: new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s])),
   timetable: null,
+  classIds: [...CLASSES],
   selectedDayId: null,
   els: {},
   isLoading: false,
@@ -171,10 +172,16 @@ function isValidTimetableData(data) {
   return true;
 }
 
+function getAvailableClasses() {
+  if (Array.isArray(state.classIds) && state.classIds.length) return state.classIds;
+  return CLASSES;
+}
+
 // Befüllt ein <select> mit Klassen-Optionen (DRY)
 function populateClassSelect(sel) {
   if (!sel) return;
-  sel.innerHTML = CLASSES.map(c =>
+  const classIds = getAvailableClasses();
+  sel.innerHTML = classIds.map(c =>
     `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
   ).join('');
 }
@@ -227,6 +234,8 @@ function applyTimetableData(data) {
   state.timeslotMap = new Map(state.timeslots.map(s => [s.id, s]));
 
   const classes = data?.classes || ensureEmptyTimetable();
+  const dynamicClassIds = Object.keys(classes || {});
+  state.classIds = dynamicClassIds.length ? dynamicClassIds : [...CLASSES];
 
   // sameAs-Referenzen auflösen
   for (const cls of Object.keys(classes)) {
@@ -579,10 +588,12 @@ function initSelects() {
   populateClassSelect(classSelect);
   populateClassSelect(todayClassSelect);
 
-  const savedClass = storageGet(APP.storageKeys.classId) || 'HT11';
+  const classIds = getAvailableClasses();
+  const fallbackClass = classIds[0] || 'HT11';
+  const savedClass = storageGet(APP.storageKeys.classId) || fallbackClass;
   const savedDay = storageGet(APP.storageKeys.dayId) || getTodayId();
 
-  const initialClass = CLASSES.includes(savedClass) ? savedClass : 'HT11';
+  const initialClass = classIds.includes(savedClass) ? savedClass : fallbackClass;
   classSelect.value = initialClass;
   if (todayClassSelect) todayClassSelect.value = initialClass;
 
@@ -1014,8 +1025,10 @@ function initWeekSelect() {
   const sel = state.els.weekClassSelect;
   if (!sel) return;
   populateClassSelect(sel);
-  const saved = storageGet(APP.storageKeys.classId) || 'HT11';
-  sel.value = CLASSES.includes(saved) ? saved : 'HT11';
+  const classIds = getAvailableClasses();
+  const fallbackClass = classIds[0] || 'HT11';
+  const saved = storageGet(APP.storageKeys.classId) || fallbackClass;
+  sel.value = classIds.includes(saved) ? saved : fallbackClass;
   sel.addEventListener('change', () => syncClassSelects(sel));
 }
 
@@ -1024,7 +1037,7 @@ function renderWeek() {
   const sel = state.els.weekClassSelect;
   if (!grid || !sel) return;
 
-  const classId = sel.value || 'HT11';
+  const classId = sel.value || (getAvailableClasses()[0] || 'HT11');
   const todayId = getTodayId();
   const currentPairStart = getCurrentPairStartSlot(todayId);
 
