@@ -11,7 +11,7 @@ const APP = {
     timetableCache: 'hgh_timetable_cache_v1',
     timetableCacheTs: 'hgh_timetable_cache_ts'
   },
-  routes: ['home', 'timetable', 'week', 'links', 'instagram'],
+  routes: ['home', 'timetable', 'week', 'links'],
   constants: {
     COUNTDOWN_INTERVAL: 30000,
     AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
