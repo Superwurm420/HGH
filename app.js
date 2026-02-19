@@ -112,6 +112,7 @@ const state = {
   installPromptEvent: null,
   countdownTimer: null,
   funMessages: DEFAULT_FUN_MESSAGES,
+  currentPdfHref: null,
   cal: {
     events: {},
     enabled: {},
@@ -267,9 +268,15 @@ function applyTimetableData(data) {
   state.timetable = classes;
 
   // PDF-Links aktualisieren
-  if (data?.meta?.source) {
-    const href = `./plan/${data.meta.source}`;
-    for (const link of qsa('a[data-pdf-link]')) link.href = href;
+  state.currentPdfHref = data?.meta?.source ? `./plan/${data.meta.source}` : null;
+  for (const link of qsa('a[data-pdf-link]')) {
+    if (state.currentPdfHref) {
+      link.href = state.currentPdfHref;
+      link.removeAttribute('aria-disabled');
+    } else {
+      link.href = '#';
+      link.setAttribute('aria-disabled', 'true');
+    }
   }
 
   // Aktualisierungsdatum anzeigen
@@ -580,7 +587,9 @@ function updateCurrentDayInfo() {
     day: '2-digit', month: '2-digit', year: 'numeric'
   });
 
-  el.innerHTML = `<a href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf" target="_blank" rel="noopener" data-pdf-link>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
+  const href = state.currentPdfHref || '#';
+  const disabledAttr = state.currentPdfHref ? '' : ' aria-disabled="true"';
+  el.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" data-pdf-link${disabledAttr}>${escapeHtml(day.label)}, ${escapeHtml(dateLabel)} · KW ${getISOWeek(selectedDate)}</a>`;
 }
 
 // Synchronisiert beide Klassen-Selects und speichert
@@ -932,6 +941,18 @@ function calEventCoversDate(ev, date) {
   return date >= startDay && date <= endDay;
 }
 
+function normalizeEventDateRange(ev) {
+  const startDay = new Date(ev.start.getFullYear(), ev.start.getMonth(), ev.start.getDate());
+  let endDay = new Date(startDay);
+  if (ev.end) endDay = new Date(ev.end.getFullYear(), ev.end.getMonth(), ev.end.getDate());
+
+  if (ev.allDay && endDay.getTime() > startDay.getTime()) {
+    endDay = new Date(endDay.getTime() - 864e5);
+  }
+
+  return { startDay, endDay };
+}
+
 function formatCalDateRange(start, end, allDay) {
   const fmt = (d, opts) => d.toLocaleDateString('de-DE', opts);
   if (!end || start.getTime() === end.getTime()) {
@@ -1034,16 +1055,24 @@ function renderCalendar() {
   // Event-Map vorberechnen: dateStr → Set von Farben
   // Statt O(cells × events) nur O(cells + events)
   const eventColorMap = new Map();
+  const visibleStart = new Date(cells[0].date.getFullYear(), cells[0].date.getMonth(), cells[0].date.getDate());
+  const visibleEnd = new Date(cells[cells.length - 1].date.getFullYear(), cells[cells.length - 1].date.getMonth(), cells[cells.length - 1].date.getDate());
+
   for (const cfg of CAL_CONFIGS) {
     if (state.cal.enabled[cfg.id] === false) continue;
     for (const ev of (state.cal.events[cfg.id] || [])) {
-      // Nur Events prüfen, die den sichtbaren Zeitraum überlappen
-      for (const cell of cells) {
-        if (calEventCoversDate(ev, cell.date)) {
-          const key = calDateStr(cell.date);
-          if (!eventColorMap.has(key)) eventColorMap.set(key, new Set());
-          eventColorMap.get(key).add(cfg.color);
-        }
+      const { startDay, endDay } = normalizeEventDateRange(ev);
+      if (endDay < visibleStart || startDay > visibleEnd) continue;
+
+      const iterStart = startDay < visibleStart ? visibleStart : startDay;
+      const iterEnd = endDay > visibleEnd ? visibleEnd : endDay;
+      const cursor = new Date(iterStart);
+
+      while (cursor <= iterEnd) {
+        const key = calDateStr(cursor);
+        if (!eventColorMap.has(key)) eventColorMap.set(key, new Set());
+        eventColorMap.get(key).add(cfg.color);
+        cursor.setDate(cursor.getDate() + 1);
       }
     }
   }
