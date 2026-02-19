@@ -49,10 +49,6 @@
   background:rgba(0,0,0,.04);
 }
 
-[data-theme="light"] .installBannerClose {
-  background:rgba(0,0,0,.05);
-}
-
 [data-theme="light"] .installStep {
   background:rgba(0,0,0,.035);
 }
@@ -441,7 +437,7 @@ select:focus-visible{
 }
 
 .netRowInline{
-  margin:4px 0 0;
+  margin:0;
 }
 
 .netIndicator{
@@ -491,6 +487,18 @@ select:focus-visible{
   display:flex;
   flex-direction:column;
   gap:2px;
+}
+
+.timeMetaRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.timeMetaRow .netRowInline{
+  flex-shrink:0;
+  align-self:center;
 }
 
 .nowTime{
@@ -588,10 +596,16 @@ select:focus-visible{
 
 .todayMetaRow{
   display:grid;
-  grid-template-columns:minmax(160px,220px);
+  grid-template-columns:minmax(160px,220px) 1fr;
   align-items:end;
   gap:12px;
   margin-top:8px;
+}
+
+.ttLastUpdated{
+  margin:0;
+  justify-self:end;
+  text-align:right;
 }
 
 .control--homeClass{
@@ -658,60 +672,13 @@ select:focus-visible{
 
 .installCtaRow{
   display:grid;
-  gap:8px;
-}
-
-.installCtaRow .btn{
-  width:fit-content;
-}
-
-.installCtaRow .btn[disabled]{
-  opacity:.55;
-  cursor:not-allowed;
-  filter:saturate(.7);
+  gap:4px;
 }
 
 .hint{
   color:var(--muted);
   font-size:12px;
   line-height:1.4;
-}
-
-/* Install Banner */
-.installBanner{
-  padding:12px;
-  border-radius:16px;
-  border:1px solid rgba(0,122,255,.45);
-  background:rgba(0,122,255,.10);
-  display:flex;
-  align-items:flex-start;
-  gap:12px;
-}
-
-.installBannerText{
-  font-size:12px;
-  color:var(--text);
-  line-height:1.35;
-}
-
-.installBannerClose{
-  appearance:none;
-  cursor:pointer;
-  margin-left:auto;
-  flex:0 0 auto;
-  width:32px;
-  height:32px;
-  border-radius:12px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.06);
-  color:var(--text);
-  font-size:18px;
-  line-height:1;
-  transition:transform 80ms ease;
-}
-
-.installBannerClose:active{
-  transform:translateY(1px);
 }
 
 .installSteps{
@@ -1553,6 +1520,21 @@ select:focus-visible{
 
 /* Responsive Design */
 @media (min-width:740px){
+  .calGrid{
+    gap:4px;
+  }
+
+  .calCell{
+    aspect-ratio:auto;
+    min-height:58px;
+    border:1px solid var(--line);
+    padding:6px 3px 3px;
+  }
+
+  .calDayNum{
+    font-size:13px;
+  }
+
   .hero{
     grid-template-columns:1.1fr .9fr;
     align-items:stretch;
@@ -1576,6 +1558,25 @@ select:focus-visible{
 
   .classPhotosGrid{
     grid-template-columns:1fr 1fr;
+  }
+}
+
+
+@media (min-width:1024px){
+  .view[data-view="home"]{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    align-items:start;
+  }
+
+  .view[data-view="home"] .card{
+    margin:0;
+  }
+
+  .view[data-view="home"] .calCard{
+    grid-row:1 / span 2;
+    align-self:start;
   }
 }
 
@@ -1653,6 +1654,10 @@ select:focus-visible{
     align-items:flex-start;
   }
 
+  .timeMetaRow{
+    width:100%;
+  }
+
   .countdownText{
     width:100%;
     text-align:left;
@@ -1661,10 +1666,6 @@ select:focus-visible{
   .installHead{
     flex-direction:column;
     align-items:flex-start;
-  }
-
-  .installCtaRow .btn{
-    width:100%;
   }
 
   [data-theme="light"] .navItem[aria-current="page"]{
@@ -1692,7 +1693,6 @@ select:focus-visible{
 @media print{
   .topbar,
   .nav,
-  .installBanner,
   .footer{
     display:none;
   }

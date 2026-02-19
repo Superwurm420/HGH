@@ -86,9 +86,9 @@
     </button>
     <button class="navItem surface" data-route="links" type="button">
       <span class="navIcon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
       </span>
-      <span>Links</span>
+      <span>Weiteres</span>
     </button>
   </nav>
 
@@ -107,17 +107,19 @@
           <div class="countdownTop">
             <div class="countdownTimeBlock">
               <div class="small muted">Aktuelle Uhrzeit</div>
-              <div id="nowTime" class="nowTime" aria-live="polite">—</div>
-              <div id="todayWeekday" class="small muted">—</div>
-              <div class="netRow netRowInline" role="status" aria-label="Netzwerkstatus">
-                <span
-                  id="netIndicator"
-                  class="netIndicator"
-                  data-status="unknown"
-                  aria-hidden="true"
-                ></span>
-                <span id="netLabel" class="small muted">—</span>
+              <div class="timeMetaRow">
+                <div id="nowTime" class="nowTime" aria-live="polite">—</div>
+                <div class="netRow netRowInline" role="status" aria-label="Netzwerkstatus">
+                  <span
+                    id="netIndicator"
+                    class="netIndicator"
+                    data-status="unknown"
+                    aria-hidden="true"
+                  ></span>
+                  <span id="netLabel" class="small muted">—</span>
+                </div>
               </div>
+              <div id="todayWeekday" class="small muted">—</div>
             </div>
             <div id="countdownText" class="countdownText" aria-live="polite">—</div>
           </div>
@@ -133,6 +135,7 @@
               <select id="todayClassSelect" class="select" aria-label="Klasse für Heute-Widget auswählen"></select>
             </span>
           </label>
+          <p id="ttLastUpdated" class="small muted ttLastUpdated"></p>
         </div>
         <div
           id="todayPreview"
@@ -140,8 +143,6 @@
           role="region"
           aria-label="Heutiger Stundenplan (Vorschau)"
         ></div>
-
-        <p id="ttLastUpdated" class="small muted"></p>
       </div>
 
       <!-- Kalender-Karte -->
@@ -174,48 +175,19 @@
         </div>
 
         <div class="installCtaRow">
-          <button
-            id="installButton"
-            class="btn"
-            type="button"
-            disabled
-            aria-disabled="true"
-          >
-            Jetzt installieren
-          </button>
-          <div id="installHint" class="hint" role="status" aria-live="polite"></div>
-        </div>
-
-        <div
-          id="installBanner"
-          class="installBanner"
-          role="status"
-          aria-live="polite"
-          hidden
-        >
-          <div class="installBannerText">
-            Tipp: Falls kein Button aktiv ist, nutze die Anleitung für deinen Browser.
-          </div>
-          <button
-            id="installBannerClose"
-            class="installBannerClose"
-            type="button"
-            aria-label="Hinweis schließen"
-          >
-            ×
-          </button>
+          <div class="hint" role="status" aria-live="polite">So installierst du die App auf deinem Gerät:</div>
         </div>
 
         <div class="installSteps" role="list" aria-label="Installationsanleitung">
           <article class="installStep" role="listitem">
-            <span class="installStepNumber" aria-hidden="true">1</span>
+            <span class="installStepNumber" aria-hidden="true">🤖</span>
             <div>
               <h3>Android</h3>
               <p><strong>Menü</strong> öffnen → <strong>„App installieren"</strong>.</p>
             </div>
           </article>
           <article class="installStep" role="listitem">
-            <span class="installStepNumber" aria-hidden="true">2</span>
+            <span class="installStepNumber" aria-hidden="true">🍎</span>
             <div>
               <h3>iOS</h3>
               <p><strong>Teilen</strong> tippen → <strong>„Zum Home-Bildschirm"</strong>.</p>
