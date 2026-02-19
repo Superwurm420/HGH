@@ -61,6 +61,15 @@ const MONTH_NAMES = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ];
+const WEEKDAY_LABELS = {
+  mo: 'Montag',
+  di: 'Dienstag',
+  mi: 'Mittwoch',
+  do: 'Donnerstag',
+  fr: 'Freitag',
+  sa: 'Samstag',
+  so: 'Sonntag'
+};
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
 const CALENDAR_VISIBLE_WINDOW_DAYS = {
@@ -74,7 +83,10 @@ const DEFAULT_FUN_MESSAGES = {
     duringLesson: ['Volle Konzentration in {subject}. 📚'],
     betweenBlocks: ['Kleine Pause – dann weiter. 💪'],
     lunch: ['Mittagspause – lass es dir schmecken! 🍽️'],
-    afterSchool: ['Unterricht vorbei – guten Feierabend! 👋']
+    afterSchool: ['Unterricht vorbei – guten Feierabend! 👋'],
+    weekend: ['Wochenende-Modus aktiv – {weekdayLabel} gehört dir. 😎'],
+    holiday: ['{holidayName} heute – genieße den freien Tag! 🎉'],
+    noLessons: ['Für {weekdayLabel} sind keine Stunden geplant. 📅']
   },
   classes: {}
 };
@@ -104,6 +116,7 @@ const state = {
   timetable: null,
   classIds: [...CLASSES],
   selectedDayId: null,
+  currentRoute: 'home',
   els: {},
   isLoading: false,
   autoRefreshTimer: null,
@@ -159,6 +172,60 @@ function getTodayId() {
 function isWeekday() {
   const d = new Date().getDay();
   return d >= 1 && d <= 5;
+}
+
+function getDateByDayOffset(base, offsetDays) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + offsetDays);
+  return d;
+}
+
+function getEasterSunday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+function getHolidayLabel(date) {
+  const year = date.getFullYear();
+  const fmt = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const fixed = {
+    '01-01': 'Neujahr',
+    '05-01': 'Tag der Arbeit',
+    '10-03': 'Tag der Deutschen Einheit',
+    '10-31': 'Reformationstag',
+    '12-25': '1. Weihnachtstag',
+    '12-26': '2. Weihnachtstag'
+  };
+
+  if (fixed[fmt]) return fixed[fmt];
+
+  const easter = getEasterSunday(year);
+  const movable = [
+    { offset: -2, label: 'Karfreitag' },
+    { offset: 1, label: 'Ostermontag' },
+    { offset: 39, label: 'Christi Himmelfahrt' },
+    { offset: 50, label: 'Pfingstmontag' }
+  ];
+
+  for (const h of movable) {
+    const d = getDateByDayOffset(easter, h.offset);
+    if (d.toDateString() === date.toDateString()) return h.label;
+  }
+
+  return '';
 }
 
 function safeSetText(el, text) {
@@ -387,6 +454,7 @@ function initAutoRefresh() {
 // --- Navigation ---------------------------------------------------------
 
 function setRoute(route) {
+  state.currentRoute = route;
   for (const b of state.els.navItems) {
     b.setAttribute('aria-current', b.dataset.route === route ? 'page' : 'false');
   }
@@ -737,7 +805,10 @@ function normalizeMessageBuckets(raw) {
     duringLesson: raw?.duringLesson || fallback.duringLesson,
     betweenBlocks: raw?.betweenBlocks || fallback.betweenBlocks,
     lunch: raw?.lunch || fallback.lunch,
-    afterSchool: raw?.afterSchool || fallback.afterSchool
+    afterSchool: raw?.afterSchool || fallback.afterSchool,
+    weekend: raw?.weekend || fallback.weekend,
+    holiday: raw?.holiday || fallback.holiday,
+    noLessons: raw?.noLessons || fallback.noLessons
   };
 }
 
@@ -746,12 +817,16 @@ function formatFunMessage(msg, ctx) {
     .replaceAll('{classId}', ctx.classId)
     .replaceAll('{subject}', ctx.subject)
     .replaceAll('{nextSubject}', ctx.nextSubject)
-    .replaceAll('{slotLabel}', ctx.slotLabel);
+    .replaceAll('{slotLabel}', ctx.slotLabel)
+    .replaceAll('{holidayName}', ctx.holidayName)
+    .replaceAll('{weekdayLabel}', ctx.weekdayLabel);
 }
 
 function getMessagePhase(now, scheduleRows) {
-  if (!isWeekday()) return 'afterSchool';
-  if (!scheduleRows.length) return now.getHours() < 15 ? 'beforeSchool' : 'afterSchool';
+  const holidayName = getHolidayLabel(now);
+  if (holidayName) return 'holiday';
+  if (!isWeekday()) return 'weekend';
+  if (!scheduleRows.length) return 'noLessons';
 
   const parsed = scheduleRows
     .map(r => ({ row: r, range: parseSlotRange(state.timeslotMap.get(String(r.slotId))?.time || '', now) }))
@@ -778,8 +853,8 @@ function getMessagePhase(now, scheduleRows) {
 
 function getFunMessage(now = new Date()) {
   const classId = state.els.todayClassSelect?.value || state.els.classSelect?.value || 'HT11';
-  const todayId = getTodayId();
-  const rows = (state.timetable?.[classId]?.[todayId] || []).filter(r => r && r.subject);
+  const activeDayId = state.currentRoute === 'timetable' && state.selectedDayId ? state.selectedDayId : getTodayId();
+  const rows = (state.timetable?.[classId]?.[activeDayId] || []).filter(r => r && r.subject);
   const parsed = rows
     .map(r => ({ row: r, range: parseSlotRange(state.timeslotMap.get(String(r.slotId))?.time || '', now) }))
     .filter(x => x.range)
@@ -797,7 +872,9 @@ function getFunMessage(now = new Date()) {
     classId,
     subject: current?.row?.subject || next?.row?.subject || 'dem Unterricht',
     nextSubject: next?.row?.subject || 'deiner nächsten Stunde',
-    slotLabel
+    slotLabel,
+    holidayName: getHolidayLabel(now) || 'Feiertag',
+    weekdayLabel: WEEKDAY_LABELS[activeDayId] || WEEKDAY_LABELS[getTodayId()] || 'heute'
   };
 
   return formatFunMessage(chooseMessage(pool), ctx);
