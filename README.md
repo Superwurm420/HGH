@@ -214,6 +214,11 @@ Die Klassenfoto-Kacheln verweisen in `index.html` auf zwei Dateitypen:
 3. Referenzen in `index.html` prüfen (`href` und `img src`).
 4. App lokal testen (mobil + Desktop).
 
+### Hinweis zu Icons
+
+Es gibt **keine verpflichtende automatische Icon-Generierung** mehr im Projekt.
+Alle Bilddateien in `icons/` und `images/` können direkt ersetzt werden (gleicher Dateiname = sofort wirksam).
+
 ### Best Practices für Bilder
 
 - Dateinamen klein, ohne Leerzeichen (`kebab-case`).
