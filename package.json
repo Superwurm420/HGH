@@ -9,7 +9,8 @@
     "lint:js": "jshint app.js",
     "lint": "npm run lint:html && npm run lint:js",
     "timetable:ingest": "node tools/ingest-latest-timetable.js",
-    "timetable:ingest:dry": "node tools/ingest-latest-timetable.js --dry-run"
+    "timetable:ingest:dry": "node tools/ingest-latest-timetable.js --dry-run",
+    "test:parser:special": "node tools/test-special-events-regression.js"
   },
   "keywords": [],
   "author": "",
