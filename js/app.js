@@ -205,10 +205,6 @@ function createInitialState() {
 
 const state = createInitialState();
 
-function safeSetText(el, text) {
-  if (el) el.textContent = text;
-}
-
 // localStorage-Helper (aus js/utils/storage.js importiert)
 
 function formatTeacherRoom(teacher, room) {
