@@ -75,6 +75,7 @@ const WEEKDAY_LABELS = {
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
 const ANNOUNCEMENTS_INDEX_URL = './data/announcements/index.json';
+const ANNOUNCEMENTS_DIR_URL = './data/announcements/';
 const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = {
   past: 30,
@@ -507,16 +508,58 @@ function collectAnnouncementIssuesFromItem(item, fileName) {
   return issues;
 }
 
+function extractAnnouncementFilesFromDirectoryListing(html, baseUrl) {
+  const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  const links = Array.from(doc.querySelectorAll('a[href]'));
+  const allowedExt = ['.txt', '.json'];
+  const files = new Set();
+
+  for (const link of links) {
+    const href = link.getAttribute('href') || '';
+    let fileName = '';
+
+    try {
+      const url = new URL(href, baseUrl);
+      const path = url.pathname || '';
+      fileName = decodeURIComponent(path.split('/').pop() || '');
+    } catch {
+      fileName = decodeURIComponent(href.split('/').pop() || '');
+    }
+
+    const lower = fileName.toLowerCase();
+    if (lower === 'index.json') continue;
+    if (allowedExt.some(ext => lower.endsWith(ext))) files.add(fileName);
+  }
+
+  return Array.from(files);
+}
+
+async function discoverAnnouncementFiles() {
+  try {
+    const resp = await fetch(ANNOUNCEMENTS_DIR_URL, { cache: 'no-cache' });
+    if (!resp.ok) return [];
+    const html = await resp.text();
+    return extractAnnouncementFilesFromDirectoryListing(html, ANNOUNCEMENTS_DIR_URL)
+      .sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+  } catch {
+    return [];
+  }
+}
+
 async function loadAnnouncements() {
   let rawItems = null;
   state.announcementIssues = [];
 
   try {
-    const indexResp = await fetch(ANNOUNCEMENTS_INDEX_URL, { cache: 'no-cache' });
-    if (!indexResp.ok) throw new Error(`HTTP ${indexResp.status}`);
+    let files = await discoverAnnouncementFiles();
+    if (!files.length) {
+      const indexResp = await fetch(ANNOUNCEMENTS_INDEX_URL, { cache: 'no-cache' });
+      if (!indexResp.ok) throw new Error(`HTTP ${indexResp.status}`);
 
-    const indexData = await indexResp.json();
-    const files = Array.isArray(indexData?.files) ? indexData.files : [];
+      const indexData = await indexResp.json();
+      files = Array.isArray(indexData?.files) ? indexData.files : [];
+      state.announcementIssues.push('Automatische Dateierkennung nicht verfügbar – nutze index.json als Fallback.');
+    }
 
     const loaded = await Promise.all(files.map(async (file) => {
       const name = typeof file === 'string' ? file : file?.file;
