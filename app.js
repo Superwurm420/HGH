@@ -871,6 +871,18 @@ function parseICSDate(s) {
   return new Date(y, mo, d);
 }
 
+function isPseudoAllDayEvent(start, end) {
+  if (!start || !end) return false;
+  if (
+    start.getHours() !== 0 || start.getMinutes() !== 0 || start.getSeconds() !== 0 ||
+    end.getHours() !== 0 || end.getMinutes() !== 0 || end.getSeconds() !== 0
+  ) {
+    return false;
+  }
+  const durationMs = end.getTime() - start.getTime();
+  return durationMs >= 864e5 && durationMs % 864e5 === 0;
+}
+
 function parseICS(text) {
   const unfolded = text.replace(/\r?\n[ \t]/g, '');
   const unescape = s => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
@@ -892,12 +904,13 @@ function parseICS(text) {
     const dtstart = get('DTSTART');
     if (!dtstart) continue;
     const dtend = get('DTEND');
-    const allDay = !dtstart.includes('T');
+    const allDayFromDateType = !dtstart.includes('T');
     const start = parseICSDate(dtstart);
     const end2 = dtend ? parseICSDate(dtend) : start;
     if (!start || Number.isNaN(start.getTime())) continue;
 
     const eventEnd = end2 && !Number.isNaN(end2.getTime()) ? end2 : start;
+    const allDay = allDayFromDateType || isPseudoAllDayEvent(start, eventEnd);
     if (eventEnd < minDate || start > maxDate) continue;
 
     events.push({ title, start, end: eventEnd, allDay });
