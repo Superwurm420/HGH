@@ -302,7 +302,9 @@ function findItemInColumn(items, column, y, yTolerance) {
     const bScore = Math.abs(b.y - y) + noisePenalty(b.str);
     return aScore - bScore || a.x - b.x;
   });
-  return candidates[0];
+
+  const best = candidates.find(it => !(/^\d{1,2}\.?$/.test(it.str) && it.x < 100));
+  return best || null;
 }
 
 function findRoomInColumn(items, column, y, yTolerance) {
@@ -370,6 +372,7 @@ function parseTimetable(items, columns, dayBlocks) {
         if (subject && /^\d{1,2}\.\d{2}\s*-?$/.test(subject)) subject = null;
         // Filter non-teacher items on teacher lines
         if (teacher && /\s/.test(teacher)) teacher = null; // teachers never contain spaces
+        if (teacher && /^\d{1,2}\.?$/.test(teacher)) teacher = null; // slot markers aren't teachers
         if (teacher && /^[A-ZÄÖÜ]+-$/.test(teacher)) teacher = null; // word fragments like "SERIEN-", "UNTER-"
         if (teacher && CLASS_IDS.includes(teacher)) teacher = null; // class names aren't teachers
         if (teacher && /^(USF|PROJEKT|FERTIGUNG)$/i.test(teacher)) teacher = null; // USF fragments

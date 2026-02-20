@@ -1761,6 +1761,11 @@ select:focus-visible{
     align-self:start;
   }
 
+  .view[data-view="home"] .installCard{
+    order:99;
+    grid-column:1 / -1;
+  }
+
   .view[data-view="timetable"]{
     display:grid;
     grid-template-columns:minmax(280px,340px) minmax(0,1fr);
@@ -1909,6 +1914,15 @@ select:focus-visible{
     flex-direction:column;
     align-items:flex-start;
   }
+
+  .view[data-view="home"]{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .view[data-view="home"] .announcementsCard{ order:2; }
+  .view[data-view="home"] .calCard{ order:3; }
+  .view[data-view="home"] .installCard{ order:4; }
 
 
   .weekCell{
