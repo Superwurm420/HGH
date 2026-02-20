@@ -163,6 +163,20 @@
         <div class="calEvents" id="calEvents" aria-live="polite"></div>
       </div>
 
+      <!-- Ankündigungen -->
+      <div class="card surface announcementsCard" id="announcementsCard" hidden>
+        <div class="row wrap">
+          <h2>Ankündigungen</h2>
+          <span class="small muted">Wird nur angezeigt, wenn aktuelle Termine vorhanden sind.</span>
+        </div>
+        <article id="announcementNext" class="announcementNext" hidden aria-live="polite"></article>
+        <div id="announcementsIssues" class="announcementsIssues" hidden aria-live="polite"></div>
+        <div id="announcementsList" class="announcementsList" role="list" aria-live="polite"></div>
+        <button id="announcementsMoreBtn" class="btn secondary announcementMoreBtn" type="button" hidden>
+          Mehr anzeigen
+        </button>
+      </div>
+
       <!-- Install-Karte -->
       <div class="card surface installCard">
         <div class="installHead">

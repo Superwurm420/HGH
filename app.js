@@ -8,11 +8,14 @@ const APP = {
     classId: 'hgh_class',
     dayId: 'hgh_day',
     timetableCache: 'hgh_timetable_cache_v1',
-    timetableCacheTs: 'hgh_timetable_cache_ts'
+    timetableCacheTs: 'hgh_timetable_cache_ts',
+    announcementsCache: 'hgh_announcements_cache_v1'
   },
   routes: ['home', 'timetable', 'week', 'links'],
   constants: {
     COUNTDOWN_INTERVAL: 30000,
+    ANNOUNCEMENTS_INTERVAL: 1000,
+    ANNOUNCEMENTS_PREVIEW_LIMIT: 3,
     AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
     MIN_REFRESH_GAP: 60 * 1000
   }
@@ -72,6 +75,7 @@ const WEEKDAY_LABELS = {
 };
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
+const ANNOUNCEMENTS_INDEX_URL = './data/announcements/index.json';
 const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = {
   past: 30,
@@ -124,9 +128,13 @@ const state = {
   lastRefreshAt: 0,
   installPromptEvent: null,
   countdownTimer: null,
+  announcementsTimer: null,
   funMessages: DEFAULT_FUN_MESSAGES,
   currentPdfHref: null,
   hasTimetableData: false,
+  announcements: [],
+  announcementIssues: [],
+  announcementsShowAll: false,
   cal: {
     events: {},
     enabled: {},
@@ -269,6 +277,292 @@ function populateClassSelect(sel) {
   sel.innerHTML = classIds.map(c =>
     `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
   ).join('');
+}
+
+function parseAnnouncementDate(value, endOfDay = false) {
+  if (!value || typeof value !== 'string') return null;
+  const input = value.trim();
+
+  let y; let mo; let d; let h; let mi;
+  let hasTime = false;
+
+  let m = input.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{1,2}):(\d{2}))?$/);
+  if (m) {
+    [, y, mo, d, h, mi] = m;
+    hasTime = typeof h !== 'undefined';
+  } else {
+    m = input.match(/^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+    if (!m) return null;
+    [, d, mo, y, h, mi] = m;
+    hasTime = typeof h !== 'undefined';
+  }
+
+  const year = Number(y);
+  const month = Number(mo);
+  const day = Number(d);
+  const hour = hasTime ? Number(h) : (endOfDay ? 23 : 0);
+  const minute = hasTime ? Number(mi) : (endOfDay ? 59 : 0);
+  const second = hasTime ? 0 : (endOfDay ? 59 : 0);
+  const ms = hasTime ? 0 : (endOfDay ? 999 : 0);
+
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day, hour, minute, second, ms);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function announcementHasTime(value) {
+  return typeof value === 'string' && /(?:[T\s]|\s)(\d{1,2}):(\d{2})$/.test(value.trim());
+}
+
+function formatAnnouncementDateLabel(rawValue, endOfDayFallback = false) {
+  const date = parseAnnouncementDate(rawValue, endOfDayFallback);
+  if (!date) return '';
+
+  const dateLabel = date.toLocaleDateString('de-DE');
+  if (announcementHasTime(rawValue)) {
+    const timeLabel = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} Uhr`;
+    return `${dateLabel}, ${timeLabel}`;
+  }
+  return dateLabel;
+}
+
+function isAnnouncementActive(item, now = new Date()) {
+  if (!item || item.visible === false) return false;
+
+  const start = parseAnnouncementDate(item.startDate, false);
+  const end = parseAnnouncementDate(item.endDate, true);
+
+  if (start && now < start) return false;
+  if (end && now > end) return false;
+  return true;
+}
+
+function normalizeAnnouncementItem(item, index = 0) {
+  const title = (item?.title || item?.titel || item?.ueberschrift || '').toString().trim();
+  const text = (item?.text || item?.inhalt || item?.nachricht || '').toString().trim();
+  const sortRaw = item?.sortOrder ?? item?.sort ?? item?.reihenfolge;
+  const sortOrder = Number.isFinite(Number(sortRaw)) ? Number(sortRaw) : index;
+  const visibleRaw = typeof item?.visible !== 'undefined' ? item.visible : item?.sichtbar;
+
+  const location = (item?.location || item?.ort || item?.raum || '').toString().trim();
+
+  return {
+    id: (item?.id || item?.name || `announcement-${index + 1}`).toString(),
+    title: title || 'Ankündigung',
+    text: text || '',
+    location,
+    startDate: typeof (item?.startDate ?? item?.start ?? item?.beginn) === 'string' ? String(item?.startDate ?? item?.start ?? item?.beginn).trim() : '',
+    endDate: typeof (item?.endDate ?? item?.ende ?? item?.end) === 'string' ? String(item?.endDate ?? item?.ende ?? item?.end).trim() : '',
+    visible: parseBooleanLike(visibleRaw, true),
+    sortOrder
+  };
+}
+
+function normalizeAnnouncements(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item, idx) => normalizeAnnouncementItem(item, idx))
+    .filter(item => item.text && isAnnouncementActive(item))
+    .sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      const aEnd = parseAnnouncementDate(a.endDate, true)?.getTime() ?? Number.POSITIVE_INFINITY;
+      const bEnd = parseAnnouncementDate(b.endDate, true)?.getTime() ?? Number.POSITIVE_INFINITY;
+      return aEnd - bEnd;
+    });
+}
+
+function getAnnouncementTimeLabel(item) {
+  const start = parseAnnouncementDate(item.startDate, false);
+  const end = parseAnnouncementDate(item.endDate, false);
+
+  const startLabel = formatAnnouncementDateLabel(item.startDate, false);
+  const endLabel = formatAnnouncementDateLabel(item.endDate, false);
+
+  if (start && end) {
+    return `${startLabel} – ${endLabel}`;
+  }
+  if (start) {
+    return `ab ${startLabel}`;
+  }
+  if (end) {
+    return `bis ${endLabel}`;
+  }
+  return 'ohne Datum';
+}
+
+
+function getAnnouncementStatus(item, now = new Date()) {
+  const start = parseAnnouncementDate(item.startDate, false);
+  const end = parseAnnouncementDate(item.endDate, true);
+
+  if (start && now < start) return 'upcoming';
+  if ((start && now >= start) || (!start && end && now <= end)) return 'active';
+  return 'timeless';
+}
+
+function getNextAnnouncement(now = new Date()) {
+  const upcoming = state.announcements
+    .map(item => ({ item, start: parseAnnouncementDate(item.startDate, false) }))
+    .filter(x => x.start && x.start > now)
+    .sort((a, b) => a.start - b.start);
+  return upcoming[0]?.item || null;
+}
+
+function parseBooleanLike(value, fallback = true) {
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'ja') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'nein') return false;
+  return fallback;
+}
+
+function parseAnnouncementTxt(content) {
+  const lines = String(content || '').replace(/\r\n/g, '\n').split('\n');
+  const meta = {};
+  const bodyLines = [];
+  let inBody = false;
+
+  for (const line of lines) {
+    if (!inBody && line.trim() === '---') {
+      inBody = true;
+      continue;
+    }
+
+    if (!inBody) {
+      if (!line.trim() || line.trim().startsWith('#')) continue;
+      const match = line.match(/^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$/);
+      if (!match) continue;
+      const key = match[1];
+      const value = match[2].trim();
+      meta[key] = value;
+      continue;
+    }
+
+    bodyLines.push(line);
+  }
+
+  const bodyText = bodyLines.join('\n').trim();
+  if (bodyText) meta.text = bodyText;
+
+  if (Object.keys(meta).length === 0) return null;
+  if (!meta.text) {
+    const fallbackText = String(content || '').trim();
+    if (fallbackText) meta.text = fallbackText;
+  }
+
+  if (typeof meta.visible !== 'undefined') meta.visible = parseBooleanLike(meta.visible, true);
+  if (typeof meta.sortOrder !== 'undefined') {
+    const n = Number(meta.sortOrder);
+    if (Number.isFinite(n)) meta.sortOrder = n;
+  }
+
+  return meta;
+}
+
+function parseAnnouncementByFileType(fileName, content) {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.txt')) return parseAnnouncementTxt(content);
+  if (lower.endsWith('.json')) return JSON.parse(content);
+
+  try { return JSON.parse(content); }
+  catch { return parseAnnouncementTxt(content); }
+}
+
+function collectAnnouncementIssuesFromItem(item, fileName) {
+  const issues = [];
+  const title = (item?.title || item?.titel || item?.ueberschrift || '').toString().trim();
+  const text = (item?.text || item?.inhalt || item?.nachricht || '').toString().trim();
+  const startSource = item?.startDate ?? item?.start ?? item?.beginn;
+  const endSource = item?.endDate ?? item?.ende ?? item?.end;
+  const startRaw = typeof startSource === 'string' ? String(startSource).trim() : '';
+  const endRaw = typeof endSource === 'string' ? String(endSource).trim() : '';
+
+  if (!title) issues.push(`Titel fehlt in Datei: ${fileName}`);
+  if (!text) issues.push(`Text fehlt in Datei: ${fileName}`);
+
+  if (startRaw && !parseAnnouncementDate(startRaw, false)) {
+    issues.push(`Ungültiges Startdatum in Datei: ${fileName}`);
+  }
+
+  if (endRaw && !parseAnnouncementDate(endRaw, true)) {
+    issues.push(`Ungültiges Enddatum in Datei: ${fileName}`);
+  }
+
+  const start = parseAnnouncementDate(startRaw, false);
+  const end = parseAnnouncementDate(endRaw, true);
+  if (start && end && start > end) {
+    issues.push(`Startdatum liegt nach Enddatum in Datei: ${fileName}`);
+  }
+
+  return issues;
+}
+
+async function loadAnnouncements() {
+  let rawItems = null;
+  state.announcementIssues = [];
+
+  try {
+    const indexResp = await fetch(ANNOUNCEMENTS_INDEX_URL, { cache: 'no-cache' });
+    if (!indexResp.ok) throw new Error(`HTTP ${indexResp.status}`);
+
+    const indexData = await indexResp.json();
+    const files = Array.isArray(indexData?.files) ? indexData.files : [];
+
+    const loaded = await Promise.all(files.map(async (file) => {
+      const name = typeof file === 'string' ? file : file?.file;
+      if (!name) return null;
+
+      const resp = await fetch(`./data/announcements/${name}`, { cache: 'no-cache' });
+      if (!resp.ok) {
+        state.announcementIssues.push(`Datei fehlt oder nicht lesbar: ${name}`);
+        return null;
+      }
+
+      try {
+        const content = await resp.text();
+        const parsed = parseAnnouncementByFileType(name, content);
+        if (!parsed) {
+          state.announcementIssues.push(`Datei ohne gültigen Inhalt: ${name}`);
+          return null;
+        }
+
+        const itemIssues = collectAnnouncementIssuesFromItem(parsed, name);
+        for (const issue of itemIssues) state.announcementIssues.push(issue);
+
+        return parsed;
+      } catch {
+        state.announcementIssues.push(`Formatfehler in Datei: ${name}`);
+        return null;
+      }
+    }));
+
+    rawItems = loaded.filter(Boolean);
+    storageSet(APP.storageKeys.announcementsCache, JSON.stringify(rawItems));
+  } catch (e) {
+    console.warn('Ankündigungen konnten nicht vom Netzwerk geladen werden:', e);
+    state.announcementIssues.push('Ankündigungen wurden aus dem Cache geladen.');
+    try {
+      const cached = storageGet(APP.storageKeys.announcementsCache);
+      if (cached) rawItems = JSON.parse(cached);
+    } catch {
+      rawItems = [];
+    }
+  }
+
+  state.announcementsShowAll = false;
+  state.announcements = normalizeAnnouncements(rawItems || []);
 }
 
 // --- Theme --------------------------------------------------------------
@@ -488,6 +782,7 @@ function render() {
   renderTimetable();
   renderTodayPreview();
   renderWeek();
+  renderAnnouncements();
 }
 
 function renderTimetable() {
@@ -639,6 +934,80 @@ function renderTodayPreview() {
   }).join('');
 }
 
+function renderAnnouncements() {
+  const card = state.els.announcementsCard;
+  const list = state.els.announcementsList;
+  const issuesEl = state.els.announcementsIssues;
+  const nextEl = state.els.announcementsNext;
+  const moreBtn = state.els.announcementsMoreBtn;
+
+  if (!card || !list || !issuesEl || !nextEl || !moreBtn) return;
+
+  if (!state.announcements.length) {
+    card.hidden = true;
+    list.innerHTML = '';
+    issuesEl.hidden = true;
+    nextEl.hidden = true;
+    moreBtn.hidden = true;
+    return;
+  }
+
+  card.hidden = false;
+
+  if (state.announcementIssues.length) {
+    issuesEl.hidden = false;
+    issuesEl.innerHTML = `<strong>Hinweis:</strong><ul>${state.announcementIssues.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}</ul>`;
+  } else {
+    issuesEl.hidden = true;
+    issuesEl.innerHTML = '';
+  }
+
+  const nextItem = getNextAnnouncement();
+  if (nextItem) {
+    nextEl.hidden = false;
+    nextEl.innerHTML = `
+      <p class="announcementNextLabel">Nächster Termin</p>
+      <h3>${escapeHtml(nextItem.title)}</h3>
+      <p class="announcementMeta">${escapeHtml(getAnnouncementTimeLabel(nextItem))}</p>
+      <p class="announcementCountdown announcementCountdown--upcoming">${escapeHtml(getAnnouncementCountdownLabel(nextItem))}</p>
+    `;
+  } else {
+    nextEl.hidden = true;
+    nextEl.innerHTML = '';
+  }
+
+  const limit = APP.constants.ANNOUNCEMENTS_PREVIEW_LIMIT;
+  const visibleItems = state.announcementsShowAll ? state.announcements : state.announcements.slice(0, limit);
+
+  list.innerHTML = visibleItems.map((item) => {
+    const status = getAnnouncementStatus(item);
+    const locationHtml = item.location ? `<p class="announcementLocation">Ort: ${escapeHtml(item.location)}</p>` : '';
+    return `
+      <article class="announcementItem" role="listitem">
+        <p class="announcementMeta">${escapeHtml(getAnnouncementTimeLabel(item))}</p>
+        <p class="announcementCountdown announcementCountdown--${escapeHtml(status)}" data-announcement-id="${escapeHtml(item.id)}"></p>
+        <h3>${escapeHtml(item.title)}</h3>
+        ${locationHtml}
+        <p>${escapeHtml(item.text)}</p>
+      </article>
+    `;
+  }).join('');
+
+  if (state.announcements.length > limit) {
+    moreBtn.hidden = false;
+    moreBtn.textContent = state.announcementsShowAll ? 'Weniger anzeigen' : `Mehr anzeigen (${state.announcements.length - limit})`;
+    moreBtn.onclick = () => {
+      state.announcementsShowAll = !state.announcementsShowAll;
+      renderAnnouncements();
+    };
+  } else {
+    moreBtn.hidden = true;
+    moreBtn.onclick = null;
+  }
+
+  updateAnnouncementCountdowns();
+}
+
 // --- Selects ------------------------------------------------------------
 
 function setActiveDayButton(dayId) {
@@ -752,6 +1121,52 @@ function parseSlotRange(range, base = new Date()) {
 function diffMinsCeil(a, b) {
   return Math.max(0, Math.ceil((b - a) / 60000));
 }
+function formatCountdownDistance(ms) {
+  const totalMins = Math.max(0, Math.ceil(ms / 60000));
+  const days = Math.floor(totalMins / (60 * 24));
+  const hours = Math.floor((totalMins % (60 * 24)) / 60);
+  const mins = totalMins % 60;
+  const parts = [];
+  if (days) parts.push(`${days} Tag${days === 1 ? '' : 'e'}`);
+  if (hours) parts.push(`${hours} Std`);
+  parts.push(`${mins} Min`);
+  return parts.join(' ');
+}
+
+function getAnnouncementCountdownLabel(item, now = new Date()) {
+  const start = parseAnnouncementDate(item.startDate, false);
+  const end = parseAnnouncementDate(item.endDate, true);
+
+  if (start && now < start) {
+    return `Startet in ${formatCountdownDistance(start - now)}`;
+  }
+
+  if (start && end && now >= start && now <= end) {
+    return `Läuft gerade · endet in ${formatCountdownDistance(end - now)}`;
+  }
+
+  if (start && !end && now >= start) {
+    return 'Bereits gestartet';
+  }
+
+  if (!start && end && now <= end) {
+    return `Endet in ${formatCountdownDistance(end - now)}`;
+  }
+
+  return 'Ohne Termin';
+}
+
+function updateAnnouncementCountdowns(now = new Date()) {
+  for (const el of qsa('[data-announcement-id]')) {
+    const item = state.announcements.find(a => a.id === el.dataset.announcementId);
+    if (!item) continue;
+    const status = getAnnouncementStatus(item, now);
+    el.classList.remove('announcementCountdown--upcoming', 'announcementCountdown--active', 'announcementCountdown--timeless');
+    el.classList.add(`announcementCountdown--${status}`);
+    el.textContent = getAnnouncementCountdownLabel(item, now);
+  }
+}
+
 
 function getDayRanges(base = new Date()) {
   const ranges = [];
@@ -793,9 +1208,10 @@ function getCurrentPairStartSlot(dayId, now = new Date()) {
 
 function updateCountdown() {
   const { nowTime: nowEl, countdownText: textEl } = state.els;
+  const now = new Date();
+  updateAnnouncementCountdowns(now);
   if (!nowEl || !textEl) return;
 
-  const now = new Date();
   nowEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   if (!isWeekday()) { textEl.textContent = 'Schönes Wochenende! 🎉'; return; }
@@ -954,6 +1370,9 @@ function initCountdown() {
   tick();
   if (state.countdownTimer) clearInterval(state.countdownTimer);
   state.countdownTimer = setInterval(tick, APP.constants.COUNTDOWN_INTERVAL);
+
+  if (state.announcementsTimer) clearInterval(state.announcementsTimer);
+  state.announcementsTimer = setInterval(() => updateAnnouncementCountdowns(new Date()), APP.constants.ANNOUNCEMENTS_INTERVAL);
 }
 
 // --- Network indicator --------------------------------------------------
@@ -1556,7 +1975,12 @@ function cacheEls() {
     weekGrid: qs('#weekGrid'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
-    darkToggle: qs('#darkToggle')
+    darkToggle: qs('#darkToggle'),
+    announcementsCard: qs('#announcementsCard'),
+    announcementsList: qs('#announcementsList'),
+    announcementsIssues: qs('#announcementsIssues'),
+    announcementsNext: qs('#announcementNext'),
+    announcementsMoreBtn: qs('#announcementsMoreBtn')
   };
 }
 
@@ -1573,6 +1997,7 @@ async function boot() {
 
     await refreshTimetableIfNeeded();
     await loadFunMessages();
+    await loadAnnouncements();
 
     initCountdown();
     initAutoRefresh();

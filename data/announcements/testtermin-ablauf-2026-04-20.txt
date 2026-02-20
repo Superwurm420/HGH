@@ -1,0 +1,14 @@
+# Einfaches Format:
+# 1) Felder oben ausfüllen
+# 2) Ab --- den sichtbaren Text schreiben
+
+id: testtermin-ablauf-2026-04-20-0420
+titel: Testtermin (läuft automatisch aus)
+start: 2026-01-01
+ende: 2026-04-20 04:20
+ort: Aula
+sichtbar: ja
+reihenfolge: 1
+---
+Dieser Testtermin ist sichtbar bis 20.04.2026 um 04:20 Uhr.
+Danach verschwindet er automatisch.

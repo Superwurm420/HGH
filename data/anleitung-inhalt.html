@@ -46,3 +46,30 @@
   <li><strong>Falscher Ordner:</strong> Datei in den gleichen Ordner wie die alte Datei legen.</li>
   <li><strong>Änderung nicht sichtbar:</strong> Browser-Cache mit harter Aktualisierung leeren.</li>
 </ul>
+
+<h2>6) Neue Ankündigungen / Termine anlegen</h2>
+<ol class="guideList">
+  <li>Öffne den Ordner <span class="guideCode">data/announcements/</span>.</li>
+  <li>Kopiere eine der Vorlagen:
+    <ul class="guideList">
+      <li><span class="guideCode">vorlage-mit-termin.txt</span> für Ankündigungen mit Datum.</li>
+      <li><span class="guideCode">vorlage-ohne-datum.txt</span> für Hinweise ohne Datum.</li>
+    </ul>
+  </li>
+  <li>Gib der neuen Datei einen eigenen Namen, z. B. <span class="guideCode">projektwoche-2026.txt</span>.</li>
+  <li>Fülle Felder aus:
+    <ul class="guideList">
+      <li><span class="guideCode">titel</span>: Überschrift.</li>
+      <li><span class="guideCode">start</span> / <span class="guideCode">ende</span> (optional, Format <span class="guideCode">YYYY-MM-DD</span> oder <span class="guideCode">YYYY-MM-DD HH:MM</span>).</li>
+      <li><span class="guideCode">sichtbar</span>: <span class="guideCode">ja</span> oder <span class="guideCode">nein</span>.</li>
+      <li><span class="guideCode">ort</span> (optional): z. B. Raum oder Ort.</li>
+      <li><span class="guideCode">reihenfolge</span>: kleinere Zahl erscheint weiter oben.</li>
+      <li>Nach den Feldern eine Zeile mit <span class="guideCode">---</span> einfügen. Darunter kommt der sichtbare Text.</li>
+    </ul>
+  </li>
+  <li>Öffne <span class="guideCode">data/announcements/index.json</span> und trage den TXT-Dateinamen in <span class="guideCode">files</span> ein (z. B. <span class="guideCode">projektwoche-2026.txt</span>).</li>
+  <li>Wichtig: Ist ein <span class="guideCode">ende</span> gesetzt und vorbei, verschwindet der Termin automatisch aus der App.</li>
+</ol>
+<div class="guideNote">
+  Tipp: Für dauerhafte Hinweise einfach kein Datum eintragen. Dann bleibt die Ankündigung sichtbar, solange <span class="guideCode">sichtbar: ja</span> gesetzt ist.
+</div>
