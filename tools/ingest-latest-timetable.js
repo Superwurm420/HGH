@@ -6,12 +6,6 @@
  * - validiert das Ergebnis (Mindestqualität)
  * - schreibt data/timetable.json atomar
  * - entfernt alte Stundenplan-PDF-Dateien (keep=1 standard)
- *
- * Usage:
- *   node tools/ingest-latest-timetable.js
- *   node tools/ingest-latest-timetable.js --input plan/foo.pdf
- *   node tools/ingest-latest-timetable.js --keep 2
- *   node tools/ingest-latest-timetable.js --dry-run
  */
 
 import fs from 'node:fs';
@@ -75,7 +69,6 @@ function pickLatestPdf(files) {
   const planCandidates = files.filter(f => f.isLikelyPlan);
   if (!planCandidates.length) return files[0];
 
-  // Primär nach KW im Dateinamen, sekundär nach mtime.
   const withWeek = planCandidates.filter(f => f.weekHint != null);
   if (withWeek.length) {
     withWeek.sort((a, b) => (b.weekHint - a.weekHint) || (b.mtimeMs - a.mtimeMs));
@@ -91,7 +84,9 @@ function summarizeQuality(data) {
     withRoom: 0,
     specials: 0,
     classDayCoverage: 0,
-    validClassCount: 0
+    validClassCount: 0,
+    entriesByClass: {},
+    dayCoverageByClass: {}
   };
 
   if (!data || typeof data !== 'object' || typeof data.classes !== 'object') return summary;
@@ -99,74 +94,34 @@ function summarizeQuality(data) {
   for (const classId of CLASS_IDS) {
     const cls = data.classes[classId];
     if (!cls || typeof cls !== 'object') continue;
+
     summary.validClassCount += 1;
+    let classEntries = 0;
+    let classCoverage = 0;
 
     for (const dayId of DAY_IDS) {
       const dayRows = Array.isArray(cls[dayId]) ? cls[dayId] : [];
-      if (dayRows.length > 0) summary.classDayCoverage += 1;
+      if (dayRows.length > 0) {
+        summary.classDayCoverage += 1;
+        classCoverage += 1;
+      }
 
       for (const row of dayRows) {
         summary.entries += 1;
+        classEntries += 1;
         if (row?.teacher) summary.withTeacher += 1;
         if (row?.room) summary.withRoom += 1;
         if (row?.note) summary.specials += 1;
       }
     }
+
+    summary.entriesByClass[classId] = classEntries;
+    summary.dayCoverageByClass[classId] = classCoverage;
   }
 
   return summary;
 }
 
-function scoreTimetable(data) {
-  const q = summarizeQuality(data);
-  if (q.entries === 0 || q.validClassCount === 0) return -1;
-
-  // Dichte + Datenvollständigkeit + Flächenabdeckung (Klasse×Tag).
-  return (
-    q.entries +
-    q.withTeacher * 0.5 +
-    q.withRoom * 0.25 +
-    q.specials * 0.2 +
-    q.classDayCoverage * 2
-  );
-}
-
-function runParser(parserScript, inputPdf) {
-  const tempOut = path.join('data', `.tmp-${path.basename(parserScript, '.js')}.json`);
-  const validFrom = new Date().toISOString().split('T')[0];
-  const result = spawnSync(process.execPath, [parserScript, inputPdf, '--out', tempOut, '--validFrom', validFrom], {
-    encoding: 'utf8'
-  });
-
-  if (result.status !== 0) {
-    return { parserScript, ok: false, error: result.stderr || result.stdout || 'unknown parser error' };
-  }
-
-  try {
-    const parsed = JSON.parse(fs.readFileSync(tempOut, 'utf8'));
-    const quality = summarizeQuality(parsed);
-    const score = scoreTimetable(parsed);
-    return { parserScript, ok: true, score, quality, parsed, tempOut };
-  } catch (err) {
-    return { parserScript, ok: false, error: err.message, tempOut };
-  }
-}
-
-function cleanupTempOutputs(results) {
-    validClassCount: 0,
-    entriesByClass: {},
-    dayCoverageByClass: {}
-    let classEntries = 0;
-    let classCoverage = 0;
-
-      if (dayRows.length > 0) {
-        summary.classDayCoverage += 1;
-        classCoverage += 1;
-      }
-        classEntries += 1;
-
-    summary.entriesByClass[classId] = classEntries;
-    summary.dayCoverageByClass[classId] = classCoverage;
 function calculateMedian(values) {
   if (!values.length) return 0;
   const sorted = values.slice().sort((a, b) => a - b);
@@ -190,25 +145,61 @@ function imbalancePenalty(quality) {
   return penalty;
 }
 
-  const imbalance = imbalancePenalty(q);
+function scoreTimetable(data) {
+  const q = summarizeQuality(data);
+  if (q.entries === 0 || q.validClassCount === 0) return -1;
 
-  // Dichte + Datenvollständigkeit + Flächenabdeckung (Klasse×Tag) - Klassen-Imbalance.
+  const imbalance = imbalancePenalty(q);
+  return (
+    q.entries +
+    q.withTeacher * 0.5 +
+    q.withRoom * 0.25 +
+    q.specials * 0.2 +
     q.classDayCoverage * 2 -
     imbalance
+  );
+}
+
 function countWarnings(output) {
   if (!output) return 0;
   const matches = String(output).match(/(^|\n)warning:/gi);
   return matches ? matches.length : 0;
 }
 
+function runParser(parserScript, inputPdf) {
+  const tempOut = path.join('data', `.tmp-${path.basename(parserScript, '.js')}.json`);
+  const validFrom = new Date().toISOString().split('T')[0];
+  const result = spawnSync(process.execPath, [parserScript, inputPdf, '--out', tempOut, '--validFrom', validFrom], {
+    encoding: 'utf8'
+  });
+
+  if (result.status !== 0) {
+    return { parserScript, ok: false, error: result.stderr || result.stdout || 'unknown parser error', tempOut };
   }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(tempOut, 'utf8'));
+    const quality = summarizeQuality(parsed);
     const warningCount = countWarnings(`${result.stderr || ''}\n${result.stdout || ''}`);
     const score = scoreTimetable(parsed) - warningCount * 0.5;
     return { parserScript, ok: true, score, quality, warningCount, parsed, tempOut };
+  } catch (err) {
+    return { parserScript, ok: false, error: err.message, tempOut };
+  }
+}
+
+function cleanupTempOutputs(results) {
+  for (const r of results) {
+    if (!r?.tempOut) continue;
+    if (!fs.existsSync(r.tempOut)) continue;
+    fs.rmSync(r.tempOut, { force: true });
+  }
+}
+
 function ensureMinimumQuality(best) {
   const q = best.quality;
   const minEntries = 80;
-  const minCoverage = 20; // 7 Klassen * 5 Tage => max 35
+  const minCoverage = 20;
   const minClassCoverage = 2;
 
   if (q.entries < minEntries) {
@@ -246,7 +237,6 @@ function writeOutputAtomically(targetPath, data) {
 function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   const keepSafe = Number.isFinite(keepCount) && keepCount > 0 ? Math.floor(keepCount) : 1;
   const scheduleFiles = allFiles.filter(f => f.isLikelyPlan || f.full === activePdf);
-
   const sorted = scheduleFiles.slice().sort((a, b) => b.mtimeMs - a.mtimeMs);
 
   const keepSet = new Set([activePdf]);
@@ -256,7 +246,6 @@ function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   }
 
   const toDelete = sorted.filter(f => !keepSet.has(f.full));
-
   for (const file of toDelete) {
     if (dryRun) {
       console.log(`[dry-run] remove old PDF: ${file.full}`);
@@ -308,7 +297,7 @@ function main() {
   successful.sort((a, b) => b.score - a.score);
   const best = successful[0];
   console.log(`Selected parser: ${best.parserScript} (score=${best.score.toFixed(2)})`);
-  console.log(`Quality: entries=${best.quality.entries}, coverage=${best.quality.classDayCoverage}, teacher=${best.quality.withTeacher}, rooms=${best.quality.withRoom}`);
+  console.log(`Quality: entries=${best.quality.entries}, coverage=${best.quality.classDayCoverage}, teacher=${best.quality.withTeacher}, rooms=${best.quality.withRoom}, warnings=${best.warningCount || 0}`);
 
   try {
     ensureMinimumQuality(best);
@@ -336,4 +325,3 @@ function main() {
 }
 
 main();
-  console.log(`Quality: entries=${best.quality.entries}, coverage=${best.quality.classDayCoverage}, teacher=${best.quality.withTeacher}, rooms=${best.quality.withRoom}, warnings=${best.warningCount || 0}`);
