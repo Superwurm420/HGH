@@ -636,6 +636,14 @@ function renderTimetable() {
   const body = state.els.timetableBody;
   if (!body) return;
 
+  if (state.isLoading && !state.hasTimetableData) {
+    body.innerHTML = `
+      <div class="timetableEmpty" role="status" aria-live="polite">
+        <p>Stundenplan wird geladen …</p>
+      </div>`;
+    return;
+  }
+
   if (!state.hasTimetableData) {
     body.innerHTML = `
       <div class="timetableEmpty" role="status">
@@ -1657,6 +1665,14 @@ function renderWeek() {
   const classId = sel.value || (getAvailableClasses()[0] || 'HT11');
   const todayId = getTodayId();
   const currentPairStart = getCurrentPairStartSlot(todayId);
+
+  if (state.isLoading && !state.hasTimetableData) {
+    grid.innerHTML = `
+      <div class="weekEmptyState" role="status" aria-live="polite">
+        Wochenübersicht wird geladen …
+      </div>`;
+    return;
+  }
 
   const header = `
     <div class="weekRow weekHeader" role="row">
