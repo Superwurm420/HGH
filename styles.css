@@ -1622,6 +1622,62 @@ select:focus-visible{
   }
 }
 
+    gap:14px;
+    align-items:start;
+  }
+
+  .view[data-view="timetable"] .row.wrap,
+  .view[data-view="timetable"] .dayRow{
+    grid-column:1;
+  }
+
+  .view[data-view="timetable"] .row.wrap{
+    display:grid;
+    gap:10px;
+    align-items:start;
+  }
+
+  .view[data-view="timetable"] .controls{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    align-items:start;
+  }
+
+  .view[data-view="timetable"] .controls .btn.secondary,
+  .view[data-view="timetable"] .controls .dayInfoBadge,
+  .view[data-view="timetable"] .control--class,
+  .view[data-view="timetable"] .control--class .selectWrap{
+    width:100%;
+  }
+
+  .view[data-view="timetable"] .dayRow{
+    margin-top:0;
+  }
+
+  .view[data-view="timetable"] .daySelectGroup{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .view[data-view="timetable"] .timetable{
+    grid-column:2;
+    grid-row:1 / span 2;
+    margin-top:0;
+    max-height:min(75vh,760px);
+    overflow:auto;
+  }
+
+  .view[data-view="timetable"] .timetableHeader{
+    position:sticky;
+    top:0;
+    z-index:2;
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+  }
+}
+
 /* Mobile Bottom Navigation – Apple Glass Floating Pill */
 @media (max-width:739px){
   .nav{
@@ -1799,4 +1855,3 @@ select:focus-visible{
     border-width:2px;
   }
 }
-
