@@ -943,16 +943,18 @@ function renderAnnouncements() {
 
   if (!card || !list || !issuesEl || !nextEl || !moreBtn) return;
 
+  card.hidden = false;
+
   if (!state.announcements.length) {
-    card.hidden = true;
-    list.innerHTML = '';
+    list.innerHTML = '<article class="announcementItem" role="listitem"><h3>Aktuell keine Termine/Ankündigungen</h3></article>';
     issuesEl.hidden = true;
+    issuesEl.innerHTML = '';
     nextEl.hidden = true;
+    nextEl.innerHTML = '';
     moreBtn.hidden = true;
+    moreBtn.onclick = null;
     return;
   }
-
-  card.hidden = false;
 
   if (state.announcementIssues.length) {
     issuesEl.hidden = false;
@@ -976,7 +978,7 @@ function renderAnnouncements() {
     nextEl.innerHTML = '';
   }
 
-  const limit = APP.constants.ANNOUNCEMENTS_PREVIEW_LIMIT;
+  const limit = APP.constants.ANNOUNCEMENTS_PREVIEW_LIMIT; // aktuell 3
   const visibleItems = state.announcementsShowAll ? state.announcements : state.announcements.slice(0, limit);
 
   list.innerHTML = visibleItems.map((item) => {
@@ -993,7 +995,7 @@ function renderAnnouncements() {
     `;
   }).join('');
 
-  if (state.announcements.length > limit) {
+  if (state.announcements.length > 3) {
     moreBtn.hidden = false;
     moreBtn.textContent = state.announcementsShowAll ? 'Weniger anzeigen' : `Mehr anzeigen (${state.announcements.length - limit})`;
     moreBtn.onclick = () => {
