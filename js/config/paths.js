@@ -20,7 +20,8 @@ export const PATHS = Object.freeze({
     },
   },
   data: {
-    announcementsJson: './data/announcements.json',
-    bellTimesJson: './data/bell-times.json',
+    // ehemals ./data/* → nach ./assets/data/runtime verschoben
+    announcementsJson: './assets/data/runtime/announcements.json',
+    bellTimesJson: './assets/data/runtime/bell-times.json',
   },
 });

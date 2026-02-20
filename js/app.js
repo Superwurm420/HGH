@@ -4,7 +4,7 @@ import {
   createEmptyTimetable,
   parseAndNormalizeTimetable,
   hasTimetableEntries,
-} from './timetable-parser.js';
+} from './modules/timetable-parser.js';
 
 import { PATHS } from './js/config/paths.js';
 

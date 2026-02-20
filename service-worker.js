@@ -12,8 +12,8 @@ const ASSETS = [
   './assets/data/announcements/testtermin-ablauf-2026-04-20.txt',
   './assets/data/announcements/testankuendigung-ohne-datum.txt',
   './app.css',
-  './app.js',
-  './timetable-parser.js',
+  './js/app.js',
+  './js/modules/timetable-parser.js',
   './manifest.json',
   './content/stundenplan.json',
   './content/kalender.ics',
@@ -118,7 +118,10 @@ async function handleAsset(req) {
     url.pathname === '/content/stundenplan.json' ||
     url.pathname === '/content/kalender.ics' ||
     url.pathname === '/assets/data/announcements/index.json' ||
-    url.pathname.startsWith('/assets/data/announcements/');
+    url.pathname.startsWith('/assets/data/announcements/') ||
+    // ehemals /data/*
+    url.pathname === '/assets/data/runtime/announcements.json' ||
+    url.pathname === '/assets/data/runtime/bell-times.json';
 
   // Dynamic data should be network-first so newly added timetable/announcement
   // files show up immediately without waiting for a service worker version bump.
