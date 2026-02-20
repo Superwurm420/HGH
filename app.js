@@ -15,7 +15,6 @@ const APP = {
   constants: {
     COUNTDOWN_INTERVAL: 30000,
     ANNOUNCEMENTS_INTERVAL: 1000,
-    ANNOUNCEMENTS_PREVIEW_LIMIT: 3,
     AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
     MIN_REFRESH_GAP: 60 * 1000
   }
@@ -134,7 +133,6 @@ const state = {
   hasTimetableData: false,
   announcements: [],
   announcementIssues: [],
-  announcementsShowAll: false,
   cal: {
     events: {},
     enabled: {},
@@ -561,7 +559,6 @@ async function loadAnnouncements() {
     }
   }
 
-  state.announcementsShowAll = false;
   state.announcements = normalizeAnnouncements(rawItems || []);
 }
 
@@ -939,16 +936,13 @@ function renderAnnouncements() {
   const list = state.els.announcementsList;
   const issuesEl = state.els.announcementsIssues;
   const nextEl = state.els.announcementsNext;
-  const moreBtn = state.els.announcementsMoreBtn;
-
-  if (!card || !list || !issuesEl || !nextEl || !moreBtn) return;
+  if (!card || !list || !issuesEl || !nextEl) return;
 
   if (!state.announcements.length) {
     card.hidden = true;
     list.innerHTML = '';
     issuesEl.hidden = true;
     nextEl.hidden = true;
-    moreBtn.hidden = true;
     return;
   }
 
@@ -976,10 +970,7 @@ function renderAnnouncements() {
     nextEl.innerHTML = '';
   }
 
-  const limit = APP.constants.ANNOUNCEMENTS_PREVIEW_LIMIT;
-  const visibleItems = state.announcementsShowAll ? state.announcements : state.announcements.slice(0, limit);
-
-  list.innerHTML = visibleItems.map((item) => {
+  list.innerHTML = state.announcements.map((item) => {
     const status = getAnnouncementStatus(item);
     const locationHtml = item.location ? `<p class="announcementLocation">Ort: ${escapeHtml(item.location)}</p>` : '';
     return `
@@ -992,18 +983,6 @@ function renderAnnouncements() {
       </article>
     `;
   }).join('');
-
-  if (state.announcements.length > limit) {
-    moreBtn.hidden = false;
-    moreBtn.textContent = state.announcementsShowAll ? 'Weniger anzeigen' : `Mehr anzeigen (${state.announcements.length - limit})`;
-    moreBtn.onclick = () => {
-      state.announcementsShowAll = !state.announcementsShowAll;
-      renderAnnouncements();
-    };
-  } else {
-    moreBtn.hidden = true;
-    moreBtn.onclick = null;
-  }
 
   updateAnnouncementCountdowns();
 }
@@ -1979,8 +1958,7 @@ function cacheEls() {
     announcementsCard: qs('#announcementsCard'),
     announcementsList: qs('#announcementsList'),
     announcementsIssues: qs('#announcementsIssues'),
-    announcementsNext: qs('#announcementNext'),
-    announcementsMoreBtn: qs('#announcementsMoreBtn')
+    announcementsNext: qs('#announcementNext')
   };
 }
 

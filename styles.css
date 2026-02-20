@@ -1917,6 +1917,7 @@ select:focus-visible{
 
   .view[data-view="home"] .announcementsCard{ order:2; }
   .view[data-view="home"] .calCard{ order:3; }
+  .view[data-view="home"] .installCard{ order:4; }
 
 
   .weekCell{
