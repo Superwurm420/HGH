@@ -1,6 +1,6 @@
-/* Service Worker – offline-first for app shell (v1.4.8, optimiert) */
+/* Service Worker – offline-first for app shell (v1.5.0, optimiert) */
 
-const VERSION = 'v1.4.8';
+const VERSION = 'v1.5.0';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
@@ -13,10 +13,12 @@ const ASSETS = [
   './data/announcements/vorlage-mit-termin.txt',
   './data/announcements/testtermin-ablauf-2026-04-20.txt',
   './data/announcements/testankuendigung-ohne-datum.txt',
-  './styles.css',
+  './app.css',
   './app.js',
   './manifest.webmanifest',
-  './data/timetable.json',
+  './content/stundenplan.json',
+  './content/kalender.ics',
+  './content/README_admin.txt',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',
@@ -114,7 +116,8 @@ async function handleAsset(req) {
   const url = new URL(req.url);
 
   const isDynamicContent =
-    url.pathname === '/data/timetable.json' ||
+    url.pathname === '/content/stundenplan.json' ||
+    url.pathname === '/content/kalender.ics' ||
     url.pathname === '/data/announcements/index.json' ||
     url.pathname.startsWith('/data/announcements/');
 

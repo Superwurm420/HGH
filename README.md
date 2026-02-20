@@ -34,7 +34,7 @@ Die Anwendung ist bewusst minimalistisch gehalten und basiert auf reinem HTML, C
 
 	3.	Das Script erkennt automatisch die neueste passende PDF (auch Sonderpläne), testet mehrere Parser-Varianten und übernimmt nur das qualitativ beste Ergebnis (mit Mindest-Qualitätsprüfung).
 
-	4.	`data/timetable.json` wird atomar geschrieben (kein halbgeschriebener Zustand bei Fehlern).
+	4.	`content/stundenplan.json` wird atomar geschrieben (kein halbgeschriebener Zustand bei Fehlern).
 
 	5.	Alte Stundenplan-PDFs werden dabei automatisch entfernt (standardmäßig bleibt nur die aktuelle Datei erhalten).
 
@@ -47,7 +47,7 @@ Optional: Mit `npm run timetable:ingest:dry` kann der Ablauf ohne Schreiben/Lös
 
 ### Daten-Pipeline (Stundenplan)
 
-Die App verarbeitet `data/timetable.json` jetzt in einer klaren Pipeline:
+Die App verarbeitet `content/stundenplan.json` jetzt in einer klaren Pipeline:
 1. **Input:** Laden der JSON-Datei (Netzwerk + Cache-Fallback)
 2. **Parsing/Normalisierung:** Vereinheitlichung von Zeitslots, Klassen, Tagesdaten und `sameAs`
 3. **Validierung:** strukturierte Hinweise bei fehlenden/ungültigen Feldern

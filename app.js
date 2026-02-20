@@ -1,42 +1,195 @@
 /* HGH Schüler-PWA – vanilla JS, performance-optimiert & vereinfacht */
 
 import {
-  APP,
-  CLASSES,
-  DAYS,
-  DAY_IDS,
-  DEFAULT_TIMESLOTS,
-  DOUBLE_PAIRS,
-  SECOND_SLOTS,
-  WEEK_PAIRS,
-  ROUTES_SET,
-  MONTH_NAMES,
-  WEEKDAY_LABELS,
-  CORS_PROXY,
-  FUN_MESSAGES_URL,
-  ANNOUNCEMENTS_INDEX_URL,
-  ANNOUNCEMENTS_DIR_URL,
-  MESSAGE_PHASES,
-  CALENDAR_VISIBLE_WINDOW_DAYS,
-  DEFAULT_FUN_MESSAGES,
-  CAL_CONFIGS,
-} from './js/config.js';
-import { createInitialState } from './js/state.js';
-import {
-  qs,
-  qsa,
-  escapeHtml,
-  formatSubject,
-  getISOWeek,
-  getTodayId,
-  isWeekday,
-  getHolidayLabel,
-} from './js/utils.js';
-import {
   createEmptyTimetable,
   parseAndNormalizeTimetable,
   hasTimetableEntries,
-} from './js/modules/timetable-pipeline.js';
+} from './timetable-parser.js';
+
+// --- App-Konfiguration --------------------------------------------------
+const APP = {
+  name: 'HGH Hildesheim',
+  version: '1.2.0',
+  storageKeys: {
+    theme: 'hgh_theme',
+    classId: 'hgh_class',
+    dayId: 'hgh_day',
+    timetableCache: 'hgh_timetable_cache_v1',
+    timetableCacheTs: 'hgh_timetable_cache_ts',
+    announcementsCache: 'hgh_announcements_cache_v1'
+  },
+  routes: ['home', 'timetable', 'week', 'links'],
+  constants: {
+    COUNTDOWN_INTERVAL: 30000,
+    ANNOUNCEMENTS_INTERVAL: 1000,
+    AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
+    MIN_REFRESH_GAP: 60 * 1000
+  }
+};
+
+const CLASSES = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
+
+const DAYS = [
+  { id: 'mo', label: 'Montag' },
+  { id: 'di', label: 'Dienstag' },
+  { id: 'mi', label: 'Mittwoch' },
+  { id: 'do', label: 'Donnerstag' },
+  { id: 'fr', label: 'Freitag' }
+];
+
+const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
+
+const DEFAULT_TIMESLOTS = [
+  { id: '1', time: '08:00–08:45' },
+  { id: '2', time: '08:45–09:30' },
+  { id: '3', time: '09:50–10:35' },
+  { id: '4', time: '10:35–11:20' },
+  { id: '5', time: '11:40–12:25' },
+  { id: '6', time: '12:25–13:10' },
+  { id: '7', time: 'Mittagspause' },
+  { id: '8', time: '14:10–14:55' },
+  { id: '9', time: '14:55–15:40' }
+];
+
+const DOUBLE_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
+const SECOND_SLOTS = new Set(Object.values(DOUBLE_PAIRS));
+const WEEK_PAIRS = [
+  { first: '1', second: '2' },
+  { first: '3', second: '4' },
+  { first: '5', second: '6' },
+  { first: '8', second: '9' }
+];
+const ROUTES_SET = new Set(APP.routes);
+const DAY_NUM_MAP = { 1: 'mo', 2: 'di', 3: 'mi', 4: 'do', 5: 'fr' };
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+];
+const WEEKDAY_LABELS = {
+  mo: 'Montag', di: 'Dienstag', mi: 'Mittwoch', do: 'Donnerstag', fr: 'Freitag', sa: 'Samstag', so: 'Sonntag'
+};
+const FUN_MESSAGES_URL = './data/fun-messages.json';
+const ANNOUNCEMENTS_INDEX_URL = './data/announcements/index.json';
+const ANNOUNCEMENTS_DIR_URL = './data/announcements/';
+const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
+const CALENDAR_VISIBLE_WINDOW_DAYS = { past: 30, future: 400 };
+const DEFAULT_FUN_MESSAGES = {
+  default: {
+    beforeSchool: ['Guten Morgen – dein Tag startet gleich. ☀️'],
+    beforeLesson: ['Gleich geht die nächste Stunde los. ⏱️'],
+    duringLesson: ['Volle Konzentration in {subject}. 📚'],
+    betweenBlocks: ['Kleine Pause – dann weiter. 💪'],
+    lunch: ['Mittagspause – lass es dir schmecken! 🍽️'],
+    afterSchool: ['Unterricht vorbei – guten Feierabend! 👋'],
+    weekend: ['Wochenende-Modus aktiv – {weekdayLabel} gehört dir. 😎'],
+    holiday: ['{holidayName} heute – genieße den freien Tag! 🎉'],
+    noLessons: ['Für {weekdayLabel} sind keine Stunden geplant. 📅']
+  }
+};
+const CAL_CONFIGS = [{
+  id: 'schulkalender',
+  label: 'Schulkalender',
+  icsUrl: './content/kalender.ics',
+  color: '#58b4ff',
+}];
+
+// --- Utils --------------------------------------------------------------
+const qs = (sel, root = document) => root.querySelector(sel);
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function formatSubject(str) {
+  if (!str) return '—';
+  return str.split('/').map(p => escapeHtml(p.trim())).join('<br>');
+}
+
+function getISOWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getTodayId() { return DAY_NUM_MAP[new Date().getDay()] || 'mo'; }
+function isWeekday() { const d = new Date().getDay(); return d >= 1 && d <= 5; }
+function getDateByDayOffset(base, offsetDays) { const d = new Date(base); d.setDate(d.getDate() + offsetDays); return d; }
+function getEasterSunday(year) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+function getHolidayLabel(date) {
+  const year = date.getFullYear();
+  const fmt = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const fixed = { '01-01': 'Neujahr', '05-01': 'Tag der Arbeit', '10-03': 'Tag der Deutschen Einheit', '10-31': 'Reformationstag', '12-25': '1. Weihnachtstag', '12-26': '2. Weihnachtstag' };
+  if (fixed[fmt]) return fixed[fmt];
+  const easter = getEasterSunday(year);
+  const movable = [
+    { offset: -2, label: 'Karfreitag' },
+    { offset: 1, label: 'Ostermontag' },
+    { offset: 39, label: 'Christi Himmelfahrt' },
+    { offset: 50, label: 'Pfingstmontag' }
+  ];
+  for (const h of movable) {
+    const d = getDateByDayOffset(easter, h.offset);
+    if (d.toDateString() === date.toDateString()) return h.label;
+  }
+  return '';
+}
+
+function createInitialState() {
+  return {
+    timeslots: DEFAULT_TIMESLOTS,
+    timeslotMap: new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s])),
+    timetable: null,
+    classIds: [...CLASSES],
+    selectedDayId: null,
+    currentRoute: 'home',
+    els: {},
+    isLoading: false,
+    autoRefreshTimer: null,
+    lastSignature: null,
+    lastRefreshAt: 0,
+    installPromptEvent: null,
+    countdownTimer: null,
+    announcementsTimer: null,
+    funMessages: DEFAULT_FUN_MESSAGES,
+    currentPdfHref: null,
+    hasTimetableData: false,
+    timetableIssues: [],
+    announcements: [],
+    announcementIssues: [],
+    cal: {
+      events: {},
+      enabled: {},
+      year: new Date().getFullYear(),
+      month: new Date().getMonth(),
+      selectedDate: null,
+      issues: [],
+    },
+  };
+}
 
 const state = createInitialState();
 
@@ -458,7 +611,7 @@ function renderTimetablePipelineStatus() {
   el.innerHTML = `
     <strong>Stundenplan-Hinweis:</strong>
     <ul>${state.timetableIssues.map((msg) => `<li>${escapeHtml(msg)}</li>`).join('')}</ul>
-    <p class="small muted">Tipp: Datei in <code>data/timetable.json</code> prüfen oder neu importieren.</p>
+    <p class="small muted">Tipp: Datei in <code>content/stundenplan.json</code> prüfen oder neu ersetzen.</p>
   `;
 }
 
@@ -514,7 +667,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     lastError = new Error('offline');
   } else {
     try {
-      const res = await fetch('./data/timetable.json', { cache: 'no-cache' });
+      const res = await fetch('./content/stundenplan.json', { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const pipeline = parseAndNormalizeTimetable(data);
@@ -1384,21 +1537,22 @@ async function fetchCalendar(cfg) {
   };
 
   try {
-    let text;
-    try {
-      text = await tryFetch(`${cfg.icsUrl}${cfg.icsUrl.includes('?') ? '&' : '?'}_=${Date.now()}`);
-    } catch {
-      text = await tryFetch(`${CORS_PROXY}${encodeURIComponent(cfg.icsUrl)}&_=${Date.now()}`);
+    const text = await tryFetch(`${cfg.icsUrl}${cfg.icsUrl.includes('?') ? '&' : '?'}_=${Date.now()}`);
+    const parsed = parseICS(text);
+    state.cal.events[cfg.id] = parsed;
+    if (!Array.isArray(parsed) || !parsed.length) {
+      state.cal.issues.push(`Kalender ohne Einträge: ${cfg.label}. Prüfe content/kalender.ics.`);
     }
-    state.cal.events[cfg.id] = parseICS(text);
   } catch (e) {
     console.warn(`[Cal] ${cfg.id}:`, e);
+    state.cal.issues.push(`Kalender-Datei fehlt/defekt: ${cfg.label}. Prüfe content/kalender.ics.`);
     if (!state.cal.events[cfg.id]) state.cal.events[cfg.id] = [];
   }
 }
 
 async function loadCalendars() {
   state.cal.events = {};
+  state.cal.issues = [];
   await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
   renderCalendar();
 }
@@ -1448,7 +1602,14 @@ function renderCalendarEvents() {
   const el = state.els.calEvents;
   if (!el) return;
   const { selectedDate } = state.cal;
-  if (!selectedDate) { el.innerHTML = ''; return; }
+  if (!selectedDate) {
+    if (state.cal.issues.length) {
+      el.innerHTML = `<p class="small muted calNoEvents">${escapeHtml(state.cal.issues[0])}</p>`;
+    } else {
+      el.innerHTML = '';
+    }
+    return;
+  }
 
   const [y, m, d] = selectedDate.split('-').map(Number);
   const date = new Date(y, m - 1, d);
@@ -1625,6 +1786,7 @@ function initCalendar() {
     year: now.getFullYear(),
     month: now.getMonth(),
     selectedDate: null,
+    issues: [],
   };
 
   state.els.calPrev?.addEventListener('click', () => {

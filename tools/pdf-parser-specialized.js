@@ -20,7 +20,7 @@
  *   node tools/pdf-parser-specialized.js <input.pdf> [options]
  *
  * Options:
- *   --out <path>         Output JSON file (default: data/timetable.json)
+ *   --out <path>         Output JSON file (default: content/stundenplan.json)
  *   --validFrom <date>   Valid from date (default: today)
  *   --debug              Show debug output
  */
@@ -66,7 +66,7 @@ function getArg(flag) {
 
 const args = {
   input: process.argv[2],
-  out: getArg('--out') || 'data/timetable.json',
+  out: getArg('--out') || 'content/stundenplan.json',
   validFrom: getArg('--validFrom') || new Date().toISOString().split('T')[0],
   debug: process.argv.includes('--debug')
 };
