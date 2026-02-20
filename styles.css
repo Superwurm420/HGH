@@ -477,20 +477,24 @@ select:focus-visible{
 }
 
 .countdownTop{
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
   gap:12px;
 }
 
 .countdownNetStatus{
-  align-self:flex-end;
+  justify-self:end;
 }
 
 .countdownTimeBlock{
   display:flex;
   flex-direction:column;
   gap:2px;
+}
+
+.countdownDate{
+  line-height:1.2;
 }
 
 .timeMetaRow{
@@ -508,6 +512,7 @@ select:focus-visible{
 }
 
 .countdownText{
+  grid-column:1 / -1;
   font-weight:700;
   font-size:13px;
   padding:7px 14px;
@@ -1793,22 +1798,13 @@ select:focus-visible{
     font-size:11px;
   }
 
-  .countdownTop{
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .countdownNetStatus{
-    align-self:flex-end;
-  }
-
   .timeMetaRow{
     width:100%;
   }
 
   .countdownText{
     width:100%;
-    text-align:left;
+    text-align:center;
   }
 
   .installHead{
