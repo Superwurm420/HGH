@@ -79,6 +79,25 @@ if (!args.input) {
 // === Logging ===
 function log(...msgs) { if (args.debug) console.log('[DEBUG]', ...msgs); }
 
+function compactToken(s) {
+  return String(s || '').replace(/\s+/g, '').toUpperCase();
+}
+
+function canonicalClassId(token) {
+  const compact = compactToken(token);
+  const aliases = {
+    HT11: 'HT11',
+    HT12: 'HT12',
+    HT21: 'HT21',
+    HT22: 'HT22',
+    G11: 'G11',
+    G21: 'G21',
+    GT01: 'GT01',
+    GT1: 'GT01'
+  };
+  return aliases[compact] || null;
+}
+
 // === PDF Item Extraction ===
 async function extractItems(pdfPath) {
   const data = new Uint8Array(fs.readFileSync(pdfPath));
@@ -96,9 +115,31 @@ async function extractItems(pdfPath) {
 
 // === Column Detection ===
 function findColumns(items) {
-  // Find R header positions (7 "R" items at the same y)
+  // Find class header positions from first header line.
+  const classHeaderItems = items
+    .map(it => ({ ...it, classId: canonicalClassId(it.str) }))
+    .filter(it => it.classId)
+    .sort((a, b) => b.y - a.y);
+
+  const classHeaderY = classHeaderItems.length ? classHeaderItems[0].y : null;
+  const headerClassX = {};
+  if (classHeaderY != null) {
+    for (const it of classHeaderItems) {
+      if (Math.abs(it.y - classHeaderY) > 4) continue;
+      // If duplicates exist, keep the leftmost occurrence.
+      if (headerClassX[it.classId] == null || it.x < headerClassX[it.classId]) {
+        headerClassX[it.classId] = it.x;
+      }
+    }
+  }
+
+  // Find R header positions (7 "R" items, typically on header line).
   const rItems = items.filter(it => it.str === 'R');
-  const rXs = rItems.map(it => it.x).sort((a, b) => a - b);
+  const rTop = rItems.length ? Math.max(...rItems.map(it => it.y)) : null;
+  const rXs = rItems
+    .filter(it => rTop == null || Math.abs(it.y - rTop) <= 8)
+    .map(it => it.x)
+    .sort((a, b) => a - b);
 
   if (rXs.length < 7) {
     throw new Error(`Expected 7 R columns, found ${rXs.length}`);
@@ -111,13 +152,43 @@ function findColumns(items) {
   const DATA_LEFT = Math.max(90, rXs[0] - 90);
   const DATA_RIGHT = rXs[6] + 50;
 
-  // Build column definitions
-  // Subject/teacher items appear left-aligned in each class column
-  // Room items appear near the R column x position
-  const columns = CLASS_IDS.map((id, i) => {
-    const leftBound = i === 0 ? DATA_LEFT : rXs[i - 1];
-    const rightBound = rXs[i];
-    const roomX = rXs[i];
+  // Build room anchors per class.
+  // Preferred: assign nearest R to class header x.
+  // Fallback: keep strict left-to-right order.
+  const roomByClass = {};
+  const unassignedRX = [...rXs];
+  const haveAllHeaders = CLASS_IDS.every(id => headerClassX[id] != null);
+
+  if (haveAllHeaders) {
+    for (const classId of CLASS_IDS) {
+      const cx = headerClassX[classId];
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < unassignedRX.length; i++) {
+        const dist = Math.abs(unassignedRX[i] - cx);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx === -1) break;
+      roomByClass[classId] = unassignedRX[bestIdx];
+      unassignedRX.splice(bestIdx, 1);
+    }
+  }
+
+  if (Object.keys(roomByClass).length !== CLASS_IDS.length) {
+    CLASS_IDS.forEach((id, i) => {
+      roomByClass[id] = rXs[i];
+    });
+  }
+
+  const roomSequence = CLASS_IDS.map(id => roomByClass[id]).sort((a, b) => a - b);
+  const columns = CLASS_IDS.map((id) => {
+    const roomX = roomByClass[id];
+    const roomPos = roomSequence.indexOf(roomX);
+    const leftBound = roomPos === 0 ? DATA_LEFT : roomSequence[roomPos - 1];
+    const rightBound = roomX;
     return { id, leftBound, rightBound, roomX };
   });
 
@@ -131,20 +202,30 @@ function findColumns(items) {
 function findDayBlocks(items) {
   // Find all "1." slot markers — there should be 5, one per day
   const slot1Items = items
-    .filter(it => it.str === '1.' && it.x < 100) // slot markers are at the left edge
+    .filter(it => /^(1\.|1)$/.test(it.str) && it.x < 100) // slot markers are at the left edge
     .sort((a, b) => b.y - a.y); // top to bottom (PDF y increases upward)
 
   if (slot1Items.length < 5) {
     throw new Error(`Expected 5 day blocks (5× slot "1."), found ${slot1Items.length}`);
   }
 
-  // Take exactly 5 (in case there are duplicates)
-  const dayStarts = slot1Items.slice(0, 5);
+  // Deduplicate by y (some PDFs have overlays) and take 5 day starts.
+  const dayStarts = [];
+  for (const it of slot1Items) {
+    if (dayStarts.every(existing => Math.abs(existing.y - it.y) > 4)) {
+      dayStarts.push(it);
+    }
+    if (dayStarts.length === 5) break;
+  }
+
+  if (dayStarts.length < 5) {
+    throw new Error(`Expected 5 unique day blocks, found ${dayStarts.length}`);
+  }
 
   // Find all slot markers for grouping
   const allSlots = items
-    .filter(it => /^\d{1,2}\.$/.test(it.str) && it.x < 100)
-    .map(it => ({ num: parseInt(it.str), y: it.y }));
+    .filter(it => /^\d{1,2}\.?$/.test(it.str) && it.x < 100)
+    .map(it => ({ num: parseInt(it.str, 10), y: it.y }));
 
   // Build day blocks: each block spans from its "1." to its "10."
   const blocks = dayStarts.map((start, dayIdx) => {
