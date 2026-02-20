@@ -1,6 +1,6 @@
-/* Service Worker – offline-first for app shell (v1.4.7, optimiert) */
+/* Service Worker – offline-first for app shell (v1.4.8, optimiert) */
 
-const VERSION = 'v1.4.7';
+const VERSION = 'v1.4.8';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
@@ -111,6 +111,28 @@ async function handleNavigation(req) {
 
 async function handleAsset(req) {
   const cache = await caches.open(CACHE);
+  const url = new URL(req.url);
+
+  const isDynamicContent =
+    url.pathname === '/data/timetable.json' ||
+    url.pathname === '/data/announcements/index.json' ||
+    url.pathname.startsWith('/data/announcements/');
+
+  // Dynamic data should be network-first so newly added timetable/announcement
+  // files show up immediately without waiting for a service worker version bump.
+  if (isDynamicContent) {
+    try {
+      const fresh = await fetch(req, { cache: 'no-cache' });
+      if (fresh?.status === 200 && fresh.type === 'basic') {
+        cache.put(req, fresh.clone());
+      }
+      return fresh;
+    } catch {
+      const fallback = await cache.match(req);
+      if (fallback) return fallback;
+      return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+    }
+  }
 
   // Cache-first
   const cached = await cache.match(req);
