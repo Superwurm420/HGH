@@ -1638,7 +1638,7 @@ function renderCalendarEvents() {
     const range = ev.allDay ? formatCalDateRange(ev.start, ev.end, true) : `${ev.start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${ev.end ? ev.end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''}`;
     div.innerHTML = `
       <div class="calEventTitle">${escapeHtml(ev.title)}</div>
-      <div class="calEventMeta small muted">${escapeHtml(ev.calLabel)} · ${escapeHtml(range)}</div>`;
+      <div class="calEventMeta small muted">${escapeHtml(range)}</div>`;
     el.appendChild(div);
   }
 }
