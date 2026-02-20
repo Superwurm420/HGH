@@ -19,6 +19,7 @@ export function createInitialState() {
     funMessages: DEFAULT_FUN_MESSAGES,
     currentPdfHref: null,
     hasTimetableData: false,
+    timetableIssues: [],
     announcements: [],
     announcementIssues: [],
     cal: {

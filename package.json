@@ -11,7 +11,8 @@
     "timetable:ingest": "node tools/ingest-latest-timetable.js",
     "timetable:ingest:dry": "node tools/ingest-latest-timetable.js --dry-run",
     "test:parser:special": "node tools/test-special-events-regression.js",
-    "test:pdf:dates": "node tools/test-pdf-date-metadata.js"
+    "test:pdf:dates": "node tools/test-pdf-date-metadata.js",
+    "test:timetable:pipeline": "node tools/test-timetable-pipeline.js"
   },
   "keywords": [],
   "author": "",

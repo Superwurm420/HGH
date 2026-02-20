@@ -44,6 +44,17 @@ Optional: Mit `npm run timetable:ingest:dry` kann der Ablauf ohne Schreiben/Lös
 
 ⸻
 
+
+### Daten-Pipeline (Stundenplan)
+
+Die App verarbeitet `data/timetable.json` jetzt in einer klaren Pipeline:
+1. **Input:** Laden der JSON-Datei (Netzwerk + Cache-Fallback)
+2. **Parsing/Normalisierung:** Vereinheitlichung von Zeitslots, Klassen, Tagesdaten und `sameAs`
+3. **Validierung:** strukturierte Hinweise bei fehlenden/ungültigen Feldern
+4. **Rendering:** UI rendert ausschließlich das normalisierte Datenmodell
+
+Bei Parsing-Problemen zeigt die Stundenplan-Ansicht eine sichtbare Hinweiskarte mit konkreten Ursachen.
+
 🚀 Features (Beta)
 	•	📅 Dynamischer Stundenplan (JSON-basiert)
 	•	🔄 Offline-Fallback mit last-known-good-Speicherung

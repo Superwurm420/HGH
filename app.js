@@ -32,6 +32,11 @@ import {
   isWeekday,
   getHolidayLabel,
 } from './js/utils.js';
+import {
+  createEmptyTimetable,
+  parseAndNormalizeTimetable,
+  hasTimetableEntries,
+} from './js/modules/timetable-pipeline.js';
 
 const state = createInitialState();
 
@@ -55,13 +60,6 @@ function formatTeacherRoom(teacher, room) {
   if (teacher) parts.push(teacher);
   if (room) parts.push(String(room));
   return parts.join(' / ');
-}
-
-function isValidTimetableData(data) {
-  if (!data || typeof data !== 'object') return false;
-  if (data.timeslots && !Array.isArray(data.timeslots)) return false;
-  if (data.classes && typeof data.classes !== 'object') return false;
-  return true;
 }
 
 function getAvailableClasses() {
@@ -442,48 +440,43 @@ function initThemeToggle() {
 
 // --- Timetable loader ---------------------------------------------------
 
-function ensureEmptyTimetable() {
-  const empty = {};
-  for (const c of CLASSES) {
-    empty[c] = { mo: [], di: [], mi: [], do: [], fr: [] };
-  }
-  return empty;
+function setTimetableIssues(issues = []) {
+  state.timetableIssues = Array.isArray(issues) ? issues : [];
 }
 
-function applyTimetableData(data) {
-  if (!isValidTimetableData(data)) {
-    state.timeslots = DEFAULT_TIMESLOTS;
-    state.timeslotMap = new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s]));
-    state.timetable = ensureEmptyTimetable();
+function renderTimetablePipelineStatus() {
+  const el = state.els.timetablePipelineStatus;
+  if (!el) return;
+
+  if (!state.timetableIssues.length) {
+    el.hidden = true;
+    el.innerHTML = '';
     return;
   }
 
-  if (Array.isArray(data?.timeslots) && data.timeslots.length) {
-    state.timeslots = data.timeslots;
-  } else {
-    state.timeslots = DEFAULT_TIMESLOTS;
-  }
+  el.hidden = false;
+  el.innerHTML = `
+    <strong>Stundenplan-Hinweis:</strong>
+    <ul>${state.timetableIssues.map((msg) => `<li>${escapeHtml(msg)}</li>`).join('')}</ul>
+    <p class="small muted">Tipp: Datei in <code>data/timetable.json</code> prüfen oder neu importieren.</p>
+  `;
+}
+
+function applyTimetableData(rawData) {
+  const pipeline = parseAndNormalizeTimetable(rawData);
+  const data = pipeline.model;
+
+  setTimetableIssues(pipeline.issues);
+
+  state.timeslots = (Array.isArray(data?.timeslots) && data.timeslots.length) ? data.timeslots : DEFAULT_TIMESLOTS;
   state.timeslotMap = new Map(state.timeslots.map(s => [s.id, s]));
 
-  const classes = data?.classes || ensureEmptyTimetable();
+  const classes = data?.classes || createEmptyTimetable();
   const dynamicClassIds = Object.keys(classes || {});
   state.classIds = dynamicClassIds.length ? dynamicClassIds : [...CLASSES];
 
-  // sameAs-Referenzen auflösen
-  for (const cls of Object.keys(classes)) {
-    for (const day of DAY_IDS) {
-      const entry = classes[cls][day];
-      if (entry && !Array.isArray(entry) && entry.sameAs) {
-        const ref = classes[entry.sameAs]?.[day];
-        classes[cls][day] = Array.isArray(ref) ? ref : [];
-      }
-    }
-  }
-
   state.timetable = classes;
-  state.hasTimetableData = Object.values(classes).some(cls =>
-    Object.values(cls || {}).some(day => Array.isArray(day) && day.length > 0)
-  );
+  state.hasTimetableData = hasTimetableEntries(classes);
 
   // PDF-Links aktualisieren
   state.currentPdfHref = data?.meta?.source ? `./plan/${data.meta.source}` : null;
@@ -524,16 +517,15 @@ async function loadTimetable({ forceNetwork = false } = {}) {
       const res = await fetch('./data/timetable.json', { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (!isValidTimetableData(data)) throw new Error('Ungültige Datenstruktur');
-
-      const sig = getTimetableSignature(data);
+      const pipeline = parseAndNormalizeTimetable(data);
+      const sig = getTimetableSignature(pipeline.model);
       const changed = sig !== state.lastSignature;
 
-      applyTimetableData(data);
+      applyTimetableData(pipeline.model);
       state.lastSignature = sig;
       state.lastRefreshAt = Date.now();
 
-      storageSet(APP.storageKeys.timetableCache, JSON.stringify(data));
+      storageSet(APP.storageKeys.timetableCache, JSON.stringify(pipeline.model));
       storageSet(APP.storageKeys.timetableCacheTs, new Date().toISOString());
 
       state.isLoading = false;
@@ -549,12 +541,11 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     const cached = storageGet(APP.storageKeys.timetableCache);
     if (cached) {
       const data = JSON.parse(cached);
-      if (!isValidTimetableData(data)) throw new Error('Ungültige Cache-Daten');
-
-      const sig = getTimetableSignature(data);
+      const pipeline = parseAndNormalizeTimetable(data);
+      const sig = getTimetableSignature(pipeline.model);
       const changed = sig !== state.lastSignature;
 
-      applyTimetableData(data);
+      applyTimetableData(pipeline.model);
       state.lastSignature = sig;
       state.isLoading = false;
       return { source: 'cache', changed };
@@ -563,7 +554,7 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     console.warn('Cache-Fehler:', e);
   }
 
-  applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: ensureEmptyTimetable() });
+  applyTimetableData({ timeslots: DEFAULT_TIMESLOTS, classes: createEmptyTimetable() });
   state.lastSignature = null;
   state.isLoading = false;
   return { source: 'empty', changed: true };
@@ -636,6 +627,7 @@ function render() {
   renderTodayPreview();
   renderWeek();
   renderAnnouncements();
+  renderTimetablePipelineStatus();
 }
 
 function renderTimetable() {
@@ -1797,6 +1789,7 @@ function cacheEls() {
     todayClassSelect: qs('#todayClassSelect'),
     currentDayInfo: qs('#currentDayInfo'),
     timetableBody: qs('#timetableBody'),
+    timetablePipelineStatus: qs('#timetablePipelineStatus'),
     todayWeekday: qs('#todayWeekday'),
     todayPreview: qs('#todayPreview'),
     nowTime: qs('#nowTime'),
