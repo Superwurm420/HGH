@@ -185,11 +185,32 @@ function findColumns(items) {
   }
 
   const roomSequence = CLASS_IDS.map(id => roomByClass[id]).sort((a, b) => a - b);
+  const classCenters = CLASS_IDS.map(id => headerClassX[id]).filter(v => v != null).sort((a, b) => a - b);
+
   const columns = CLASS_IDS.map((id) => {
     const roomX = roomByClass[id];
     const roomPos = roomSequence.indexOf(roomX);
-    const leftBound = roomPos === 0 ? DATA_LEFT : roomSequence[roomPos - 1];
-    const rightBound = roomX;
+
+    let leftBound = roomPos === 0 ? DATA_LEFT : roomSequence[roomPos - 1];
+    let rightBound = roomX;
+
+    if (headerClassX[id] != null && classCenters.length >= 2) {
+      const center = headerClassX[id];
+      const centerPos = classCenters.indexOf(center);
+      const prevCenter = centerPos > 0 ? classCenters[centerPos - 1] : null;
+      const nextCenter = centerPos < classCenters.length - 1 ? classCenters[centerPos + 1] : null;
+
+      const centerLeft = prevCenter != null ? (prevCenter + center) / 2 : center - 90;
+      const centerRight = nextCenter != null ? (center + nextCenter) / 2 : center + 90;
+
+      if (roomPos === 0) {
+        leftBound = Math.min(leftBound, centerLeft - 10);
+      } else {
+        leftBound = Math.max(leftBound, centerLeft - 10);
+      }
+      rightBound = Math.min(rightBound, centerRight + 10);
+    }
+
     return { id, leftBound, rightBound, roomX };
   });
 
@@ -266,8 +287,21 @@ function findItemInColumn(items, column, y, yTolerance) {
 
   if (candidates.length === 0) return null;
 
-  // Pick the one closest to y
-  candidates.sort((a, b) => Math.abs(a.y - y) - Math.abs(b.y - y));
+  function noisePenalty(token) {
+    if (!token) return 8;
+    if (/^\d{1,2}\.?$/.test(token)) return 7;
+    if (/^\d{1,2}\.\d{2}\s*-?$/.test(token)) return 7;
+    if (/^(TAG|Std\.?|Zeit|MO|DI|MI|DO|FR)$/i.test(token)) return 7;
+    if (token === '#NV') return 6;
+    if (/^(R|T\d|BS|HS|USF|BL|H|8\/4|\d{1,2})$/.test(token)) return 5;
+    return 0;
+  }
+
+  candidates.sort((a, b) => {
+    const aScore = Math.abs(a.y - y) + noisePenalty(a.str);
+    const bScore = Math.abs(b.y - y) + noisePenalty(b.str);
+    return aScore - bScore || a.x - b.x;
+  });
   return candidates[0];
 }
 
@@ -533,7 +567,13 @@ function parseTimetable(items, columns, dayBlocks) {
       for (const col of coveredColumns) {
         for (const slotId of [...new Set(matchedSlots)]) {
           const existing = classes[col.id][block.dayId].find(e => e.slotId === slotId);
-          if (existing) continue;
+          if (existing) {
+            if (!existing.note) {
+              existing.note = label;
+              added = true;
+            }
+            continue;
+          }
           classes[col.id][block.dayId].push({
             slotId,
             subject: label,

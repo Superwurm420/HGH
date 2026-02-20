@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { extractTimetablePdfDates } from './pdf-date-metadata.js';
 
 const PLAN_DIR = 'plan';
 const OUTPUT_JSON = 'data/timetable.json';
@@ -46,9 +47,9 @@ function extractWeekHint(fileName) {
   return Number.isFinite(week) ? week : null;
 }
 
-function listPdfFiles(dir) {
+async function listPdfFiles(dir) {
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
+  const files = fs.readdirSync(dir)
     .filter(f => f.toLowerCase().endsWith('.pdf'))
     .map(name => {
       const full = path.join(dir, name);
@@ -60,8 +61,45 @@ function listPdfFiles(dir) {
         weekHint: extractWeekHint(name),
         isLikelyPlan: hasScheduleKeyword(name)
       };
-    })
-    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+    });
+
+  const enriched = await Promise.all(files.map(async (file) => {
+    try {
+      const meta = await extractTimetablePdfDates(file.full);
+      return {
+        ...file,
+        validFrom: meta.validFrom,
+        updatedDate: meta.updatedDate
+      };
+    } catch {
+      return file;
+    }
+  }));
+
+  enriched.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return enriched;
+}
+
+function dateNum(dateStr) {
+  if (!dateStr) return -1;
+  const t = Date.parse(`${dateStr}T00:00:00Z`);
+  return Number.isFinite(t) ? t : -1;
+}
+
+
+function comparePdfRecency(a, b) {
+  const validCmp = dateNum(b.validFrom) - dateNum(a.validFrom);
+  if (validCmp !== 0) return validCmp;
+
+  const updatedCmp = dateNum(b.updatedDate) - dateNum(a.updatedDate);
+  if (updatedCmp !== 0) return updatedCmp;
+
+  if (b.weekHint != null || a.weekHint != null) {
+    const weekCmp = (b.weekHint ?? -1) - (a.weekHint ?? -1);
+    if (weekCmp !== 0) return weekCmp;
+  }
+
+  return b.mtimeMs - a.mtimeMs;
 }
 
 function pickLatestPdf(files) {
@@ -69,11 +107,8 @@ function pickLatestPdf(files) {
   const planCandidates = files.filter(f => f.isLikelyPlan);
   if (!planCandidates.length) return files[0];
 
-  const withWeek = planCandidates.filter(f => f.weekHint != null);
-  if (withWeek.length) {
-    withWeek.sort((a, b) => (b.weekHint - a.weekHint) || (b.mtimeMs - a.mtimeMs));
-    return withWeek[0];
-  }
+  planCandidates.sort(comparePdfRecency);
+
   return planCandidates[0];
 }
 
@@ -162,14 +197,25 @@ function scoreTimetable(data) {
 
 function countWarnings(output) {
   if (!output) return 0;
-  const matches = String(output).match(/(^|\n)warning:/gi);
-  return matches ? matches.length : 0;
+  const lines = String(output)
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  let count = 0;
+  for (const line of lines) {
+    if (!/^warning:/i.test(line)) continue;
+    if (/^warning:\s*tt:\s*undefined function:/i.test(line)) continue;
+    count += 1;
+  }
+
+  return count;
 }
 
-function runParser(parserScript, inputPdf) {
+function runParser(parserScript, inputPdf, validFrom) {
   const tempOut = path.join('data', `.tmp-${path.basename(parserScript, '.js')}.json`);
-  const validFrom = new Date().toISOString().split('T')[0];
-  const result = spawnSync(process.execPath, [parserScript, inputPdf, '--out', tempOut, '--validFrom', validFrom], {
+  const parserValidFrom = validFrom || new Date().toISOString().split('T')[0];
+  const result = spawnSync(process.execPath, [parserScript, inputPdf, '--out', tempOut, '--validFrom', parserValidFrom], {
     encoding: 'utf8'
   });
 
@@ -237,7 +283,7 @@ function writeOutputAtomically(targetPath, data) {
 function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   const keepSafe = Number.isFinite(keepCount) && keepCount > 0 ? Math.floor(keepCount) : 1;
   const scheduleFiles = allFiles.filter(f => f.isLikelyPlan || f.full === activePdf);
-  const sorted = scheduleFiles.slice().sort((a, b) => b.mtimeMs - a.mtimeMs);
+  const sorted = scheduleFiles.slice().sort(comparePdfRecency);
 
   const keepSet = new Set([activePdf]);
   for (const file of sorted) {
@@ -258,13 +304,13 @@ function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   return toDelete.length;
 }
 
-function main() {
+async function main() {
   const inputPdf = argValue('--input');
   const dryRun = process.argv.includes('--dry-run');
   const keep = Number(argValue('--keep') || 1);
 
   let selectedPdf = inputPdf;
-  const allPdfs = listPdfFiles(PLAN_DIR);
+  const allPdfs = await listPdfFiles(PLAN_DIR);
 
   if (!selectedPdf) {
     const chosen = pickLatestPdf(allPdfs);
@@ -280,9 +326,24 @@ function main() {
     process.exit(1);
   }
 
-  console.log(`Using PDF: ${selectedPdf}`);
+  let selectedMeta = allPdfs.find(f => f.full === selectedPdf);
+  if (!selectedMeta) {
+    try {
+      const meta = await extractTimetablePdfDates(selectedPdf);
+      selectedMeta = { full: selectedPdf, validFrom: meta.validFrom, updatedDate: meta.updatedDate };
+    } catch {
+      selectedMeta = { full: selectedPdf };
+    }
+  }
 
-  const parserResults = PARSER_CANDIDATES.map(p => runParser(p, selectedPdf));
+  const effectiveValidFrom = selectedMeta?.validFrom || new Date().toISOString().split('T')[0];
+
+  console.log(`Using PDF: ${selectedPdf}`);
+  if (selectedMeta?.validFrom || selectedMeta?.updatedDate) {
+    console.log(`Detected PDF dates: validFrom=${selectedMeta?.validFrom || 'n/a'}, updated=${selectedMeta?.updatedDate || 'n/a'}`);
+  }
+
+  const parserResults = PARSER_CANDIDATES.map(p => runParser(p, selectedPdf, effectiveValidFrom));
   const successful = parserResults.filter(r => r.ok);
 
   if (!successful.length) {
@@ -324,4 +385,7 @@ function main() {
   }
 }
 
-main();
+main().catch((err) => {
+  console.error(err.message || err);
+  process.exit(1);
+});
