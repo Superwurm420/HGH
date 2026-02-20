@@ -1009,6 +1009,23 @@ select:focus-visible{
   font-size:14px;
 }
 
+
+.pipelineStatus{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid rgba(255,175,80,.35);
+  background:rgba(255,175,80,.12);
+  color:var(--text);
+}
+
+.pipelineStatus ul{
+  margin:8px 0 8px 18px;
+  padding:0;
+}
+
+.pipelineStatus li{ margin-bottom:4px; }
+
 .trPlaceholder{
   background:rgba(88,180,255,.14);
   border-left:3px solid var(--accent);
@@ -1973,10 +1990,55 @@ select:focus-visible{
   }
 }
 
+
+@media (max-width:739px){
+  .topbar{ padding:12px; }
+  .brandTitle{ font-size:14px; }
+  .brandSub{ font-size:11px; }
+
+  .card{ padding:14px; border-radius:18px; }
+
+  .controls{ display:grid; gap:10px; }
+  .controls .btn.secondary,
+  .controls .selectWrap,
+  .controls .dayInfoBadge{ width:100%; }
+
+  .dayBtn,
+  .navItem,
+  .btn,
+  .select{ min-height:44px; }
+
+  .timetable{ overflow:auto; }
+  .timetableHeader,
+  .tr{ grid-template-columns:88px minmax(140px,1fr) minmax(84px,auto); }
+
+  .th,
+  .td{ padding:10px 9px; }
+}
+
+@media (min-width:740px) and (max-width:1023px){
+  .main{ max-width:1100px; }
+
+  .view[data-view="home"]:not([hidden]){
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    align-items:start;
+  }
+
+  .view[data-view="home"] .announcementsCard,
+  .view[data-view="home"] .installCard{
+    grid-column:1 / -1;
+  }
+
+  .timetableHeader,
+  .tr{ grid-template-columns:110px minmax(200px,1fr) minmax(120px,auto); }
+}
+
 @media (max-width:360px){
   .timetableHeader,
   .tr{
-    grid-template-columns:80px 1fr auto auto;
+    grid-template-columns:78px 1fr auto;
   }
   
   .brandTitle{
