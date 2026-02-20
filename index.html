@@ -21,7 +21,7 @@
 
   <title>HGH Hildesheim – Schüler-PWA</title>
 
-  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="https://www.holztechnik-hildesheim.de/wp-content/uploads/2021/01/logo-favicon.png" />
   <link rel="apple-touch-icon" href="https://www.holztechnik-hildesheim.de/wp-content/uploads/2021/01/logo-favicon.png" />
 
@@ -174,66 +174,6 @@
         <div id="announcementsList" class="announcementsList" role="list" aria-live="polite"></div>
       </div>
 
-      <!-- Admin-Anleitungs-Widget -->
-      <div class="card surface adminWidget" aria-label="Anleitung für Admin-Updates">
-        <div class="adminWidgetHead">
-          <h2>So verwaltest du die App (Admin)</h2>
-          <p class="small muted">Kurz-Anleitung: Datei ersetzen, Commit machen, fertig.</p>
-        </div>
-
-        <details class="adminGuideMode" open>
-          <summary>Stundenplan aktualisieren</summary>
-          <div class="adminSteps" role="list">
-            <div class="adminStep" role="listitem"><strong>1.</strong> Datei vorbereiten: <code>stundenplan.json</code></div>
-            <div class="adminStep" role="listitem"><strong>2.</strong> In <code>/content/</code> die Datei <code>stundenplan.json</code> ersetzen</div>
-            <div class="adminStep" role="listitem"><strong>3.</strong> Auf GitHub committen/pushen</div>
-            <div class="adminStep" role="listitem"><strong>4.</strong> App öffnen und einmal neu laden</div>
-          </div>
-        </details>
-
-        <details class="adminGuideMode">
-          <summary>Kalender/Termine aktualisieren</summary>
-          <div class="adminSteps" role="list">
-            <div class="adminStep" role="listitem"><strong>1.</strong> Datei vorbereiten: <code>kalender.ics</code></div>
-            <div class="adminStep" role="listitem"><strong>2.</strong> In <code>/content/</code> die Datei <code>kalender.ics</code> ersetzen</div>
-            <div class="adminStep" role="listitem"><strong>3.</strong> Auf GitHub committen/pushen</div>
-            <div class="adminStep" role="listitem"><strong>4.</strong> App öffnen und einmal neu laden</div>
-          </div>
-        </details>
-
-        <p class="small muted adminTroubleshooting">Wenn nichts passiert: Seite schließen und neu öffnen oder Hard-Reload nutzen.</p>
-      </div>
-
-      <!-- Install-Karte -->
-      <div class="card surface installCard">
-        <div class="installHead">
-          <div>
-            <h2>App installieren</h2>
-            <p class="muted">Schneller Zugriff, Offline-Modus und Start wie eine native App.</p>
-          </div>
-        </div>
-
-        <div class="installCtaRow">
-          <div class="hint" role="status" aria-live="polite">So installierst du die App auf deinem Gerät:</div>
-        </div>
-
-        <div class="installSteps" role="list" aria-label="Installationsanleitung">
-          <article class="installStep" role="listitem">
-            <span class="installStepNumber" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="10" height="19" rx="2.2"/><path d="M11 5.8h2"/><circle cx="12" cy="18" r="1"/></svg></span>
-            <div>
-              <h3>Android</h3>
-              <p><strong>Menü</strong> öffnen → <strong>„App installieren"</strong>.</p>
-            </div>
-          </article>
-          <article class="installStep" role="listitem">
-            <span class="installStepNumber" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-5-4.35-5-9.2A3.8 3.8 0 0 1 10.8 8a4 4 0 0 1 1.2.2A4 4 0 0 1 13.2 8 3.8 3.8 0 0 1 17 11.8C17 16.65 12 21 12 21Z"/><path d="M12 8c0-1.7 1.1-3 2.8-3.6"/></svg></span>
-            <div>
-              <h3>iOS</h3>
-              <p><strong>Teilen</strong> tippen → <strong>„Zum Home-Bildschirm"</strong>.</p>
-            </div>
-          </article>
-        </div>
-      </div>
     </section>
 
     <!-- WEEK VIEW -->
@@ -258,7 +198,7 @@
 
             <a 
               class="btn secondary" 
-              href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
+              href="./assets/plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
               target="_blank"
               rel="noopener"
               aria-label="Stundenplan als PDF öffnen"
@@ -300,7 +240,7 @@
             </label>
             <a
               class="btn secondary"
-              href="./plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
+              href="./assets/plan/Stundenplan_kw_45_Hj1_2025_26.pdf"
               target="_blank"
               rel="noopener"
               aria-label="Stundenplan als PDF öffnen"
@@ -446,42 +386,60 @@
 
         <h2 style="margin-top:20px">Klassenfotos</h2>
         <div class="classPhotosGrid" id="classPhotos">
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-ht11.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-ht11.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">HT11</div>
-            <img src="./icons/class-ht11.svg" alt="Klassenfoto HT11" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-ht11.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-ht11.svg" alt="Klassenfoto HT11" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-ht11.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-ht12.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-ht12.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">HT12</div>
-            <img src="./icons/class-ht12.svg" alt="Klassenfoto HT12" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-ht12.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-ht12.svg" alt="Klassenfoto HT12" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-ht12.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-ht21.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-ht21.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">HT21</div>
-            <img src="./icons/class-ht21.svg" alt="Klassenfoto HT21" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-ht21.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-ht21.svg" alt="Klassenfoto HT21" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-ht21.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-ht22.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-ht22.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">HT22</div>
-            <img src="./icons/class-ht22.svg" alt="Klassenfoto HT22" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-ht22.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-ht22.svg" alt="Klassenfoto HT22" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-ht22.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-g11.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-g11.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">G11</div>
-            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G11" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-g11.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-placeholder.svg" alt="Klassenfoto G11" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-g11.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-g12.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-g12.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">G12</div>
-            <img src="./icons/class-placeholder.svg" alt="Klassenfoto G12" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-g12.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-placeholder.svg" alt="Klassenfoto G12" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-g12.jpg</code> ablegen.</div>
           </a>
-          <a class="classPhotoItem classPhotoItemMissing" href="./images/class-gt01.jpg" target="_blank" rel="noopener noreferrer">
+          <a class="classPhotoItem classPhotoItemMissing" href="./assets/images/class-gt01.jpg" target="_blank" rel="noopener noreferrer">
             <div class="classPhotoTitle">GT01</div>
-            <img src="./icons/class-placeholder.svg" alt="Klassenfoto GT01" class="classPhotoLarge" loading="lazy" />
-            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>images/class-gt01.jpg</code> ablegen.</div>
+            <img src="./assets/icons/class-placeholder.svg" alt="Klassenfoto GT01" class="classPhotoLarge" loading="lazy" />
+            <div class="classPhotoHint">Kein Foto vorhanden. Bitte unter <code>assets/images/class-gt01.jpg</code> ablegen.</div>
           </a>
         </div>
+
+        <h2 id="informationen" style="margin-top:20px">Informationen</h2>
+        <a class="btn secondary" href="#informationen-anleitung" aria-label="Informationen zur Nutzung anzeigen">Informationen</a>
+
+        <article id="informationen-anleitung" class="adminWidget" style="margin-top:12px;">
+          <h3>Installation (kurz)</h3>
+          <ol class="adminSteps">
+            <li class="adminStep"><strong>Android:</strong> Browser-Menü öffnen → <strong>„App installieren“</strong>.</li>
+            <li class="adminStep"><strong>iOS:</strong> <strong>Teilen</strong> → <strong>„Zum Home-Bildschirm“</strong>.</li>
+          </ol>
+
+          <h3>Admin-Anleitung (Datei ersetzen → commit → neu laden)</h3>
+          <ol class="adminSteps">
+            <li class="adminStep"><strong>1.</strong> <code>content/stundenplan.json</code> oder <code>content/kalender.ics</code> ersetzen.</li>
+            <li class="adminStep"><strong>2.</strong> Änderungen committen und pushen.</li>
+            <li class="adminStep"><strong>3.</strong> App neu laden (ggf. Hard-Reload).</li>
+          </ol>
+        </article>
       </div>
     </section>
 
@@ -496,9 +454,7 @@
         role="status" 
         aria-live="polite"
       ></div>
-      <a class="adminGuideButton" href="./anleitung-dateien-austauschen.html" aria-label="Anleitung zum Austauschen von Dateien öffnen">
-        Anleitung: Dateien austauschen
-      </a>
+
     </footer>
   </main>
 

@@ -68,9 +68,9 @@ const MONTH_NAMES = [
 const WEEKDAY_LABELS = {
   mo: 'Montag', di: 'Dienstag', mi: 'Mittwoch', do: 'Donnerstag', fr: 'Freitag', sa: 'Samstag', so: 'Sonntag'
 };
-const FUN_MESSAGES_URL = './data/fun-messages.json';
-const ANNOUNCEMENTS_INDEX_URL = './data/announcements/index.json';
-const ANNOUNCEMENTS_DIR_URL = './data/announcements/';
+const FUN_MESSAGES_URL = './assets/data/fun-messages.json';
+const ANNOUNCEMENTS_INDEX_URL = './assets/data/announcements/index.json';
+const ANNOUNCEMENTS_DIR_URL = './assets/data/announcements/';
 const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = { past: 30, future: 400 };
 const DEFAULT_FUN_MESSAGES = {
@@ -529,7 +529,7 @@ async function loadAnnouncements() {
       const name = typeof file === 'string' ? file : file?.file;
       if (!name) return null;
 
-      const resp = await fetch(`./data/announcements/${name}`, { cache: 'no-cache' });
+      const resp = await fetch(`./assets/data/announcements/${name}`, { cache: 'no-cache' });
       if (!resp.ok) {
         state.announcementIssues.push(`Datei fehlt oder nicht lesbar: ${name}`);
         return null;
@@ -632,7 +632,7 @@ function applyTimetableData(rawData) {
   state.hasTimetableData = hasTimetableEntries(classes);
 
   // PDF-Links aktualisieren
-  state.currentPdfHref = data?.meta?.source ? `./plan/${data.meta.source}` : null;
+  state.currentPdfHref = data?.meta?.source ? `./assets/plan/${data.meta.source}` : null;
   for (const link of qsa('a[data-pdf-link]')) {
     if (state.currentPdfHref) {
       link.href = state.currentPdfHref;
@@ -1905,7 +1905,7 @@ async function initServiceWorker() {
   }
 
   try {
-    const reg = await navigator.serviceWorker.register('./sw.js');
+    const reg = await navigator.serviceWorker.register('./service-worker.js');
     safeSetText(status, 'Offline-Cache aktiv.');
 
     if (reg.waiting) {
@@ -1930,7 +1930,7 @@ async function initServiceWorker() {
 
 async function loadInstagramPreviews() {
   try {
-    const resp = await fetch('./data/instagram.json');
+    const resp = await fetch('./assets/data/instagram.json');
     if (!resp.ok) return;
     const data = await resp.json();
     if (!data?.profiles) return;
