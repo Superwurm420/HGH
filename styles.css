@@ -306,6 +306,62 @@ select:focus-visible{
   border-radius:2px;
 }
 
+.bulletinCard{
+  border:1px solid rgba(255,180,80,.35);
+  background:linear-gradient(145deg, rgba(255,180,80,.12), rgba(0,122,255,.08));
+}
+
+.bulletinList{
+  display:grid;
+  gap:12px;
+}
+
+.bulletinItem{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(0,0,0,.08);
+}
+
+.bulletinBadge{
+  display:inline-flex;
+  font-size:12px;
+  font-weight:700;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);
+  margin-bottom:10px;
+}
+
+.bulletinTitle{
+  margin:0 0 8px;
+  font-size:18px;
+}
+
+.bulletinBody{
+  margin:0;
+  line-height:1.45;
+  white-space:pre-wrap;
+}
+
+.bulletinMeta{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.bulletinLink{
+  margin-top:12px;
+}
+
+.bulletinHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
 /* Hero Section */
 .hero{
   display:grid;
@@ -1799,4 +1855,3 @@ select:focus-visible{
     border-width:2px;
   }
 }
-

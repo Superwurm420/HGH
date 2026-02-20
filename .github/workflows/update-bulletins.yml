@@ -1,0 +1,39 @@
+name: Update Bulletin Data
+
+on:
+  push:
+    paths:
+      - 'data/bulletins/*.txt'
+      - 'tools/ingest-bulletins.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-bulletins:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ingest bulletin text files
+        run: node tools/ingest-bulletins.js
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/bulletin.json
+          if git diff --staged --quiet; then
+            echo "No changes to bulletin.json"
+          else
+            git commit -m "Update bulletin data from text files"
+            git push
+          fi

@@ -1,0 +1,10 @@
+Title: Test Termin – Tag der offenen Werkstatt
+Type: event
+Start: 2026-03-15 09:00
+End: 2026-03-15 14:30
+Link: https://example.org/werkstatt
+LinkLabel: Mehr Infos
+---
+Dies ist ein Testeintrag für die Pinnwand.
+Bitte Werkstattkleidung mitbringen.
+Treffpunkt ist um 09:00 Uhr im Foyer.

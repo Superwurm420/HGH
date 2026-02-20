@@ -63,6 +63,7 @@ const MONTH_NAMES = [
 ];
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 const FUN_MESSAGES_URL = './data/fun-messages.json';
+const BULLETIN_URL = './data/bulletin.json';
 const CALENDAR_VISIBLE_WINDOW_DAYS = {
   past: 30,
   future: 400,
@@ -114,6 +115,7 @@ const state = {
   funMessages: DEFAULT_FUN_MESSAGES,
   currentPdfHref: null,
   hasTimetableData: false,
+  bulletin: [],
   cal: {
     events: {},
     enabled: {},
@@ -417,9 +419,107 @@ function initNav() {
 // --- Renderer -----------------------------------------------------------
 
 function render() {
+  renderBulletin();
   renderTimetable();
   renderTodayPreview();
   renderWeek();
+}
+
+function formatDateTimeLabel(value) {
+  if (!value) return '';
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return '';
+  return dt.toLocaleString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getBulletinTypeLabel(type) {
+  if (type === 'event') return 'Veranstaltung';
+  if (type === 'warning') return 'Wichtige Info';
+  return 'Info';
+}
+
+function normalizeBulletinItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  if (!item.message || !String(item.message).trim()) return null;
+
+  const startsAt = item.startsAt ? new Date(item.startsAt) : null;
+  const endsAt = item.endsAt ? new Date(item.endsAt) : null;
+
+  return {
+    id: item.id || '',
+    title: item.title || 'Neue Meldung',
+    message: String(item.message).trim(),
+    type: item.type || 'info',
+    linkUrl: item.linkUrl || '',
+    linkLabel: item.linkLabel || 'Mehr erfahren',
+    startsAt: startsAt && !Number.isNaN(startsAt.getTime()) ? startsAt : null,
+    endsAt: endsAt && !Number.isNaN(endsAt.getTime()) ? endsAt : null,
+    enabled: item.enabled !== false
+  };
+}
+
+function getActiveBulletins(now = new Date()) {
+  const all = Array.isArray(state.bulletin) ? state.bulletin : [];
+  return all
+    .map(normalizeBulletinItem)
+    .filter(Boolean)
+    .filter(item => item.enabled)
+    .filter(item => !(item.startsAt && now < item.startsAt))
+    .filter(item => !(item.endsAt && now > item.endsAt))
+    .sort((a, b) => {
+      const aTs = a.startsAt ? a.startsAt.getTime() : Number.MAX_SAFE_INTEGER;
+      const bTs = b.startsAt ? b.startsAt.getTime() : Number.MAX_SAFE_INTEGER;
+      return aTs - bTs;
+    });
+}
+
+function renderBulletin() {
+  const card = state.els.bulletinCard;
+  const list = state.els.bulletinList;
+  if (!card || !list) return;
+
+  const bulletins = getActiveBulletins();
+  if (!bulletins.length) {
+    card.hidden = true;
+    list.innerHTML = '';
+    return;
+  }
+
+  card.hidden = false;
+  list.innerHTML = bulletins.map(item => {
+    const startsLabel = formatDateTimeLabel(item.startsAt);
+    const endsLabel = formatDateTimeLabel(item.endsAt);
+    const parts = [];
+    if (startsLabel) parts.push(`Ab ${startsLabel}`);
+    if (endsLabel) parts.push(`bis ${endsLabel}`);
+
+    let metaHtml = '';
+    if (parts.length) {
+      metaHtml = `<div class="bulletinMeta">${escapeHtml(parts.join(' · '))}</div>`;
+    }
+
+    let linkHtml = '';
+    if (item.linkUrl) {
+      linkHtml = `<a class="btn secondary bulletinLink" href="${escapeHtml(item.linkUrl)}" target="_blank" rel="noopener">${escapeHtml(item.linkLabel)}</a>`;
+    }
+
+    return `
+      <article class="bulletinItem">
+        <div class="bulletinHead">
+          <h3 class="bulletinTitle">${escapeHtml(item.title)}</h3>
+          <div class="bulletinBadge">${escapeHtml(getBulletinTypeLabel(item.type))}</div>
+        </div>
+        <p class="bulletinBody">${escapeHtml(item.message)}</p>
+        ${metaHtml}
+        ${linkHtml}
+      </article>`;
+  }).join('');
 }
 
 function renderTimetable() {
@@ -815,6 +915,18 @@ async function loadFunMessages() {
   } catch {
     state.funMessages = DEFAULT_FUN_MESSAGES;
   }
+}
+
+async function loadBulletin() {
+  try {
+    const res = await fetch(BULLETIN_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    state.bulletin = Array.isArray(payload?.items) ? payload.items : [];
+  } catch {
+    state.bulletin = [];
+  }
+  renderBulletin();
 }
 
 function initCountdown() {
@@ -1347,6 +1459,8 @@ function cacheEls() {
     calEvents: qs('#calEvents'),
     weekClassSelect: qs('#weekClassSelect'),
     weekGrid: qs('#weekGrid'),
+    bulletinCard: qs('#bulletinCard'),
+    bulletinList: qs('#bulletinList'),
     swStatus: qs('#swStatus'),
     year: qs('#year'),
     darkToggle: qs('#darkToggle')
@@ -1366,6 +1480,7 @@ async function boot() {
 
     await refreshTimetableIfNeeded();
     await loadFunMessages();
+    await loadBulletin();
 
     initCountdown();
     initAutoRefresh();

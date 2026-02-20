@@ -8,6 +8,7 @@
     "lint:html": "htmlhint index.html",
     "lint:js": "jshint app.js",
     "lint": "npm run lint:html && npm run lint:js",
+    "bulletin:ingest": "node tools/ingest-bulletins.js",
     "timetable:ingest": "node tools/ingest-latest-timetable.js",
     "timetable:ingest:dry": "node tools/ingest-latest-timetable.js --dry-run"
   },

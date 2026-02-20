@@ -1,0 +1,17 @@
+{
+  "updatedAt": "2026-02-20T01:01:05.786Z",
+  "items": [
+    {
+      "id": "2026-03-15-test-termin.txt",
+      "title": "Test Termin – Tag der offenen Werkstatt",
+      "type": "event",
+      "startsAt": "2026-03-15T09:00",
+      "endsAt": "2026-03-15T14:30",
+      "linkUrl": "https://example.org/werkstatt",
+      "linkLabel": "Mehr Infos",
+      "message": "Dies ist ein Testeintrag für die Pinnwand.\nBitte Werkstattkleidung mitbringen.\nTreffpunkt ist um 09:00 Uhr im Foyer.",
+      "enabled": true,
+      "source": "2026-03-15-test-termin.txt"
+    }
+  ]
+}
