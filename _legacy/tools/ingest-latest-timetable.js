@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Automatische Stundenplan-Pipeline:
- * - erkennt die zuletzt hochgeladene Plan-PDF in /plan (oder --input)
+ * - erkennt die zuletzt hochgeladene Plan-PDF in /assets/plan (oder --input)
  * - probiert mehrere Parser und nimmt das beste Ergebnis
  * - validiert das Ergebnis (Mindestqualität)
  * - schreibt content/stundenplan.json atomar
@@ -11,13 +11,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { extractTimetablePdfDates } from './pdf-date-metadata.js';
 
-const PLAN_DIR = 'plan';
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
+const PLAN_DIR_CANDIDATES = ['assets/plan', 'plan'];
 const OUTPUT_JSON = 'content/stundenplan.json';
 const PARSER_CANDIDATES = [
-  'tools/pdf-parser-specialized.js',
-  'tools/pdf-to-timetable-v2.js'
+  path.join(SCRIPT_DIR, 'pdf-parser-specialized.js'),
+  path.join(SCRIPT_DIR, 'pdf-to-timetable-v2.js')
 ];
 const CLASS_IDS = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
 const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
@@ -91,6 +94,16 @@ async function listPdfFiles(dir) {
 
   enriched.sort(comparePlanRecency);
   return enriched;
+}
+
+function detectPlanDir() {
+  for (const candidate of PLAN_DIR_CANDIDATES) {
+    const full = path.resolve(REPO_ROOT, candidate);
+    if (!fs.existsSync(full)) continue;
+    const hasPdf = fs.readdirSync(full).some((name) => name.toLowerCase().endsWith('.pdf'));
+    if (hasPdf) return full;
+  }
+  return path.resolve(REPO_ROOT, PLAN_DIR_CANDIDATES[0]);
 }
 
 function dateNum(dateStr) {
@@ -230,9 +243,15 @@ function countWarnings(output) {
 }
 
 function runParser(parserScript, inputPdf, validFrom) {
-  const tempOut = path.join('data', `.tmp-${path.basename(parserScript, '.js')}.json`);
+  if (!fs.existsSync(parserScript)) {
+    return { parserScript, ok: false, error: `parser script not found: ${parserScript}` };
+  }
+
+  const tempOut = path.join(REPO_ROOT, 'data', `.tmp-${path.basename(parserScript, '.js')}.json`);
   const parserValidFrom = validFrom || new Date().toISOString().split('T')[0];
+  fs.mkdirSync(path.dirname(tempOut), { recursive: true });
   const result = spawnSync(process.execPath, [parserScript, inputPdf, '--out', tempOut, '--validFrom', parserValidFrom], {
+    cwd: REPO_ROOT,
     encoding: 'utf8'
   });
 
@@ -326,13 +345,14 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const keep = Number(argValue('--keep') || 1);
 
-  let selectedPdf = inputPdf;
-  const allPdfs = await listPdfFiles(PLAN_DIR);
+  const planDir = detectPlanDir();
+  let selectedPdf = inputPdf ? path.resolve(process.cwd(), inputPdf) : null;
+  const allPdfs = await listPdfFiles(planDir);
 
   if (!selectedPdf) {
     const chosen = pickLatestPdf(allPdfs);
     if (!chosen) {
-      console.error(`No PDF found in ${PLAN_DIR}/`);
+      console.error(`No PDF found in ${planDir}/`);
       process.exit(1);
     }
     selectedPdf = chosen.full;
@@ -343,24 +363,25 @@ async function main() {
     process.exit(1);
   }
 
-  let selectedMeta = allPdfs.find(f => f.full === selectedPdf);
+  const selectedPdfFull = path.resolve(selectedPdf);
+  let selectedMeta = allPdfs.find(f => path.resolve(f.full) === selectedPdfFull);
   if (!selectedMeta) {
     try {
-      const meta = await extractTimetablePdfDates(selectedPdf);
-      selectedMeta = { full: selectedPdf, validFrom: meta.validFrom, updatedDate: meta.updatedDate };
+      const meta = await extractTimetablePdfDates(selectedPdfFull);
+      selectedMeta = { full: selectedPdfFull, validFrom: meta.validFrom, updatedDate: meta.updatedDate };
     } catch {
-      selectedMeta = { full: selectedPdf };
+      selectedMeta = { full: selectedPdfFull };
     }
   }
 
   const effectiveValidFrom = selectedMeta?.validFrom || new Date().toISOString().split('T')[0];
 
-  console.log(`Using PDF: ${selectedPdf}`);
+  console.log(`Using PDF: ${selectedPdfFull}`);
   if (selectedMeta?.validFrom || selectedMeta?.updatedDate) {
     console.log(`Detected PDF dates: validFrom=${selectedMeta?.validFrom || 'n/a'}, updated=${selectedMeta?.updatedDate || 'n/a'}`);
   }
 
-  const parserResults = PARSER_CANDIDATES.map(p => runParser(p, selectedPdf, effectiveValidFrom));
+  const parserResults = PARSER_CANDIDATES.map(p => runParser(p, selectedPdfFull, effectiveValidFrom));
   const successful = parserResults.filter(r => r.ok);
 
   if (!successful.length) {
@@ -388,14 +409,15 @@ async function main() {
   if (dryRun) {
     console.log(`[dry-run] would write ${OUTPUT_JSON}`);
   } else {
-    writeOutputAtomically(OUTPUT_JSON, best.parsed);
-    console.log(`Wrote ${OUTPUT_JSON}`);
+    const outputPath = path.resolve(REPO_ROOT, OUTPUT_JSON);
+    writeOutputAtomically(outputPath, best.parsed);
+    console.log(`Wrote ${outputPath}`);
   }
 
   cleanupTempOutputs(parserResults);
 
   if (allPdfs.length > 1) {
-    const removed = pruneOldPdfs(allPdfs, keep, selectedPdf, dryRun);
+    const removed = pruneOldPdfs(allPdfs, keep, selectedPdfFull, dryRun);
     if (!removed) console.log('No old PDFs to remove.');
   } else {
     console.log('No old PDFs to remove.');
