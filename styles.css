@@ -905,16 +905,18 @@ select:focus-visible{
   font-size:14px;
 }
 
-.timetableEmpty--lessonLike{
-  margin-top:12px;
-  padding:0;
-  color:inherit;
-  font-size:inherit;
+.trPlaceholder{
+  background:rgba(255,255,255,.06);
 }
 
-.timetableEmpty--lessonLike .tr .td{
+.trPlaceholder .td{
   border-bottom:none;
 }
+
+.listItemPlaceholder{
+  background:rgba(255,255,255,.08);
+}
+
 
 /* Tag-Auswahl-Zeile unter den Controls */
 .dayRow{

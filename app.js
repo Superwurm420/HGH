@@ -514,12 +514,10 @@ function renderTimetable() {
   const rows = state.timetable?.[classId]?.[dayId] || [];
   if (!rows.length) {
     body.innerHTML = `
-      <div class="timetableEmpty timetableEmpty--lessonLike" role="status" aria-live="polite">
-        <div class="tr">
-          <div class="td tdTime"><span class="timeFrom">—</span><span class="small muted">—</span></div>
-          <div class="td">Kein Unterricht</div>
-          <div class="td tdMeta"><small>—</small><small class="muted">—</small></div>
-        </div>
+      <div class="tr trPlaceholder" role="row" aria-live="polite">
+        <div class="td tdTime"><span class="timeFrom">—</span><span class="small muted">—</span></div>
+        <div class="td">Kein Unterricht</div>
+        <div class="td tdMeta"><small>—</small><small class="muted">—</small></div>
       </div>`;
     return;
   }
@@ -586,7 +584,7 @@ function renderTodayPreview() {
 
   if (!merged.length) {
     list.innerHTML = `
-      <div class="listItem" role="status" aria-live="polite">
+      <div class="listItem listItemPlaceholder" role="status" aria-live="polite">
         <div>
           <div class="small muted">Std. —</div>
           <div class="timeFrom">—</div>
