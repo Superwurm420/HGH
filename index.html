@@ -443,6 +443,35 @@
       </div>
     </section>
 
+
+    <!-- TV VIEW -->
+    <section class="view tvView" data-view="tv" hidden>
+      <div class="tvLayout" role="region" aria-label="TV-Modus">
+        <header class="tvHeader">
+          <div id="tvDate" class="tvDate">—</div>
+          <div id="tvTime" class="tvTime" aria-live="polite">—</div>
+        </header>
+
+        <div class="tvMain">
+          <section class="tvPanel">
+            <h2>Heute · Klassen</h2>
+            <div id="tvClasses" class="tvClasses"></div>
+          </section>
+
+          <section class="tvPanel">
+            <h2>Ankündigungen</h2>
+            <p id="tvOffline" class="tvOffline" hidden>Offline</p>
+            <ul id="tvAnnouncementsList" class="tvAnnouncementsList"></ul>
+          </section>
+        </div>
+
+        <div class="tvSlides" aria-label="Slideshow">
+          <img id="tvSlideA" class="tvSlideImage" alt="TV-Slide" loading="eager" />
+          <img id="tvSlideB" class="tvSlideImage" alt="TV-Slide" loading="eager" />
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer" role="contentinfo">
       <div class="small muted">

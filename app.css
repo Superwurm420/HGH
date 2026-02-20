@@ -2149,3 +2149,115 @@ select:focus-visible{
     grid-column:1 / -1;
   }
 }
+
+/* TV Mode */
+body.tv-mode .topbar,
+body.tv-mode .nav,
+body.tv-mode .footer,
+body.tv-mode .skip {
+  display: none;
+}
+
+body.tv-mode .main {
+  max-width: none;
+  padding: 0;
+}
+
+.tvView {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.tvLayout {
+  height: calc(100vh - 48px);
+  display: grid;
+  grid-template-rows: auto 1fr 26vh;
+  gap: 16px;
+}
+
+.tvHeader,
+.tvPanel,
+.tvSlides {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--blur)) saturate(180%);
+  border-radius: var(--radius);
+}
+
+.tvHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+}
+
+.tvDate { font-size: 2rem; font-weight: 650; }
+.tvTime { font-size: 3.4rem; font-weight: 800; letter-spacing: 0.02em; }
+
+.tvMain {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 16px;
+  min-height: 0;
+}
+
+.tvPanel {
+  padding: 18px;
+  overflow: hidden;
+}
+
+.tvPanel h2 { margin: 0 0 10px; font-size: 1.8rem; }
+
+.tvClasses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tvClassRow {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.12);
+}
+
+.tvClassRow h3 { margin: 0 0 6px; font-size: 1.4rem; }
+.tvClassRow p { margin: 0; font-size: 1.05rem; }
+
+.tvAnnouncementsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.tvAnnouncementItem {
+  border-left: 4px solid var(--accent);
+  padding-left: 10px;
+}
+
+.tvAnnouncementItem h3 { margin: 0; font-size: 1.25rem; }
+.tvAnnouncementItem p { margin: 4px 0 0; font-size: 1rem; }
+.tvEmpty { font-size: 1.1rem; color: var(--muted); }
+.tvOffline { color: #ffb347; font-weight: 700; margin: 0 0 8px; }
+
+.tvSlides {
+  position: relative;
+  overflow: hidden;
+}
+
+.tvSlideImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 800ms ease;
+}
+
+.tvSlideImage.isVisible {
+  opacity: 1;
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "id": "welcome",
+    "title": "Willkommen",
+    "text": "TV-Modus ist aktiv.",
+    "startDate": "2026-01-01",
+    "endDate": "2027-12-31",
+    "visible": true,
+    "sortOrder": 1
+  }
+]
