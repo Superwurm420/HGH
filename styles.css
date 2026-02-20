@@ -581,6 +581,22 @@ select:focus-visible{
   margin-top:2px;
 }
 
+.noteBadge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-right:6px;
+  font-size:12px;
+  line-height:1;
+  color:#ff9f0a;
+  vertical-align:middle;
+}
+
+.noteLegend{
+  margin:8px 2px 0;
+  font-size:11px;
+}
+
 .metaCol{
   display:flex;
   flex-direction:column;
@@ -1888,6 +1904,26 @@ select:focus-visible{
     grid-template-columns:minmax(136px,180px) 1fr;
     align-items:end;
     gap:10px;
+  }
+
+  .view[data-view="home"] .announcementsCard{
+    order:2;
+  }
+
+  .view[data-view="home"] .calCard{
+    order:3;
+  }
+
+  .view[data-view="home"] .installCard{
+    order:4;
+  }
+
+  .announcementItem{
+    padding:10px;
+  }
+
+  .calEvent{
+    padding:7px 9px;
   }
 
   .ttLastUpdated{
