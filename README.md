@@ -69,3 +69,34 @@ Verfügbare Platzhalter in Nachrichten:
 - `{slotLabel}` – z. B. `Std. 3`
 - `{weekdayLabel}` – Wochentag (Montag, Dienstag, …)
 - `{holidayName}` – Feiertagsname (falls zutreffend)
+
+⸻
+
+🛠️ Problembehebung: falsche Einträge im Google Jahreskalender
+
+Wenn im Google Kalender in der Jahresansicht „falsche“ Termine erscheinen, liegt die Ursache meist nicht an einem einzelnen Termin, sondern an Kalender- oder Sync-Einstellungen:
+
+1. **Sichtbare Kalender prüfen**
+   - In der linken Leiste unter **„Meine Kalender“** und **„Weitere Kalender“** nacheinander Kalender ausblenden.
+   - Häufig stammen „falsche“ Einträge aus Feiertags-, Aufgaben- oder geteilten Kalendern.
+
+2. **Serientermine kontrollieren**
+   - Einen betroffenen Termin öffnen und die Wiederholungsregel prüfen.
+   - Änderungen bei Bedarf auf **„Alle Termine“** oder **„Diese und folgende“** anwenden.
+
+3. **Zeitzone abgleichen**
+   - Einstellungen → **Allgemein** → **Zeitzone**.
+   - Eine falsche Zeitzone verschiebt Termine auf den Vortag/Folgetag.
+
+4. **Importe (ICS) als Fehlerquelle prüfen**
+   - Nach einem Import können Serienregeln oder Datumsformate fehlerhaft sein.
+   - Den importierten Kalender testweise ausblenden oder neu importieren.
+
+5. **Sync-Konflikte eingrenzen**
+   - Immer zuerst in der Web-Version prüfen (`calendar.google.com`).
+   - Wenn nur Mobilgeräte betroffen sind: App-Cache leeren oder Konto neu synchronisieren.
+
+Kurzdiagnose:
+- **Falsche Uhrzeit?** → Zeitzone prüfen.
+- **Doppelte Termine?** → doppelten Kalender/Sync prüfen.
+- **Falsche Tage über Monate?** → Serientermin oder fehlerhafter Import.
