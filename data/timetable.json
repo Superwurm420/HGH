@@ -2,7 +2,7 @@
   "meta": {
     "school": "HGH",
     "validFrom": "2026-02-20",
-    "updatedAt": "2026-02-20T11:12:36.678Z",
+    "updatedAt": "2026-02-20T11:54:59.634Z",
     "source": "Stundenplan_kw_45_Hj1_2025_26.pdf"
   },
   "timeslots": [
@@ -349,6 +349,20 @@
           "subject": "Modul2/Freihandzeichnen",
           "teacher": "BÜ",
           "room": "BS"
+        },
+        {
+          "slotId": "8",
+          "subject": "Serviceteam",
+          "teacher": null,
+          "room": null,
+          "note": "Serviceteam"
+        },
+        {
+          "slotId": "9",
+          "subject": "Serviceteam",
+          "teacher": null,
+          "room": null,
+          "note": "Serviceteam"
         }
       ],
       "mi": [
@@ -1086,31 +1100,31 @@
         },
         {
           "slotId": "3",
-          "subject": "BBS Nienburg",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "BBS Nienburg"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "4",
-          "subject": "BBS Nienburg",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "BBS Nienburg"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "5",
-          "subject": "9.50 - 13.10 Uhr",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "9.50 - 13.10 Uhr"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "6",
-          "subject": "9.50 - 13.10 Uhr",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "9.50 - 13.10 Uhr"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "8",
@@ -1332,31 +1346,31 @@
         },
         {
           "slotId": "3",
-          "subject": "BBS Nienburg",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "BBS Nienburg"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "4",
-          "subject": "BBS Nienburg",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "BBS Nienburg"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "5",
-          "subject": "9.50 - 13.10 Uhr",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "9.50 - 13.10 Uhr"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         },
         {
           "slotId": "6",
-          "subject": "9.50 - 13.10 Uhr",
+          "subject": "BBS Nienburg – 9.50 - 13.10 Uhr",
           "teacher": null,
           "room": null,
-          "note": "9.50 - 13.10 Uhr"
+          "note": "BBS Nienburg – 9.50 - 13.10 Uhr"
         }
       ],
       "di": [
@@ -1395,6 +1409,20 @@
           "subject": "Entwurf/Konstruktion WEN",
           "teacher": "WEN",
           "room": "9"
+        },
+        {
+          "slotId": "8",
+          "subject": "Serviceteam",
+          "teacher": null,
+          "room": null,
+          "note": "Serviceteam"
+        },
+        {
+          "slotId": "9",
+          "subject": "Serviceteam",
+          "teacher": null,
+          "room": null,
+          "note": "Serviceteam"
         }
       ],
       "mi": [
