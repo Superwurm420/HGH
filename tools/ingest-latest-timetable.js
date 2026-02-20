@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Automatische Stundenplan-Pipeline:
- * - erkennt die wahrscheinlich neueste Plan-PDF in /plan (oder --input)
+ * - erkennt die zuletzt hochgeladene Plan-PDF in /plan (oder --input)
  * - probiert mehrere Parser und nimmt das beste Ergebnis
  * - validiert das Ergebnis (Mindestqualität)
  * - schreibt data/timetable.json atomar
@@ -87,19 +87,17 @@ function dateNum(dateStr) {
 }
 
 
-function comparePdfRecency(a, b) {
-  const validCmp = dateNum(b.validFrom) - dateNum(a.validFrom);
-  if (validCmp !== 0) return validCmp;
+function compareUploadRecency(a, b) {
+  const mtimeCmp = b.mtimeMs - a.mtimeMs;
+  if (mtimeCmp !== 0) return mtimeCmp;
 
   const updatedCmp = dateNum(b.updatedDate) - dateNum(a.updatedDate);
   if (updatedCmp !== 0) return updatedCmp;
 
-  if (b.weekHint != null || a.weekHint != null) {
-    const weekCmp = (b.weekHint ?? -1) - (a.weekHint ?? -1);
-    if (weekCmp !== 0) return weekCmp;
-  }
+  const validCmp = dateNum(b.validFrom) - dateNum(a.validFrom);
+  if (validCmp !== 0) return validCmp;
 
-  return b.mtimeMs - a.mtimeMs;
+  return b.name.localeCompare(a.name, 'de');
 }
 
 function pickLatestPdf(files) {
@@ -107,7 +105,7 @@ function pickLatestPdf(files) {
   const planCandidates = files.filter(f => f.isLikelyPlan);
   if (!planCandidates.length) return files[0];
 
-  planCandidates.sort(comparePdfRecency);
+  planCandidates.sort(compareUploadRecency);
 
   return planCandidates[0];
 }
@@ -283,7 +281,7 @@ function writeOutputAtomically(targetPath, data) {
 function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   const keepSafe = Number.isFinite(keepCount) && keepCount > 0 ? Math.floor(keepCount) : 1;
   const scheduleFiles = allFiles.filter(f => f.isLikelyPlan || f.full === activePdf);
-  const sorted = scheduleFiles.slice().sort(comparePdfRecency);
+  const sorted = scheduleFiles.slice().sort(compareUploadRecency);
 
   const keepSet = new Set([activePdf]);
   for (const file of sorted) {
