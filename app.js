@@ -18,12 +18,14 @@ const APP = {
     timetableCacheTs: 'hgh_timetable_cache_ts',
     announcementsCache: 'hgh_announcements_cache_v1'
   },
-  routes: ['home', 'timetable', 'week', 'links'],
+  routes: ['home', 'timetable', 'week', 'links', 'tv'],
   constants: {
     COUNTDOWN_INTERVAL: 30000,
     ANNOUNCEMENTS_INTERVAL: 1000,
     AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
-    MIN_REFRESH_GAP: 60 * 1000
+    MIN_REFRESH_GAP: 60 * 1000,
+    TV_REFRESH_INTERVAL: 90 * 1000,
+    TV_SLIDE_INTERVAL: 8 * 1000
   }
 };
 
@@ -71,6 +73,10 @@ const WEEKDAY_LABELS = {
 const FUN_MESSAGES_URL = './assets/data/fun-messages.json';
 const ANNOUNCEMENTS_INDEX_URL = './assets/data/announcements/index.json';
 const ANNOUNCEMENTS_DIR_URL = './assets/data/announcements/';
+const TV_ANNOUNCEMENTS_URL = './data/announcements.json';
+const TV_BELL_TIMES_URL = './data/bell-times.json';
+const TV_SLIDES_URL = './assets/tv-slides/slides.json';
+const TV_SLIDES_BASE_URL = './assets/tv-slides/';
 const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = { past: 30, future: 400 };
 const DEFAULT_FUN_MESSAGES = {
@@ -188,6 +194,16 @@ function createInitialState() {
       selectedDate: null,
       issues: [],
     },
+    tv: {
+      clockTimer: null,
+      refreshTimer: null,
+      slideTimer: null,
+      offline: false,
+      todayKey: '',
+      activeSlideIndex: -1,
+      slides: [],
+      classes: []
+    }
   };
 }
 
@@ -742,17 +758,254 @@ function initAutoRefresh() {
   window.addEventListener('online', refresh);
 }
 
+// --- TV mode ------------------------------------------------------------
+
+function getTodaySchedule(now = new Date()) {
+  const dayId = DAY_NUM_MAP[now.getDay()];
+  if (!dayId) return [];
+
+  const classes = getAvailableClasses();
+  return classes.map((classId) => ({
+    classId,
+    rows: (state.timetable?.[classId]?.[dayId] || []).filter(r => r && r.slotId && String(r.slotId) !== '7')
+  }));
+}
+
+function getCurrentAndNextLesson(rows, now = new Date()) {
+  const parsed = (rows || [])
+    .map((row) => {
+      const slot = state.timeslotMap.get(String(row.slotId));
+      const range = parseSlotRange(slot?.time || '', now);
+      return range ? { row, ...range } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+
+  if (!parsed.length) return { current: null, next: null, status: 'no-data' };
+
+  if (now >= parsed[parsed.length - 1].end) {
+    return { current: null, next: null, status: 'finished' };
+  }
+
+  const current = parsed.find(item => now >= item.start && now < item.end) || null;
+  if (current) {
+    const next = parsed.find(item => item.start >= current.end) || null;
+    return { current: current.row, next: next?.row || null, status: 'running' };
+  }
+
+  const next = parsed.find(item => now < item.start) || null;
+  return { current: null, next: next?.row || null, status: 'break' };
+}
+
+function getActiveAnnouncements(now = new Date(), max = 8) {
+  return (state.announcements || []).filter(item => isAnnouncementActive(item, now)).slice(0, max);
+}
+
+function formatLessonLabel(row) {
+  if (!row) return '—';
+  const room = row.room ? ` (${row.room})` : '';
+  return `${row.subject || '—'}${room}`;
+}
+
+function updateTvDateTime(now = new Date()) {
+  const dateKey = now.toISOString().slice(0, 10);
+  if (dateKey !== state.tv.todayKey) {
+    state.tv.todayKey = dateKey;
+    safeSetText(state.els.tvDate, now.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }));
+  }
+  safeSetText(state.els.tvTime, now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+}
+
+function renderTvAnnouncements(now = new Date()) {
+  const list = state.els.tvAnnouncementsList;
+  if (!list) return;
+  const active = getActiveAnnouncements(now, 8);
+  if (!active.length) {
+    list.innerHTML = '<li class="tvEmpty">Keine aktuellen Ankündigungen</li>';
+    return;
+  }
+
+  list.innerHTML = active.map((item) => `
+    <li class="tvAnnouncementItem">
+      <h3>${escapeHtml(item.title)}</h3>
+      <p>${escapeHtml(item.text)}</p>
+    </li>
+  `).join('');
+}
+
+function renderTvSchedule(now = new Date()) {
+  const container = state.els.tvClasses;
+  if (!container) return;
+
+  const today = getTodaySchedule(now);
+  if (!today.length) {
+    container.innerHTML = '<article class="tvClassRow"><h3>Keine Daten</h3></article>';
+    return;
+  }
+
+  container.innerHTML = today.map(({ classId, rows }) => {
+    const lesson = getCurrentAndNextLesson(rows, now);
+    let currentLabel = 'Keine Daten';
+    let nextLabel = 'Keine Daten';
+
+    if (lesson.status === 'finished') {
+      currentLabel = 'Unterricht beendet';
+      nextLabel = '—';
+    } else if (lesson.status === 'break') {
+      currentLabel = 'Pause';
+      nextLabel = lesson.next ? formatLessonLabel(lesson.next) : 'Keine Daten';
+    } else if (lesson.status === 'running') {
+      currentLabel = formatLessonLabel(lesson.current);
+      nextLabel = lesson.next ? formatLessonLabel(lesson.next) : 'Keine Daten';
+    }
+
+    return `
+      <article class="tvClassRow">
+        <h3>${escapeHtml(classId)}</h3>
+        <p><strong>Jetzt:</strong> ${escapeHtml(currentLabel)}</p>
+        <p><strong>Nächste:</strong> ${escapeHtml(nextLabel)}</p>
+      </article>
+    `;
+  }).join('');
+}
+
+async function loadTvAnnouncementsFallback() {
+  try {
+    const res = await fetch(TV_ANNOUNCEMENTS_URL, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data)) state.announcements = normalizeAnnouncements(data);
+  } catch {
+    // optional fallback file
+  }
+}
+
+async function loadBellTimes() {
+  try {
+    const res = await fetch(TV_BELL_TIMES_URL, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data?.timeslots) && data.timeslots.length) {
+      state.timeslots = data.timeslots;
+      state.timeslotMap = new Map(data.timeslots.map(s => [String(s.id), s]));
+    }
+  } catch {
+    // optional
+  }
+}
+
+function setTvOffline(isOffline) {
+  state.tv.offline = isOffline;
+  if (state.els.tvOffline) state.els.tvOffline.hidden = !isOffline;
+}
+
+async function loadTvSlides() {
+  try {
+    const res = await fetch(TV_SLIDES_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('slides.json fehlt');
+    const files = await res.json();
+    if (!Array.isArray(files)) throw new Error('slides.json ungültig');
+
+    const checks = await Promise.all(files.map(async (file) => {
+      if (typeof file !== 'string' || !file.trim()) return null;
+      const src = `${TV_SLIDES_BASE_URL}${file}`;
+      try {
+        const imgResp = await fetch(src, { method: 'HEAD', cache: 'no-cache' });
+        return imgResp.ok ? src : null;
+      } catch {
+        return null;
+      }
+    }));
+
+    state.tv.slides = checks.filter(Boolean);
+  } catch {
+    state.tv.slides = [];
+  }
+}
+
+function renderTvSlide() {
+  const imgA = state.els.tvSlideA;
+  const imgB = state.els.tvSlideB;
+  if (!imgA || !imgB) return;
+
+  if (!state.tv.slides.length) {
+    imgA.classList.remove('isVisible');
+    imgB.classList.remove('isVisible');
+    return;
+  }
+
+  state.tv.activeSlideIndex = (state.tv.activeSlideIndex + 1) % state.tv.slides.length;
+  const src = state.tv.slides[state.tv.activeSlideIndex];
+  const active = imgA.classList.contains('isVisible') ? imgB : imgA;
+  const inactive = active === imgA ? imgB : imgA;
+
+  active.src = src;
+  active.classList.add('isVisible');
+  inactive.classList.remove('isVisible');
+}
+
+function tickTv() {
+  const now = new Date();
+  updateTvDateTime(now);
+  renderTvSchedule(now);
+  renderTvAnnouncements(now);
+}
+
+async function refreshTvData() {
+  try {
+    await Promise.all([
+      refreshTimetableIfNeeded({ forceNetwork: true, silent: true }),
+      loadAnnouncements(),
+      loadTvAnnouncementsFallback(),
+      loadBellTimes()
+    ]);
+    setTvOffline(false);
+  } catch {
+    setTvOffline(true);
+  }
+
+  tickTv();
+}
+
+async function startTvMode() {
+  stopTvMode();
+  await refreshTvData();
+  await loadTvSlides();
+  renderTvSlide();
+
+  state.tv.clockTimer = setInterval(() => updateTvDateTime(new Date()), 1000);
+  state.tv.refreshTimer = setInterval(refreshTvData, APP.constants.TV_REFRESH_INTERVAL);
+  state.tv.slideTimer = setInterval(renderTvSlide, APP.constants.TV_SLIDE_INTERVAL);
+}
+
+function stopTvMode() {
+  if (state.tv.clockTimer) clearInterval(state.tv.clockTimer);
+  if (state.tv.refreshTimer) clearInterval(state.tv.refreshTimer);
+  if (state.tv.slideTimer) clearInterval(state.tv.slideTimer);
+
+  state.tv.clockTimer = null;
+  state.tv.refreshTimer = null;
+  state.tv.slideTimer = null;
+}
+
 // --- Navigation ---------------------------------------------------------
 
 function setRoute(route) {
+  const previousRoute = state.currentRoute;
   state.currentRoute = route;
+
+  if (route === 'tv' && previousRoute !== 'tv') startTvMode();
+  if (route !== 'tv' && previousRoute === 'tv') stopTvMode();
+
   for (const b of state.els.navItems) {
     b.setAttribute('aria-current', b.dataset.route === route ? 'page' : 'false');
   }
   for (const v of state.els.views) {
     v.hidden = v.dataset.view !== route;
   }
-  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  document.body.classList.toggle('tv-mode', route === 'tv');
+  if (route !== 'tv') window.scrollTo({ top: 0, behavior: 'instant' });
   history.replaceState?.(null, '', `#${route}`);
 }
 
@@ -1989,7 +2242,14 @@ function cacheEls() {
     announcementsCard: qs('#announcementsCard'),
     announcementsList: qs('#announcementsList'),
     announcementsIssues: qs('#announcementsIssues'),
-    announcementsNext: qs('#announcementNext')
+    announcementsNext: qs('#announcementNext'),
+    tvDate: qs('#tvDate'),
+    tvTime: qs('#tvTime'),
+    tvOffline: qs('#tvOffline'),
+    tvClasses: qs('#tvClasses'),
+    tvAnnouncementsList: qs('#tvAnnouncementsList'),
+    tvSlideA: qs('#tvSlideA'),
+    tvSlideB: qs('#tvSlideB')
   };
 }
 
