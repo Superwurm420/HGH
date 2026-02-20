@@ -6,6 +6,8 @@ import {
   hasTimetableEntries,
 } from './timetable-parser.js';
 
+import { PATHS } from './js/config/paths.js';
+
 // --- App-Konfiguration --------------------------------------------------
 const APP = {
   name: 'HGH Hildesheim',
@@ -70,13 +72,14 @@ const MONTH_NAMES = [
 const WEEKDAY_LABELS = {
   mo: 'Montag', di: 'Dienstag', mi: 'Mittwoch', do: 'Donnerstag', fr: 'Freitag', sa: 'Samstag', so: 'Sonntag'
 };
-const FUN_MESSAGES_URL = './assets/data/fun-messages.json';
-const ANNOUNCEMENTS_INDEX_URL = './assets/data/announcements/index.json';
-const ANNOUNCEMENTS_DIR_URL = './assets/data/announcements/';
-const TV_ANNOUNCEMENTS_URL = './data/announcements.json';
-const TV_BELL_TIMES_URL = './data/bell-times.json';
-const TV_SLIDES_URL = './assets/tv-slides/slides.json';
-const TV_SLIDES_BASE_URL = './assets/tv-slides/';
+
+const FUN_MESSAGES_URL = PATHS.assets.funMessagesJson;
+const ANNOUNCEMENTS_INDEX_URL = PATHS.assets.announcements.indexJson;
+const ANNOUNCEMENTS_DIR_URL = PATHS.assets.announcements.dir;
+const TV_ANNOUNCEMENTS_URL = PATHS.data.announcementsJson;
+const TV_BELL_TIMES_URL = PATHS.data.bellTimesJson;
+const TV_SLIDES_URL = PATHS.assets.tvSlides.indexJson;
+const TV_SLIDES_BASE_URL = PATHS.assets.tvSlides.dir;
 const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
 const CALENDAR_VISIBLE_WINDOW_DAYS = { past: 30, future: 400 };
 const DEFAULT_FUN_MESSAGES = {
