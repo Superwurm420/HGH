@@ -1520,6 +1520,26 @@ select:focus-visible{
   background:rgba(0,122,255,.06);
 }
 
+
+.classPhotoItemMissing{
+  border-style:dashed;
+}
+
+.classPhotoHint{
+  margin-top:10px;
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.4;
+}
+
+.classPhotoHint code{
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size:11px;
+  background:rgba(127,127,127,.16);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:1px 5px;
+}
 .classPhotoTitle{
   font-weight:800;
   margin-bottom:10px;
