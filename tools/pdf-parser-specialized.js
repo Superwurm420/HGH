@@ -108,7 +108,8 @@ async function extractItems(pdfPath) {
     .map(it => ({
       str: String(it.str || '').replace(/\s+/g, ' ').trim(),
       x: it.transform[4],
-      y: it.transform[5]
+      y: it.transform[5],
+      width: typeof it.width === 'number' ? it.width : 0
     }))
     .filter(it => it.str);
 }
@@ -417,56 +418,136 @@ function parseTimetable(items, columns, dayBlocks) {
     if (CLASS_IDS.includes(it.str)) return false;
     if (usedStrings.has(it.str)) return false; // already used as subject
     if (/^[""„"]/.test(it.str)) return false; // quoted USF project names (handled above)
+    if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(it.str)) return false; // dates like 30.10.2025
     // Must contain a space, or be a recognizable multi-word item
     if (!/\s/.test(it.str) && it.str.length < 8) return false;
     return true;
   });
 
-  for (const specialItem of specialCandidates) {
-    // Find which day block this belongs to
-    const block = dayBlocks.find(b => specialItem.y <= b.yTop && specialItem.y >= b.yBottom);
-    if (!block) continue;
+  function clusterSpecialItems(itemsInBlock) {
+    const sorted = itemsInBlock.slice().sort((a, b) => b.y - a.y);
+    const clusters = [];
 
-    // Find which columns this note applies to
-    const nearbyColumns = columns.filter(col =>
-      specialItem.x >= col.leftBound - 30 && specialItem.x <= col.rightBound + 30
-    );
-    if (nearbyColumns.length === 0) continue;
+    for (const item of sorted) {
+      const itemLeft = item.x;
+      const itemRight = item.x + (item.width || 0);
 
-    // Find which slot pair this falls into based on y position
-    const { slotYs } = block;
-    let matchedPair = null;
-    for (const [oddStr, appSlots] of Object.entries(PAIR_TO_SLOTS)) {
-      const oddNum = parseInt(oddStr);
-      const slotY = slotYs[oddNum];
-      if (!slotY) continue;
-      if (Math.abs(specialItem.y - slotY) < 25) {
-        matchedPair = appSlots;
-        break;
+      let target = null;
+      for (const cluster of clusters) {
+        const yClose = Math.abs(cluster.centerY - item.y) <= 26;
+        const xOverlap = itemRight >= (cluster.minX - 40) && itemLeft <= (cluster.maxX + 40);
+        if (yClose && xOverlap) {
+          target = cluster;
+          break;
+        }
       }
-    }
-    if (!matchedPair) continue;
 
-    // Add note to columns that have empty slots for these slot pairs
-    let added = false;
-    for (const col of nearbyColumns) {
-      for (const slotId of matchedPair) {
-        const existing = classes[col.id][block.dayId].find(e => e.slotId === slotId);
-        if (!existing) {
+      if (!target) {
+        target = {
+          items: [],
+          minX: itemLeft,
+          maxX: itemRight,
+          minY: item.y,
+          maxY: item.y,
+          centerY: item.y
+        };
+        clusters.push(target);
+      }
+
+      target.items.push(item);
+      target.minX = Math.min(target.minX, itemLeft);
+      target.maxX = Math.max(target.maxX, itemRight);
+      target.minY = Math.min(target.minY, item.y);
+      target.maxY = Math.max(target.maxY, item.y);
+      target.centerY = target.items.reduce((sum, it) => sum + it.y, 0) / target.items.length;
+    }
+
+    return clusters;
+  }
+
+  function clusterLabel(cluster) {
+    // Rebuild label line-wise (top to bottom), keeping reading order inside each line.
+    const lineBuckets = [];
+    const byY = cluster.items.slice().sort((a, b) => b.y - a.y || a.x - b.x);
+    for (const it of byY) {
+      let line = lineBuckets.find(l => Math.abs(l.y - it.y) <= 4);
+      if (!line) {
+        line = { y: it.y, items: [] };
+        lineBuckets.push(line);
+      }
+      line.items.push(it);
+    }
+
+    const lines = lineBuckets
+      .sort((a, b) => b.y - a.y)
+      .map(line => line.items.sort((a, b) => a.x - b.x).map(it => it.str).join(' ').trim())
+      .filter(Boolean);
+
+    return lines.join(' – ');
+  }
+
+  for (const block of dayBlocks) {
+    const itemsInBlock = specialCandidates.filter(it => it.y <= block.yTop && it.y >= block.yBottom);
+    const clusters = clusterSpecialItems(itemsInBlock);
+
+    for (const cluster of clusters) {
+      const label = clusterLabel(cluster);
+      if (!label) continue;
+
+      const coveredColumns = columns.filter(col =>
+        cluster.maxX >= (col.leftBound - 30) && cluster.minX <= (col.rightBound + 30)
+      );
+      if (coveredColumns.length === 0) continue;
+
+      const matchedSlots = [];
+      for (const [oddStr, appSlots] of Object.entries(PAIR_TO_SLOTS)) {
+        const oddNum = parseInt(oddStr, 10);
+        const slotY = block.slotYs[oddNum];
+        if (!slotY) continue;
+
+        const spansPair = slotY <= (cluster.maxY + 20) && slotY >= (cluster.minY - 35);
+        const nearPair = Math.abs(slotY - ((cluster.minY + cluster.maxY) / 2)) < 32;
+        if (spansPair || nearPair) matchedSlots.push(...appSlots);
+      }
+
+      // Fallback: nearest pair by vertical distance.
+      if (matchedSlots.length === 0) {
+        let nearest = null;
+        let bestDist = Infinity;
+        for (const [oddStr, appSlots] of Object.entries(PAIR_TO_SLOTS)) {
+          const oddNum = parseInt(oddStr, 10);
+          const slotY = block.slotYs[oddNum];
+          if (!slotY) continue;
+          const dist = Math.abs(slotY - ((cluster.minY + cluster.maxY) / 2));
+          if (dist < bestDist) {
+            bestDist = dist;
+            nearest = appSlots;
+          }
+        }
+        if (nearest) matchedSlots.push(...nearest);
+      }
+
+      if (matchedSlots.length === 0) continue;
+
+      let added = false;
+      for (const col of coveredColumns) {
+        for (const slotId of [...new Set(matchedSlots)]) {
+          const existing = classes[col.id][block.dayId].find(e => e.slotId === slotId);
+          if (existing) continue;
           classes[col.id][block.dayId].push({
             slotId,
-            subject: specialItem.str,
+            subject: label,
             teacher: null,
             room: null,
-            note: specialItem.str
+            note: label
           });
           added = true;
         }
       }
-    }
 
-    if (added) {
-      log(`  Special event: "${specialItem.str}" → ${block.dayId}, slots ${matchedPair.join(',')}, columns: ${nearbyColumns.map(c => c.id).join(',')}`);
+      if (added) {
+        log(`  Special event: "${label}" → ${block.dayId}, slots ${[...new Set(matchedSlots)].join(',')}, columns: ${coveredColumns.map(c => c.id).join(',')}`);
+      }
     }
   }
 
