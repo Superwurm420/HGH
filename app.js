@@ -139,6 +139,10 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
+function escapeHtmlWithLineBreaks(str) {
+  return escapeHtml(str).replaceAll('\n', '<br>');
+}
+
 // Fachname bei '/' umbrechen → zwei Zeilen
 function formatSubject(str) {
   if (!str) return '—';
@@ -515,7 +519,7 @@ function renderBulletin() {
           <h3 class="bulletinTitle">${escapeHtml(item.title)}</h3>
           <div class="bulletinBadge">${escapeHtml(getBulletinTypeLabel(item.type))}</div>
         </div>
-        <p class="bulletinBody">${escapeHtml(item.message)}</p>
+        <p class="bulletinBody">${escapeHtmlWithLineBreaks(item.message)}</p>
         ${metaHtml}
         ${linkHtml}
       </article>`;
