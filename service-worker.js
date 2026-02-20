@@ -1,31 +1,30 @@
-/* Service Worker – offline-first for app shell (v1.5.0, optimiert) */
+/* Service Worker – offline-first for app shell (v1.6.0, optimiert) */
 
-const VERSION = 'v1.5.0';
+const VERSION = 'v1.6.0';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
   './',
   './index.html',
-  './anleitung-dateien-austauschen.html',
-  './data/anleitung-inhalt.html',
-  './data/announcements/index.json',
-  './data/announcements/vorlage-ohne-datum.txt',
-  './data/announcements/vorlage-mit-termin.txt',
-  './data/announcements/testtermin-ablauf-2026-04-20.txt',
-  './data/announcements/testankuendigung-ohne-datum.txt',
+      './assets/data/announcements/index.json',
+  './assets/data/announcements/vorlage-ohne-datum.txt',
+  './assets/data/announcements/vorlage-mit-termin.txt',
+  './assets/data/announcements/testtermin-ablauf-2026-04-20.txt',
+  './assets/data/announcements/testankuendigung-ohne-datum.txt',
   './app.css',
   './app.js',
-  './manifest.webmanifest',
+  './timetable-parser.js',
+  './manifest.json',
   './content/stundenplan.json',
   './content/kalender.ics',
   './content/README_admin.txt',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-512-maskable.png',
-  './icons/logo-header.png',
-  './icons/logo-lunido.svg',
-  './icons/logo-lys.svg',
-  './icons/logo-hgh-grid.svg'
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/icon-512-maskable.png',
+  './assets/icons/logo-header.png',
+  './assets/icons/logo-lunido.svg',
+  './assets/icons/logo-lys.svg',
+  './assets/icons/logo-hgh-grid.svg'
 ];
 
 const isDev = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
@@ -118,8 +117,8 @@ async function handleAsset(req) {
   const isDynamicContent =
     url.pathname === '/content/stundenplan.json' ||
     url.pathname === '/content/kalender.ics' ||
-    url.pathname === '/data/announcements/index.json' ||
-    url.pathname.startsWith('/data/announcements/');
+    url.pathname === '/assets/data/announcements/index.json' ||
+    url.pathname.startsWith('/assets/data/announcements/');
 
   // Dynamic data should be network-first so newly added timetable/announcement
   // files show up immediately without waiting for a service worker version bump.
