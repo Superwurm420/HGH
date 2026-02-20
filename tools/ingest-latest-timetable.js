@@ -47,6 +47,18 @@ function extractWeekHint(fileName) {
   return Number.isFinite(week) ? week : null;
 }
 
+function extractSchoolYearHint(fileName) {
+  const m = normalizeName(fileName).match(/(?:hj|sj)?[_\s-]?([0-9]{4})[_\s-]([0-9]{2,4})/);
+  if (!m) return null;
+
+  const startYear = Number(m[1]);
+  const endRaw = Number(m[2]);
+  if (!Number.isFinite(startYear) || !Number.isFinite(endRaw)) return null;
+
+  const normalizedEnd = endRaw < 100 ? Math.floor(startYear / 100) * 100 + endRaw : endRaw;
+  return Number.isFinite(normalizedEnd) ? startYear * 10000 + normalizedEnd : null;
+}
+
 async function listPdfFiles(dir) {
   if (!fs.existsSync(dir)) return [];
   const files = fs.readdirSync(dir)
@@ -59,6 +71,7 @@ async function listPdfFiles(dir) {
         full,
         mtimeMs: stat.mtimeMs,
         weekHint: extractWeekHint(name),
+        schoolYearHint: extractSchoolYearHint(name),
         isLikelyPlan: hasScheduleKeyword(name)
       };
     });
@@ -76,7 +89,7 @@ async function listPdfFiles(dir) {
     }
   }));
 
-  enriched.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  enriched.sort(comparePlanRecency);
   return enriched;
 }
 
@@ -87,15 +100,21 @@ function dateNum(dateStr) {
 }
 
 
-function compareUploadRecency(a, b) {
-  const mtimeCmp = b.mtimeMs - a.mtimeMs;
-  if (mtimeCmp !== 0) return mtimeCmp;
+function comparePlanRecency(a, b) {
+  const validCmp = dateNum(b.validFrom) - dateNum(a.validFrom);
+  if (validCmp !== 0) return validCmp;
 
   const updatedCmp = dateNum(b.updatedDate) - dateNum(a.updatedDate);
   if (updatedCmp !== 0) return updatedCmp;
 
-  const validCmp = dateNum(b.validFrom) - dateNum(a.validFrom);
-  if (validCmp !== 0) return validCmp;
+  const schoolYearCmp = (b.schoolYearHint || -1) - (a.schoolYearHint || -1);
+  if (schoolYearCmp !== 0) return schoolYearCmp;
+
+  const weekCmp = (b.weekHint || -1) - (a.weekHint || -1);
+  if (weekCmp !== 0) return weekCmp;
+
+  const mtimeCmp = b.mtimeMs - a.mtimeMs;
+  if (mtimeCmp !== 0) return mtimeCmp;
 
   return b.name.localeCompare(a.name, 'de');
 }
@@ -105,7 +124,7 @@ function pickLatestPdf(files) {
   const planCandidates = files.filter(f => f.isLikelyPlan);
   if (!planCandidates.length) return files[0];
 
-  planCandidates.sort(compareUploadRecency);
+  planCandidates.sort(comparePlanRecency);
 
   return planCandidates[0];
 }
@@ -281,7 +300,7 @@ function writeOutputAtomically(targetPath, data) {
 function pruneOldPdfs(allFiles, keepCount, activePdf, dryRun) {
   const keepSafe = Number.isFinite(keepCount) && keepCount > 0 ? Math.floor(keepCount) : 1;
   const scheduleFiles = allFiles.filter(f => f.isLikelyPlan || f.full === activePdf);
-  const sorted = scheduleFiles.slice().sort(compareUploadRecency);
+  const sorted = scheduleFiles.slice().sort(comparePlanRecency);
 
   const keepSet = new Set([activePdf]);
   for (const file of sorted) {
