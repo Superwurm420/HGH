@@ -970,46 +970,98 @@ function isPseudoAllDayEvent(dtstartRaw, dtendRaw, start, end) {
   return durationMs >= 864e5 && durationMs % 864e5 === 0;
 }
 
+function parseICSTimestampKey(raw) {
+  if (!raw) return '';
+  const dateOnly = raw.match(/^\d{8}$/);
+  if (dateOnly) return `${raw}T000000`;
+  const timed = raw.match(/^(\d{8}T\d{6})Z?$/);
+  return timed ? timed[1] : raw;
+}
+
 function parseICS(text) {
   const unfolded = text.replace(/\r?\n[ \t]/g, '');
   const unescape = s => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
   const events = [];
+  const cancellations = new Set();
   const now = new Date();
   const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - CALENDAR_VISIBLE_WINDOW_DAYS.past);
   const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + CALENDAR_VISIBLE_WINDOW_DAYS.future);
   const blocks = unfolded.split('BEGIN:VEVENT');
+
+  const readProps = (vevent) => {
+    const props = [];
+    const lines = vevent.split(/\r?\n/);
+    for (const line of lines) {
+      const sep = line.indexOf(':');
+      if (sep <= 0) continue;
+      const left = line.slice(0, sep);
+      const value = line.slice(sep + 1).trim();
+      const [name] = left.split(';');
+      props.push({ name: name.toUpperCase(), value });
+    }
+    return {
+      first(name) {
+        return props.find(p => p.name === name.toUpperCase()) || null;
+      },
+    };
+  };
+
   for (let i = 1; i < blocks.length; i++) {
     const end = blocks[i].indexOf('END:VEVENT');
     const vevent = end >= 0 ? blocks[i].slice(0, end) : blocks[i];
-    const get = name => {
-      const m = vevent.match(new RegExp(`^${name}(?:;[^:]+)?:(.+)$`, 'm'));
-      return m ? m[1].trim() : '';
-    };
-    const status = get('STATUS').toUpperCase();
-    if (status === 'CANCELLED') continue;
-    const title = unescape(get('SUMMARY')) || '(Kein Titel)';
-    const dtstart = get('DTSTART');
-    if (!dtstart) continue;
-    const dtend = get('DTEND');
-    const allDayFromDateType = !dtstart.includes('T');
-    const start = parseICSDate(dtstart);
-    const end2 = dtend ? parseICSDate(dtend) : start;
+    const props = readProps(vevent);
+    const status = (props.first('STATUS')?.value || '').toUpperCase();
+    const uid = props.first('UID')?.value || '';
+    const recurrenceIdRaw = props.first('RECURRENCE-ID')?.value || '';
+    const recurrenceKey = `${uid}|${parseICSTimestampKey(recurrenceIdRaw)}`;
+
+    if (status === 'CANCELLED') {
+      if (uid && recurrenceIdRaw) cancellations.add(recurrenceKey);
+      continue;
+    }
+
+    const dtstartRaw = props.first('DTSTART')?.value || '';
+    if (!dtstartRaw) continue;
+    const dtendRaw = props.first('DTEND')?.value || '';
+
+    const title = unescape(props.first('SUMMARY')?.value || '') || '(Kein Titel)';
+    const allDayFromDateType = !dtstartRaw.includes('T');
+    const start = parseICSDate(dtstartRaw);
+    const end2 = dtendRaw ? parseICSDate(dtendRaw) : start;
     if (!start || Number.isNaN(start.getTime())) continue;
 
     const eventEnd = end2 && !Number.isNaN(end2.getTime()) ? end2 : start;
-    const allDay = allDayFromDateType || isPseudoAllDayEvent(dtstart, dtend, start, eventEnd);
+    if (eventEnd < start) continue;
+
+    const durationMs = eventEnd.getTime() - start.getTime();
+    if (durationMs > 180 * 864e5) continue;
+
+    const allDay = allDayFromDateType || isPseudoAllDayEvent(dtstartRaw, dtendRaw, start, eventEnd);
     if (eventEnd < minDate || start > maxDate) continue;
 
-    events.push({ title, start, end: eventEnd, allDay });
+    events.push({
+      uid,
+      recurrenceIdKey: parseICSTimestampKey(recurrenceIdRaw),
+      title,
+      start,
+      end: eventEnd,
+      allDay
+    });
   }
 
   const seen = new Set();
   return events.filter(ev => {
-    const key = `${ev.title}|${ev.start.getTime()}|${ev.end?.getTime() || ''}|${ev.allDay}`;
+    if (ev.uid && ev.recurrenceIdKey && cancellations.has(`${ev.uid}|${ev.recurrenceIdKey}`)) return false;
+    let key;
+    if (ev.uid) {
+      key = `${ev.uid}|${ev.recurrenceIdKey || ev.start.getTime()}|${ev.end?.getTime() || ''}|${ev.allDay}`;
+    } else {
+      key = `${ev.title}|${ev.start.getTime()}|${ev.end?.getTime() || ''}|${ev.allDay}`;
+    }
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  });
+  }).map(({ uid, recurrenceIdKey, ...ev }) => ev);
 }
 
 async function fetchCalendar(cfg) {
