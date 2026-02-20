@@ -9,9 +9,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: update-timetable
+  cancel-in-progress: true
+
 jobs:
   update-timetable:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -21,15 +26,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Find PDF
+      - name: Verify parser scripts syntax
+        run: |
+          node --check tools/pdf-parser-specialized.js
+          node --check tools/fetch-instagram-preview.js
+
+      - name: Find latest PDF
         id: find-pdf
         run: |
-          echo "Looking for PDF..."
-          PDF=$(find plan/ -name "*.pdf" -type f | head -n 1)
+          echo "Looking for latest PDF..."
+          PDF=$(find plan/ -name "*.pdf" -type f -printf "%T@ %p\n" | sort -nr | head -n 1 | cut -d' ' -f2-)
           if [ -z "$PDF" ]; then
             echo "ERROR: No PDF found in plan/ directory!"
             echo "Contents of plan/:"
@@ -37,28 +48,28 @@ jobs:
             exit 1
           fi
           echo "Found: $PDF"
-          echo "pdf_file=$PDF" >> $GITHUB_OUTPUT
+          echo "pdf_file=$PDF" >> "$GITHUB_OUTPUT"
 
-      - name: Run Parser
+      - name: Run parser
         run: |
           echo "Running parser..."
           node tools/pdf-parser-specialized.js "${{ steps.find-pdf.outputs.pdf_file }}" \
             --out data/timetable.json \
-            --validFrom $(date +%Y-%m-%d) \
+            --validFrom "$(date +%Y-%m-%d)" \
             --debug
 
-      - name: Fetch Instagram Previews
-        run: node tools/fetch-instagram-preview.js || echo "Instagram fetch failed (non-critical)"
+      - name: Refresh Instagram previews (best effort)
+        run: node tools/fetch-instagram-preview.js
         continue-on-error: true
 
-      - name: Commit & Push
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/timetable.json data/instagram.json 2>/dev/null || true
           if git diff --staged --quiet; then
-            echo "No changes to timetable.json"
+            echo "No generated data changes"
           else
-            git commit -m "Update timetable from PDF"
+            git commit -m "chore(data): update timetable from PDF"
             git push
           fi
