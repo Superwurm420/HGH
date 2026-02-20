@@ -865,20 +865,25 @@ function parseICSDate(s) {
   if (!s) return null;
   const y = +s.slice(0, 4), mo = +s.slice(4, 6) - 1, d = +s.slice(6, 8);
   if (s.includes('T')) {
-    const h = +s.slice(9, 11), mi = +s.slice(11, 13), sec = +s.slice(13, 15);
+    const m = s.match(/^\d{8}T(\d{2})(\d{2})(\d{2})?Z?$/);
+    const h = m ? +m[1] : 0;
+    const mi = m ? +m[2] : 0;
+    const sec = m && m[3] ? +m[3] : 0;
     return s.endsWith('Z') ? new Date(Date.UTC(y, mo, d, h, mi, sec)) : new Date(y, mo, d, h, mi, sec);
   }
   return new Date(y, mo, d);
 }
 
-function isPseudoAllDayEvent(start, end) {
+function isMidnightTimestamp(raw) {
+  const m = raw?.match(/^\d{8}T(\d{2})(\d{2})(\d{2})?Z?$/);
+  if (!m) return false;
+  return m[1] === '00' && m[2] === '00' && (!m[3] || m[3] === '00');
+}
+
+function isPseudoAllDayEvent(dtstartRaw, dtendRaw, start, end) {
   if (!start || !end) return false;
-  if (
-    start.getHours() !== 0 || start.getMinutes() !== 0 || start.getSeconds() !== 0 ||
-    end.getHours() !== 0 || end.getMinutes() !== 0 || end.getSeconds() !== 0
-  ) {
-    return false;
-  }
+  if (!dtstartRaw?.includes('T') || !dtendRaw?.includes('T')) return false;
+  if (!isMidnightTimestamp(dtstartRaw) || !isMidnightTimestamp(dtendRaw)) return false;
   const durationMs = end.getTime() - start.getTime();
   return durationMs >= 864e5 && durationMs % 864e5 === 0;
 }
@@ -910,7 +915,7 @@ function parseICS(text) {
     if (!start || Number.isNaN(start.getTime())) continue;
 
     const eventEnd = end2 && !Number.isNaN(end2.getTime()) ? end2 : start;
-    const allDay = allDayFromDateType || isPseudoAllDayEvent(start, eventEnd);
+    const allDay = allDayFromDateType || isPseudoAllDayEvent(dtstart, dtend, start, eventEnd);
     if (eventEnd < minDate || start > maxDate) continue;
 
     events.push({ title, start, end: eventEnd, allDay });
