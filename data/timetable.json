@@ -2,7 +2,7 @@
   "meta": {
     "school": "HGH",
     "validFrom": "2026-02-20",
-    "updatedAt": "2026-02-20T12:00:09.035Z",
+    "updatedAt": "2026-02-20T12:25:55.234Z",
     "source": "Stundenplan_kw_45_Hj1_2025_26.pdf"
   },
   "timeslots": [
@@ -48,89 +48,101 @@
       "mo": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Fertigungstechnik W1/W2",
+          "teacher": "GRO",
           "room": "T1"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Fertigungstechnik W1/W2",
+          "teacher": "GRO",
           "room": "T1"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/ReWe",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/ReWe",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Deutsch",
+          "teacher": "MEL",
           "room": "2"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Deutsch",
+          "teacher": "MEL",
           "room": "2"
+        },
+        {
+          "slotId": "8",
+          "subject": null,
+          "teacher": "15.40",
+          "room": null
+        },
+        {
+          "slotId": "9",
+          "subject": null,
+          "teacher": "15.40",
+          "room": null
         }
       ],
       "di": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "M6 PowerP/DTP/Mark",
+          "teacher": "STI",
           "room": "8/4"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "M6 PowerP/DTP/Mark",
+          "teacher": "STI",
           "room": "8/4"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Fertigungstechnik W1/W2",
+          "teacher": "GRO",
           "room": "T1"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Fertigungstechnik W1/W2",
+          "teacher": "GRO",
           "room": "T1"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/EDV",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/EDV",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "8",
-          "subject": "Serviceteam",
-          "teacher": null,
+          "subject": null,
+          "teacher": "15.40",
           "room": null,
           "note": "Serviceteam"
         },
         {
           "slotId": "9",
-          "subject": "Serviceteam",
-          "teacher": null,
+          "subject": null,
+          "teacher": "15.40",
           "room": null,
           "note": "Serviceteam"
         }
@@ -138,126 +150,126 @@
       "mi": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Werkstoffkunde",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Werkstoffkunde",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Werkstoffkunde",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/Werkstoffkunde",
+          "teacher": "TAM",
           "room": "5"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Freihandzeichnen",
+          "teacher": "BÜ",
           "room": "1"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Freihandzeichnen",
+          "teacher": "BÜ",
           "room": "1"
         },
         {
           "slotId": "8",
-          "subject": null,
-          "teacher": null,
+          "subject": "Politik",
+          "teacher": "STI",
           "room": "8"
         },
         {
           "slotId": "9",
-          "subject": null,
-          "teacher": null,
+          "subject": "Politik",
+          "teacher": "STI",
           "room": "8"
         }
       ],
       "do": [
         {
           "slotId": "1",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Statik",
+          "teacher": "HOFF",
           "room": "2"
         },
         {
           "slotId": "2",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Statik",
+          "teacher": "HOFF",
           "room": "2"
         },
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/KuSti",
+          "teacher": "MEL",
           "room": "7"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul7/KuSti",
+          "teacher": "MEL",
           "room": "7"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
           "room": "3"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/CNC",
+          "teacher": "HOFF",
           "room": "3"
         },
         {
           "slotId": "8",
-          "subject": null,
-          "teacher": null,
+          "subject": "Englisch",
+          "teacher": "WEN",
           "room": "9"
         },
         {
           "slotId": "9",
-          "subject": null,
-          "teacher": null,
+          "subject": "Englisch",
+          "teacher": "WEN",
           "room": "9"
         }
       ],
       "fr": [
         {
           "slotId": "3",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Fertigungstechnik",
+          "teacher": "STE",
           "room": "1"
         },
         {
           "slotId": "4",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul2/Fertigungstechnik",
+          "teacher": "STE",
           "room": "1"
         },
         {
           "slotId": "5",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/CAD",
+          "teacher": "HOFF",
           "room": "4"
         },
         {
           "slotId": "6",
-          "subject": null,
-          "teacher": null,
+          "subject": "Modul1/CAD",
+          "teacher": "HOFF",
           "room": "4"
         }
       ]
