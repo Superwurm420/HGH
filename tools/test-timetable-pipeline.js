@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { parseAndNormalizeTimetable } from '../js/modules/timetable-pipeline.js';
+import { parseAndNormalizeTimetable } from '../timetable-parser.js';
 
 const sample = {
   meta: { source: 'test.pdf' },

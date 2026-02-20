@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /*
-  Apply extracted room mappings to data/timetable.json.
+  Apply extracted room mappings to content/stundenplan.json.
 
   Usage:
-    node scripts/apply-rooms.js plan/rooms.json data/timetable.json
+    node scripts/apply-rooms.js plan/rooms.json content/stundenplan.json
 */
 
 const fs = require('fs');
 
 const inRooms = process.argv[2];
-const inTimetable = process.argv[3] || 'data/timetable.json';
+const inTimetable = process.argv[3] || 'content/stundenplan.json';
 if (!inRooms) {
-  console.error('Usage: node scripts/apply-rooms.js plan/rooms.json [data/timetable.json]');
+  console.error('Usage: node scripts/apply-rooms.js plan/rooms.json [content/stundenplan.json]');
   process.exit(2);
 }
 

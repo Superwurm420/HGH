@@ -2116,3 +2116,36 @@ select:focus-visible{
     border-width:2px;
   }
 }
+
+/* Admin-Widget */
+.adminWidgetHead p { margin: 4px 0 0; }
+.adminGuideMode {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-top: 10px;
+  background: color-mix(in srgb, var(--surface), var(--bg) 15%);
+}
+.adminGuideMode summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.adminSteps {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.adminStep {
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.adminTroubleshooting { margin: 10px 0 0; }
+
+@media (min-width:900px){
+  .view[data-view="home"] .adminWidget,
+  .view[data-view="home"] .announcementsCard,
+  .view[data-view="home"] .installCard{
+    grid-column:1 / -1;
+  }
+}

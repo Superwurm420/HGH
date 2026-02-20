@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const jsonFile = process.argv[2] || 'data/timetable.json';
+const jsonFile = process.argv[2] || 'content/stundenplan.json';
 
 if (!fs.existsSync(jsonFile)) {
   console.error(`❌ File not found: ${jsonFile}`);

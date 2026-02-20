@@ -25,7 +25,7 @@
   <link rel="icon" href="https://www.holztechnik-hildesheim.de/wp-content/uploads/2021/01/logo-favicon.png" />
   <link rel="apple-touch-icon" href="https://www.holztechnik-hildesheim.de/wp-content/uploads/2021/01/logo-favicon.png" />
 
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./app.css" />
 </head>
 <body>
   <!-- Skip Link für Accessibility -->
@@ -172,6 +172,36 @@
         <article id="announcementNext" class="announcementNext" hidden aria-live="polite"></article>
         <div id="announcementsIssues" class="announcementsIssues" hidden aria-live="polite"></div>
         <div id="announcementsList" class="announcementsList" role="list" aria-live="polite"></div>
+      </div>
+
+      <!-- Admin-Anleitungs-Widget -->
+      <div class="card surface adminWidget" aria-label="Anleitung für Admin-Updates">
+        <div class="adminWidgetHead">
+          <h2>So verwaltest du die App (Admin)</h2>
+          <p class="small muted">Kurz-Anleitung: Datei ersetzen, Commit machen, fertig.</p>
+        </div>
+
+        <details class="adminGuideMode" open>
+          <summary>Stundenplan aktualisieren</summary>
+          <div class="adminSteps" role="list">
+            <div class="adminStep" role="listitem"><strong>1.</strong> Datei vorbereiten: <code>stundenplan.json</code></div>
+            <div class="adminStep" role="listitem"><strong>2.</strong> In <code>/content/</code> die Datei <code>stundenplan.json</code> ersetzen</div>
+            <div class="adminStep" role="listitem"><strong>3.</strong> Auf GitHub committen/pushen</div>
+            <div class="adminStep" role="listitem"><strong>4.</strong> App öffnen und einmal neu laden</div>
+          </div>
+        </details>
+
+        <details class="adminGuideMode">
+          <summary>Kalender/Termine aktualisieren</summary>
+          <div class="adminSteps" role="list">
+            <div class="adminStep" role="listitem"><strong>1.</strong> Datei vorbereiten: <code>kalender.ics</code></div>
+            <div class="adminStep" role="listitem"><strong>2.</strong> In <code>/content/</code> die Datei <code>kalender.ics</code> ersetzen</div>
+            <div class="adminStep" role="listitem"><strong>3.</strong> Auf GitHub committen/pushen</div>
+            <div class="adminStep" role="listitem"><strong>4.</strong> App öffnen und einmal neu laden</div>
+          </div>
+        </details>
+
+        <p class="small muted adminTroubleshooting">Wenn nichts passiert: Seite schließen und neu öffnen oder Hard-Reload nutzen.</p>
       </div>
 
       <!-- Install-Karte -->

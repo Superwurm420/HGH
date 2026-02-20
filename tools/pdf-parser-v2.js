@@ -8,7 +8,7 @@
  * - Fächer, Lehrkräfte, Räume
  * 
  * Usage:
- *   node tools/pdf-parser.js <input.pdf> [--out data/timetable.json] [--validFrom 2026-01-19] [--debug]
+ *   node tools/pdf-parser.js <input.pdf> [--out content/stundenplan.json] [--validFrom 2026-01-19] [--debug]
  */
 
 import fs from 'node:fs';
@@ -22,13 +22,13 @@ function argValue(flag) {
 }
 
 const input = process.argv[2];
-const outPath = argValue('--out') || 'data/timetable.json';
+const outPath = argValue('--out') || 'content/stundenplan.json';
 const validFrom = argValue('--validFrom') || new Date().toISOString().split('T')[0];
 const DEBUG = process.argv.includes('--debug');
 
 if (!input) {
   console.error('❌ Missing input PDF');
-  console.error('Usage: node tools/pdf-parser.js <input.pdf> [--out data/timetable.json] [--validFrom YYYY-MM-DD] [--debug]');
+  console.error('Usage: node tools/pdf-parser.js <input.pdf> [--out content/stundenplan.json] [--validFrom YYYY-MM-DD] [--debug]');
   process.exit(1);
 }
 

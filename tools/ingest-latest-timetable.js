@@ -4,7 +4,7 @@
  * - erkennt die zuletzt hochgeladene Plan-PDF in /plan (oder --input)
  * - probiert mehrere Parser und nimmt das beste Ergebnis
  * - validiert das Ergebnis (Mindestqualität)
- * - schreibt data/timetable.json atomar
+ * - schreibt content/stundenplan.json atomar
  * - entfernt alte Stundenplan-PDF-Dateien (keep=1 standard)
  */
 
@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { extractTimetablePdfDates } from './pdf-date-metadata.js';
 
 const PLAN_DIR = 'plan';
-const OUTPUT_JSON = 'data/timetable.json';
+const OUTPUT_JSON = 'content/stundenplan.json';
 const PARSER_CANDIDATES = [
   'tools/pdf-parser-specialized.js',
   'tools/pdf-to-timetable-v2.js'

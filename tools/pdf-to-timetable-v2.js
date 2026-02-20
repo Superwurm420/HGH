@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * HGH timetable PDF → data/timetable.json
+ * HGH timetable PDF → content/stundenplan.json
  *
  * This parser uses PDF text items with x/y coordinates (pdfjs-dist).
  * It is tailored to the school PDF layout you provided:
@@ -11,7 +11,7 @@
  * - Teacher tokens are 2–4 uppercase letters (incl. umlauts) and appear on separate rows.
  *
  * Usage:
- *   node tools/pdf-to-timetable-v2.js <input.pdf> [--out data/timetable.json] [--validFrom 2026-01-19]
+ *   node tools/pdf-to-timetable-v2.js <input.pdf> [--out content/stundenplan.json] [--validFrom 2026-01-19]
  */
 
 import fs from 'node:fs';
@@ -286,11 +286,11 @@ function parse(items, validFrom, inputPath){
 
 async function main(){
   const input = process.argv[2];
-  const out = argValue('--out') || 'data/timetable.json';
+  const out = argValue('--out') || 'content/stundenplan.json';
   const validFrom = argValue('--validFrom') || null;
 
   if(!input){
-    console.error('Usage: node tools/pdf-to-timetable-v2.js <input.pdf> [--out data/timetable.json] [--validFrom YYYY-MM-DD]');
+    console.error('Usage: node tools/pdf-to-timetable-v2.js <input.pdf> [--out content/stundenplan.json] [--validFrom YYYY-MM-DD]');
     process.exit(2);
   }
 

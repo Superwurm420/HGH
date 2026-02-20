@@ -3,7 +3,7 @@
  * PDF → timetable.json generator (HGH)
  *
  * Usage:
- *   node tools/pdf-parser.js <input.pdf> [--out data/timetable.json] [--validFrom 2026-01-19]
+ *   node tools/pdf-parser.js <input.pdf> [--out content/stundenplan.json] [--validFrom 2026-01-19]
  *
  * Notes:
  * - This is a *best effort* parser scaffold. PDFs differ wildly.
@@ -22,11 +22,11 @@ function argValue(flag){
 }
 
 const input = process.argv[2];
-const outPath = argValue('--out') || 'data/timetable.json';
+const outPath = argValue('--out') || 'content/stundenplan.json';
 const validFrom = argValue('--validFrom') || null;
 
 if(!input){
-  console.error('Missing input PDF. Usage: node tools/pdf-parser.js <input.pdf> [--out data/timetable.json]');
+  console.error('Missing input PDF. Usage: node tools/pdf-parser.js <input.pdf> [--out content/stundenplan.json]');
   process.exit(1);
 }
 
