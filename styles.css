@@ -640,6 +640,89 @@ select:focus-visible{
 
 
 
+
+.announcementsCard{
+  display:grid;
+  gap:10px;
+}
+
+.announcementsList{
+  display:grid;
+  gap:10px;
+}
+
+.announcementItem{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  background:rgba(255,255,255,.04);
+}
+
+.announcementItem h3{
+  margin:0 0 6px;
+  font-size:15px;
+}
+
+.announcementItem p{
+  margin:0;
+  line-height:1.45;
+}
+
+.announcementMeta{
+  color:var(--muted);
+  font-size:12px;
+  margin-bottom:6px;
+}
+
+.announcementCountdown{
+  margin:0 0 6px;
+  color:var(--accent);
+  font-size:12px;
+  font-weight:700;
+}
+
+
+.announcementNext,
+.announcementsIssues{
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px 12px;
+  background:rgba(255,255,255,.04);
+}
+
+.announcementNextLabel{
+  margin:0 0 4px;
+  font-size:11px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.announcementsIssues{
+  background:rgba(255,153,0,.12);
+}
+
+.announcementsIssues ul{
+  margin:6px 0 0;
+  padding-left:18px;
+}
+
+.announcementLocation{
+  margin:0 0 6px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.announcementMoreBtn{
+  justify-self:start;
+}
+
+.announcementCountdown--upcoming{ color:#58b4ff; }
+.announcementCountdown--active{ color:#35c26b; }
+.announcementCountdown--timeless{ color:var(--muted); }
+
+
 /* Install Card */
 .installCard{
   display:grid;

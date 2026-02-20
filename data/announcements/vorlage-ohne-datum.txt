@@ -1,0 +1,11 @@
+# Vorlage ohne Datum
+# Mini-Beispiel:
+# titel: Allgemeine Info
+
+id: hinweis-ohne-datum
+titel: Neue Ankündigung ohne Datum
+ort: Sekretariat
+sichtbar: nein
+reihenfolge: 20
+---
+Hier den Text für die Ankündigung ohne Datum eintragen.

@@ -1,6 +1,6 @@
-/* Service Worker – offline-first for app shell (v1.4.2, optimiert) */
+/* Service Worker – offline-first for app shell (v1.4.7, optimiert) */
 
-const VERSION = 'v1.4.2';
+const VERSION = 'v1.4.7';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
@@ -8,6 +8,11 @@ const ASSETS = [
   './index.html',
   './anleitung-dateien-austauschen.html',
   './data/anleitung-inhalt.html',
+  './data/announcements/index.json',
+  './data/announcements/vorlage-ohne-datum.txt',
+  './data/announcements/vorlage-mit-termin.txt',
+  './data/announcements/testtermin-ablauf-2026-04-20.txt',
+  './data/announcements/testankuendigung-ohne-datum.txt',
   './styles.css',
   './app.js',
   './manifest.webmanifest',

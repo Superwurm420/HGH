@@ -1,0 +1,15 @@
+# Vorlage mit Termin
+# Datumsformat: YYYY-MM-DD oder YYYY-MM-DD HH:MM
+# Mini-Beispiel:
+# titel: Elternabend
+# start: 2026-05-12 18:00
+
+id: termin-neu
+titel: Neuer Termin
+start: 2026-05-01
+ende: 2026-05-01 12:00
+ort: Raum A12
+sichtbar: nein
+reihenfolge: 10
+---
+Hier den Text für den Termin eintragen.

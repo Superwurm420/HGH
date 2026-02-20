@@ -1,0 +1,10 @@
+# Eintrag ohne Datum (bleibt sichtbar, solange sichtbar: ja)
+
+id: testankuendigung-ohne-datum
+titel: Testankündigung ohne Datum
+ort: Schwarzes Brett
+sichtbar: ja
+reihenfolge: 2
+---
+So sieht eine Ankündigung ohne Zeitangabe aus.
+Sie bleibt sichtbar, solange sichtbar auf ja steht.
