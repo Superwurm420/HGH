@@ -513,7 +513,14 @@ function renderTimetable() {
 
   const rows = state.timetable?.[classId]?.[dayId] || [];
   if (!rows.length) {
-    body.innerHTML = '<div class="small muted">Keine Stunden für diesen Tag.</div>';
+    body.innerHTML = `
+      <div class="timetableEmpty timetableEmpty--lessonLike" role="status" aria-live="polite">
+        <div class="tr">
+          <div class="td tdTime"><span class="timeFrom">—</span><span class="small muted">—</span></div>
+          <div class="td">Kein Unterricht</div>
+          <div class="td tdMeta"><small>—</small><small class="muted">—</small></div>
+        </div>
+      </div>`;
     return;
   }
   const bySlot = new Map(rows.map(r => [r.slotId, r]));
@@ -578,7 +585,19 @@ function renderTodayPreview() {
   const merged = allRows.filter(r => !SECOND_SLOTS.has(r.slotId)).slice(0, 4);
 
   if (!merged.length) {
-    list.innerHTML = '<div class="small muted">Keine Daten verfügbar.</div>';
+    list.innerHTML = `
+      <div class="listItem" role="status" aria-live="polite">
+        <div>
+          <div class="small muted">Std. —</div>
+          <div class="timeFrom">—</div>
+        </div>
+        <div class="subjectCol">
+          <div>Kein Unterricht</div>
+        </div>
+        <div class="metaCol">
+          <div class="sub">—</div>
+        </div>
+      </div>`;
     return;
   }
 
@@ -745,6 +764,18 @@ function getDayRanges(base = new Date()) {
   return ranges.sort((a, b) => a.start - b.start);
 }
 
+function getClassDayRanges(classId, dayId, base = new Date()) {
+  const rows = (state.timetable?.[classId]?.[dayId] || []).filter(r => r && r.subject);
+  return rows
+    .map(r => {
+      const slot = state.timeslotMap.get(String(r.slotId));
+      const range = parseSlotRange(slot?.time || '', base);
+      return range ? { slotId: String(r.slotId), ...range } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+}
+
 function getCurrentPairStartSlot(dayId, now = new Date()) {
   if (!isWeekday() || dayId !== getTodayId()) return null;
   const ranges = getDayRanges(now);
@@ -766,13 +797,20 @@ function updateCountdown() {
 
   if (!isWeekday()) { textEl.textContent = 'Schönes Wochenende! 🎉'; return; }
 
-  const ranges = getDayRanges(now);
-  if (!ranges.length || now >= ranges[ranges.length - 1].end) {
+  const classId = state.els.todayClassSelect?.value || state.els.classSelect?.value || 'HT11';
+  const dayId = getTodayId();
+  const ranges = getClassDayRanges(classId, dayId, now);
+
+  if (!ranges.length) {
+    textEl.textContent = 'Kein Unterricht';
+    return;
+  }
+
+  if (now >= ranges[ranges.length - 1].end) {
     textEl.textContent = 'Schultag vorbei 👋';
     return;
   }
 
-  // Aktuell in einer Stunde?
   const current = ranges.find(r => now >= r.start && now < r.end);
   if (current) {
     const partnerId = DOUBLE_PAIRS[current.slotId];
@@ -781,7 +819,6 @@ function updateCountdown() {
     return;
   }
 
-  // Pause vor nächster Stunde
   const next = ranges.find(r => now < r.start);
   if (next) {
     textEl.textContent = `Nächste Stunde in ${diffMinsCeil(now, next.start)} Min`;

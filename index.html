@@ -105,19 +105,18 @@
         <!-- Countdown -->
         <div class="countdown" role="region" aria-label="Countdown zur nächsten Stunde">
           <div class="countdownTop">
+            <div class="netRow netRowInline countdownNetStatus" role="status" aria-label="Netzwerkstatus">
+              <span
+                id="netIndicator"
+                class="netIndicator"
+                data-status="unknown"
+                aria-hidden="true"
+              ></span>
+              <span id="netLabel" class="small muted">—</span>
+            </div>
             <div class="countdownTimeBlock">
-              <div class="small muted">Aktuelle Uhrzeit</div>
               <div class="timeMetaRow">
                 <div id="nowTime" class="nowTime" aria-live="polite">—</div>
-                <div class="netRow netRowInline" role="status" aria-label="Netzwerkstatus">
-                  <span
-                    id="netIndicator"
-                    class="netIndicator"
-                    data-status="unknown"
-                    aria-hidden="true"
-                  ></span>
-                  <span id="netLabel" class="small muted">—</span>
-                </div>
               </div>
               <div id="todayWeekday" class="small muted">—</div>
             </div>

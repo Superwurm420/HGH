@@ -478,9 +478,13 @@ select:focus-visible{
 
 .countdownTop{
   display:flex;
-  align-items:center;
-  justify-content:space-between;
+  flex-direction:column;
+  align-items:stretch;
   gap:12px;
+}
+
+.countdownNetStatus{
+  align-self:flex-end;
 }
 
 .countdownTimeBlock{
@@ -492,13 +496,7 @@ select:focus-visible{
 .timeMetaRow{
   display:flex;
   align-items:flex-end;
-  justify-content:space-between;
   gap:10px;
-}
-
-.timeMetaRow .netRowInline{
-  flex-shrink:0;
-  align-self:center;
 }
 
 .nowTime{
@@ -905,6 +903,17 @@ select:focus-visible{
   gap:12px;
   color:var(--muted);
   font-size:14px;
+}
+
+.timetableEmpty--lessonLike{
+  margin-top:12px;
+  padding:0;
+  color:inherit;
+  font-size:inherit;
+}
+
+.timetableEmpty--lessonLike .tr .td{
+  border-bottom:none;
 }
 
 /* Tag-Auswahl-Zeile unter den Controls */
@@ -1758,7 +1767,11 @@ select:focus-visible{
 
   .countdownTop{
     flex-direction:column;
-    align-items:flex-start;
+    align-items:stretch;
+  }
+
+  .countdownNetStatus{
+    align-self:flex-end;
   }
 
   .timeMetaRow{
