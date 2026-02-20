@@ -514,7 +514,7 @@ function renderTimetable() {
   const rows = state.timetable?.[classId]?.[dayId] || [];
   if (!rows.length) {
     body.innerHTML = `
-      <div class="tr trPlaceholder" role="row" aria-live="polite">
+      <div class="tr trPlaceholder" role="row" aria-live="polite" aria-label="Kein Unterricht">
         <div class="td tdTime"><span class="timeFrom">—</span><span class="small muted">—</span></div>
         <div class="td">Kein Unterricht</div>
         <div class="td tdMeta"><small>—</small><small class="muted">—</small></div>
@@ -591,6 +591,7 @@ function renderTodayPreview() {
         </div>
         <div class="subjectCol">
           <div>Kein Unterricht</div>
+          <div class="sub muted">Für diesen Tag sind keine Stunden eingetragen.</div>
         </div>
         <div class="metaCol">
           <div class="sub">—</div>

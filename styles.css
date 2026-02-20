@@ -906,15 +906,21 @@ select:focus-visible{
 }
 
 .trPlaceholder{
-  background:rgba(255,255,255,.06);
+  background:rgba(88,180,255,.14);
+  border-left:3px solid var(--accent);
 }
 
 .trPlaceholder .td{
   border-bottom:none;
 }
 
+.trPlaceholder .td:nth-child(2){
+  font-weight:700;
+}
+
 .listItemPlaceholder{
-  background:rgba(255,255,255,.08);
+  background:rgba(88,180,255,.12);
+  border-left:3px solid var(--accent);
 }
 
 
