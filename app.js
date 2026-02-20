@@ -813,7 +813,7 @@ function updateTvDateTime(now = new Date()) {
     state.tv.todayKey = dateKey;
     safeSetText(state.els.tvDate, now.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }));
   }
-  safeSetText(state.els.tvTime, now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  safeSetText(state.els.tvTime, now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }));
 }
 
 function renderTvAnnouncements(now = new Date()) {
@@ -921,6 +921,14 @@ async function loadTvSlides() {
   } catch {
     state.tv.slides = [];
   }
+
+  if (!state.tv.slides.length) state.tv.activeSlideIndex = -1;
+  setTvSlidesVisibility(state.tv.slides.length > 0);
+}
+
+function setTvSlidesVisibility(isVisible) {
+  const container = state.els.tvSlides;
+  if (container) container.hidden = !isVisible;
 }
 
 function renderTvSlide() {
@@ -929,10 +937,13 @@ function renderTvSlide() {
   if (!imgA || !imgB) return;
 
   if (!state.tv.slides.length) {
+    setTvSlidesVisibility(false);
     imgA.classList.remove('isVisible');
     imgB.classList.remove('isVisible');
     return;
   }
+
+  setTvSlidesVisibility(true);
 
   state.tv.activeSlideIndex = (state.tv.activeSlideIndex + 1) % state.tv.slides.length;
   const src = state.tv.slides[state.tv.activeSlideIndex];
@@ -975,7 +986,7 @@ async function startTvMode() {
 
   state.tv.clockTimer = setInterval(() => updateTvDateTime(new Date()), 1000);
   state.tv.refreshTimer = setInterval(refreshTvData, APP.constants.TV_REFRESH_INTERVAL);
-  state.tv.slideTimer = setInterval(renderTvSlide, APP.constants.TV_SLIDE_INTERVAL);
+  if (state.tv.slides.length) state.tv.slideTimer = setInterval(renderTvSlide, APP.constants.TV_SLIDE_INTERVAL);
 }
 
 function stopTvMode() {
@@ -2249,7 +2260,8 @@ function cacheEls() {
     tvClasses: qs('#tvClasses'),
     tvAnnouncementsList: qs('#tvAnnouncementsList'),
     tvSlideA: qs('#tvSlideA'),
-    tvSlideB: qs('#tvSlideB')
+    tvSlideB: qs('#tvSlideB'),
+    tvSlides: qs('#tvSlides')
   };
 }
 

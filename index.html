@@ -448,7 +448,10 @@
     <section class="view tvView" data-view="tv" hidden>
       <div class="tvLayout" role="region" aria-label="TV-Modus">
         <header class="tvHeader">
-          <div id="tvDate" class="tvDate">—</div>
+          <div class="tvDateWrap">
+            <img class="tvLogo" src="./assets/icons/icon-512-maskable.png" alt="HGH Logo" loading="eager" />
+            <div id="tvDate" class="tvDate">—</div>
+          </div>
           <div id="tvTime" class="tvTime" aria-live="polite">—</div>
         </header>
 
@@ -465,7 +468,7 @@
           </section>
         </div>
 
-        <div class="tvSlides" aria-label="Slideshow">
+        <div id="tvSlides" class="tvSlides" aria-label="Slideshow">
           <img id="tvSlideA" class="tvSlideImage" alt="TV-Slide" loading="eager" />
           <img id="tvSlideB" class="tvSlideImage" alt="TV-Slide" loading="eager" />
         </div>

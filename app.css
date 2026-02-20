@@ -2192,6 +2192,22 @@ body.tv-mode .main {
   padding: 18px 24px;
 }
 
+
+.tvDateWrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.tvLogo {
+  width: clamp(56px, 5vw, 86px);
+  height: auto;
+  max-height: 86px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .tvDate { font-size: 2rem; font-weight: 650; }
 .tvTime { font-size: 3.4rem; font-weight: 800; letter-spacing: 0.02em; }
 
