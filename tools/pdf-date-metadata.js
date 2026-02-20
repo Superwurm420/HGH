@@ -33,8 +33,58 @@ function collectDateItems(items) {
     .filter(it => it.parsed);
 }
 
-function findValidFrom(items, dateItems) {
-  // Prefer explicit inline label containing the date.
+function getBounds(items) {
+  if (!items.length) {
+    return { minX: 0, maxX: 0, minY: 0, maxY: 0, width: 0, height: 0 };
+  }
+
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const item of items) {
+    if (item.x < minX) minX = item.x;
+    if (item.x > maxX) maxX = item.x;
+    if (item.y < minY) minY = item.y;
+    if (item.y > maxY) maxY = item.y;
+  }
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+}
+
+function findTopLeftDate(dateItems, bounds) {
+  if (!dateItems.length) return null;
+
+  const leftLimit = bounds.minX + bounds.width * 0.45;
+  const topLimit = bounds.minY + bounds.height * 0.45;
+
+  const preferred = dateItems
+    .filter(d => d.x <= leftLimit && d.y >= topLimit)
+    .sort((a, b) => (a.x - b.x) || (b.y - a.y))[0];
+
+  if (preferred) return preferred;
+
+  return dateItems
+    .slice()
+    .sort((a, b) => (a.x - b.x) || (b.y - a.y))[0] || null;
+}
+
+function findValidFrom(items, dateItems, bounds) {
+  // Stundenplan-Layout: gültig-ab Datum steht links im Kopfbereich.
+  const topLeftDate = findTopLeftDate(dateItems, bounds);
+  if (topLeftDate?.parsed) {
+    return { value: topLeftDate.parsed, raw: topLeftDate.str };
+  }
+
+  // Fallback: Prefer explicit inline label containing the date.
   const inline = items
     .filter(it => /gültig\s*ab/i.test(it.str))
     .map(it => ({ ...it, parsed: parseGermanDateToken(it.str) }))
@@ -88,8 +138,9 @@ export async function extractTimetablePdfDates(pdfPath) {
     }))
     .filter(it => it.str);
 
+  const bounds = getBounds(items);
   const dateItems = collectDateItems(items);
-  const validFrom = findValidFrom(items, dateItems);
+  const validFrom = findValidFrom(items, dateItems, bounds);
   const updated = findUpdatedDate(dateItems);
 
   return {
