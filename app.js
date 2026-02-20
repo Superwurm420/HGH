@@ -983,6 +983,7 @@ function parseICS(text) {
   const unescape = s => s.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1');
   const events = [];
   const cancellations = new Set();
+  const cancellationStarts = new Set();
   const now = new Date();
   const minDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - CALENDAR_VISIBLE_WINDOW_DAYS.past);
   const maxDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + CALENDAR_VISIBLE_WINDOW_DAYS.future);
@@ -1016,7 +1017,13 @@ function parseICS(text) {
     const recurrenceKey = `${uid}|${parseICSTimestampKey(recurrenceIdRaw)}`;
 
     if (status === 'CANCELLED') {
-      if (uid && recurrenceIdRaw) cancellations.add(recurrenceKey);
+      if (uid && recurrenceIdRaw) {
+        cancellations.add(recurrenceKey);
+        const recurrenceDate = parseICSDate(recurrenceIdRaw);
+        if (recurrenceDate && !Number.isNaN(recurrenceDate.getTime())) {
+          cancellationStarts.add(`${uid}|${recurrenceDate.getTime()}`);
+        }
+      }
       continue;
     }
 
@@ -1052,6 +1059,7 @@ function parseICS(text) {
   const seen = new Set();
   return events.filter(ev => {
     if (ev.uid && ev.recurrenceIdKey && cancellations.has(`${ev.uid}|${ev.recurrenceIdKey}`)) return false;
+    if (ev.uid && cancellationStarts.has(`${ev.uid}|${ev.start.getTime()}`)) return false;
     let key;
     if (ev.uid) {
       key = `${ev.uid}|${ev.recurrenceIdKey || ev.start.getTime()}|${ev.end?.getTime() || ''}|${ev.allDay}`;
