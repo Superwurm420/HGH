@@ -39,3 +39,11 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 ## Hinweis zu Legacy-Dateien
 
 Nicht mehr aktive Parser-, Test- und Build-Hilfen liegen unter `_legacy/` und werden von der Laufzeit nicht benötigt.
+
+## Prompt-Standard für Agenten
+
+Für Agenten-Aufgaben im GitHub-Repo **Projekt m** gilt: Es werden standardmäßig **Ultraprompts** verwendet.
+
+- Vorlage: `ULTRAPROMPT_TEMPLATE.md`
+- Nutzung: Ziel, Stack und Constraints einsetzen und unverändert als Basis verwenden.
+
