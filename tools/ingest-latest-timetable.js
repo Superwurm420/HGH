@@ -153,23 +153,86 @@ function runParser(parserScript, inputPdf) {
 }
 
 function cleanupTempOutputs(results) {
-  for (const r of results) {
-    if (r?.tempOut && fs.existsSync(r.tempOut)) {
-      fs.rmSync(r.tempOut, { force: true });
-    }
-  }
+    validClassCount: 0,
+    entriesByClass: {},
+    dayCoverageByClass: {}
+    let classEntries = 0;
+    let classCoverage = 0;
+
+      if (dayRows.length > 0) {
+        summary.classDayCoverage += 1;
+        classCoverage += 1;
+      }
+        classEntries += 1;
+
+    summary.entriesByClass[classId] = classEntries;
+    summary.dayCoverageByClass[classId] = classCoverage;
+function calculateMedian(values) {
+  if (!values.length) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2;
+  return sorted[mid];
 }
 
+function imbalancePenalty(quality) {
+  const counts = Object.values(quality.entriesByClass || {});
+  if (!counts.length) return 0;
+
+  const median = calculateMedian(counts);
+  if (median <= 0) return 0;
+
+  let penalty = 0;
+  for (const count of counts) {
+    if (count >= median * 0.5) continue;
+    penalty += (median * 0.5 - count) * 1.5;
+  }
+  return penalty;
+}
+
+  const imbalance = imbalancePenalty(q);
+
+  // Dichte + Datenvollständigkeit + Flächenabdeckung (Klasse×Tag) - Klassen-Imbalance.
+    q.classDayCoverage * 2 -
+    imbalance
+function countWarnings(output) {
+  if (!output) return 0;
+  const matches = String(output).match(/(^|\n)warning:/gi);
+  return matches ? matches.length : 0;
+}
+
+  }
+    const warningCount = countWarnings(`${result.stderr || ''}\n${result.stdout || ''}`);
+    const score = scoreTimetable(parsed) - warningCount * 0.5;
+    return { parserScript, ok: true, score, quality, warningCount, parsed, tempOut };
 function ensureMinimumQuality(best) {
   const q = best.quality;
   const minEntries = 80;
   const minCoverage = 20; // 7 Klassen * 5 Tage => max 35
+  const minClassCoverage = 2;
 
   if (q.entries < minEntries) {
     throw new Error(`Timetable quality too low: only ${q.entries} entries (expected >= ${minEntries}).`);
   }
   if (q.classDayCoverage < minCoverage) {
     throw new Error(`Timetable coverage too low: ${q.classDayCoverage} class-day cells (expected >= ${minCoverage}).`);
+  }
+
+  const classCounts = Object.values(q.entriesByClass || {});
+  if (classCounts.length) {
+    const median = calculateMedian(classCounts);
+    const minExpected = Math.max(8, Math.floor(median * 0.35));
+    for (const [classId, count] of Object.entries(q.entriesByClass)) {
+      if (count < minExpected) {
+        throw new Error(`Class ${classId} has suspiciously few entries (${count}; expected >= ${minExpected}).`);
+      }
+    }
+  }
+
+  for (const [classId, coverage] of Object.entries(q.dayCoverageByClass || {})) {
+    if (coverage < minClassCoverage) {
+      throw new Error(`Class ${classId} has too little day coverage (${coverage}; expected >= ${minClassCoverage}).`);
+    }
   }
 }
 
@@ -273,3 +336,4 @@ function main() {
 }
 
 main();
+  console.log(`Quality: entries=${best.quality.entries}, coverage=${best.quality.classDayCoverage}, teacher=${best.quality.withTeacher}, rooms=${best.quality.withRoom}, warnings=${best.warningCount || 0}`);
