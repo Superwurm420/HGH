@@ -6,7 +6,10 @@ import {
   hasTimetableEntries,
 } from './modules/timetable-parser.js';
 
-import { PATHS } from './js/config/paths.js';
+import { PATHS } from './config/paths.js';
+import { qs, qsa, safeSetText } from './utils/dom.js';
+import { storageGet, storageSet } from './utils/storage.js';
+import { escapeHtml } from './utils/text.js';
 
 // --- App-Konfiguration --------------------------------------------------
 const APP = {
@@ -103,17 +106,7 @@ const CAL_CONFIGS = [{
 }];
 
 // --- Utils --------------------------------------------------------------
-const qs = (sel, root = document) => root.querySelector(sel);
-const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
+// DOM/Text helpers werden aus js/utils/* importiert.
 
 function formatSubject(str) {
   if (!str) return '—';
@@ -216,16 +209,7 @@ function safeSetText(el, text) {
   if (el) el.textContent = text;
 }
 
-// localStorage-Helper: eliminiert repetitive try/catch-Blöcke
-function storageGet(key) {
-  try { return localStorage.getItem(key); }
-  catch { return null; }
-}
-
-function storageSet(key, value) {
-  try { localStorage.setItem(key, value); }
-  catch { /* quota/private mode */ }
-}
+// localStorage-Helper (aus js/utils/storage.js importiert)
 
 function formatTeacherRoom(teacher, room) {
   const parts = [];
