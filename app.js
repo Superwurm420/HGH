@@ -764,8 +764,12 @@ function getDayRanges(base = new Date()) {
 }
 
 function getClassDayRanges(classId, dayId, base = new Date()) {
-  const rows = (state.timetable?.[classId]?.[dayId] || []).filter(r => r && r.subject);
-  return rows
+  const rows = (state.timetable?.[classId]?.[dayId] || [])
+    .filter(r => r && r.slotId && String(r.slotId) !== '7');
+
+  const uniqueBySlot = new Map(rows.map(r => [String(r.slotId), r]));
+
+  return [...uniqueBySlot.values()]
     .map(r => {
       const slot = state.timeslotMap.get(String(r.slotId));
       const range = parseSlotRange(slot?.time || '', base);
@@ -805,22 +809,29 @@ function updateCountdown() {
     return;
   }
 
+  if (now < ranges[0].start) {
+    textEl.textContent = `Unterricht startet in ${diffMinsCeil(now, ranges[0].start)} Min`;
+    return;
+  }
+
   if (now >= ranges[ranges.length - 1].end) {
     textEl.textContent = 'Schultag vorbei 👋';
     return;
   }
 
-  const current = ranges.find(r => now >= r.start && now < r.end);
+  const currentIndex = ranges.findIndex(r => now >= r.start && now < r.end);
+  const current = currentIndex >= 0 ? ranges[currentIndex] : null;
   if (current) {
     const partnerId = DOUBLE_PAIRS[current.slotId];
     const partner = partnerId ? ranges.find(r => r.slotId === partnerId) : null;
-    textEl.textContent = `Pause in ${diffMinsCeil(now, partner ? partner.end : current.end)} Min`;
+    textEl.textContent = `Unterricht endet in ${diffMinsCeil(now, partner ? partner.end : current.end)} Min`;
     return;
   }
 
-  const next = ranges.find(r => now < r.start);
+  const nextIndex = ranges.findIndex(r => now < r.start);
+  const next = nextIndex >= 0 ? ranges[nextIndex] : null;
   if (next) {
-    textEl.textContent = `Nächste Stunde in ${diffMinsCeil(now, next.start)} Min`;
+    textEl.textContent = `Pause endet in ${diffMinsCeil(now, next.start)} Min`;
     return;
   }
 
