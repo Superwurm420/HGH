@@ -1,239 +1,39 @@
 /* HGH Schüler-PWA – vanilla JS, performance-optimiert & vereinfacht */
 
-const APP = {
-  name: 'HGH Hildesheim',
-  version: '1.2.0',
-  storageKeys: {
-    theme: 'hgh_theme',
-    classId: 'hgh_class',
-    dayId: 'hgh_day',
-    timetableCache: 'hgh_timetable_cache_v1',
-    timetableCacheTs: 'hgh_timetable_cache_ts',
-    announcementsCache: 'hgh_announcements_cache_v1'
-  },
-  routes: ['home', 'timetable', 'week', 'links'],
-  constants: {
-    COUNTDOWN_INTERVAL: 30000,
-    ANNOUNCEMENTS_INTERVAL: 1000,
-    AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
-    MIN_REFRESH_GAP: 60 * 1000
-  }
-};
+import {
+  APP,
+  CLASSES,
+  DAYS,
+  DAY_IDS,
+  DEFAULT_TIMESLOTS,
+  DOUBLE_PAIRS,
+  SECOND_SLOTS,
+  WEEK_PAIRS,
+  ROUTES_SET,
+  MONTH_NAMES,
+  WEEKDAY_LABELS,
+  CORS_PROXY,
+  FUN_MESSAGES_URL,
+  ANNOUNCEMENTS_INDEX_URL,
+  ANNOUNCEMENTS_DIR_URL,
+  MESSAGE_PHASES,
+  CALENDAR_VISIBLE_WINDOW_DAYS,
+  DEFAULT_FUN_MESSAGES,
+  CAL_CONFIGS,
+} from './js/config.js';
+import { createInitialState } from './js/state.js';
+import {
+  qs,
+  qsa,
+  escapeHtml,
+  formatSubject,
+  getISOWeek,
+  getTodayId,
+  isWeekday,
+  getHolidayLabel,
+} from './js/utils.js';
 
-// --- Data ---------------------------------------------------------------
-
-// id === name, daher reichen Strings
-const CLASSES = ['HT11', 'HT12', 'HT21', 'HT22', 'G11', 'G21', 'GT01'];
-
-const DAYS = [
-  { id: 'mo', label: 'Montag' },
-  { id: 'di', label: 'Dienstag' },
-  { id: 'mi', label: 'Mittwoch' },
-  { id: 'do', label: 'Donnerstag' },
-  { id: 'fr', label: 'Freitag' }
-];
-
-const DAY_IDS = ['mo', 'di', 'mi', 'do', 'fr'];
-
-
-const DEFAULT_TIMESLOTS = [
-  { id: '1', time: '08:00–08:45' },
-  { id: '2', time: '08:45–09:30' },
-  { id: '3', time: '09:50–10:35' },
-  { id: '4', time: '10:35–11:20' },
-  { id: '5', time: '11:40–12:25' },
-  { id: '6', time: '12:25–13:10' },
-  { id: '7', time: 'Mittagspause' },
-  { id: '8', time: '14:10–14:55' },
-  { id: '9', time: '14:55–15:40' }
-];
-
-// Pre-computed Lookup-Strukturen (einmalig statt wiederholter .find()-Aufrufe)
-const DOUBLE_PAIRS = { '1': '2', '3': '4', '5': '6', '8': '9' };
-const SECOND_SLOTS = new Set(Object.values(DOUBLE_PAIRS));
-const WEEK_PAIRS = [
-  { first: '1', second: '2' },
-  { first: '3', second: '4' },
-  { first: '5', second: '6' },
-  { first: '8', second: '9' }
-];
-const ROUTES_SET = new Set(APP.routes);
-const DAY_NUM_MAP = { 1: 'mo', 2: 'di', 3: 'mi', 4: 'do', 5: 'fr' };
-const MONTH_NAMES = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-];
-const WEEKDAY_LABELS = {
-  mo: 'Montag',
-  di: 'Dienstag',
-  mi: 'Mittwoch',
-  do: 'Donnerstag',
-  fr: 'Freitag',
-  sa: 'Samstag',
-  so: 'Sonntag'
-};
-const CORS_PROXY = 'https://corsproxy.io/?url=';
-const FUN_MESSAGES_URL = './data/fun-messages.json';
-const ANNOUNCEMENTS_INDEX_URL = './data/announcements/index.json';
-const ANNOUNCEMENTS_DIR_URL = './data/announcements/';
-const MESSAGE_PHASES = ['beforeSchool', 'beforeLesson', 'duringLesson', 'betweenBlocks', 'lunch', 'afterSchool', 'weekend', 'holiday', 'noLessons'];
-const CALENDAR_VISIBLE_WINDOW_DAYS = {
-  past: 30,
-  future: 400,
-};
-const DEFAULT_FUN_MESSAGES = {
-  default: {
-    beforeSchool: ['Guten Morgen – dein Tag startet gleich. ☀️'],
-    beforeLesson: ['Gleich geht die nächste Stunde los. ⏱️'],
-    duringLesson: ['Volle Konzentration in {subject}. 📚'],
-    betweenBlocks: ['Kleine Pause – dann weiter. 💪'],
-    lunch: ['Mittagspause – lass es dir schmecken! 🍽️'],
-    afterSchool: ['Unterricht vorbei – guten Feierabend! 👋'],
-    weekend: ['Wochenende-Modus aktiv – {weekdayLabel} gehört dir. 😎'],
-    holiday: ['{holidayName} heute – genieße den freien Tag! 🎉'],
-    noLessons: ['Für {weekdayLabel} sind keine Stunden geplant. 📅']
-  }
-};
-
-// --- Calendar config ----------------------------------------------------
-
-const CAL_CONFIGS = [
-  {
-    id: 'jahreskalender',
-    label: 'Jahreskalender',
-    icsUrl: 'https://calendar.google.com/calendar/ical/r1d6av3let2sjbfthapb5i87sg%40group.calendar.google.com/public/basic.ics',
-    color: '#58b4ff',
-  },
-  {
-    id: 'klausurenkalender',
-    label: 'Klausurenkalender',
-    icsUrl: 'https://calendar.google.com/calendar/ical/2jbkl2auqim9pb150rnd6tpnl8%40group.calendar.google.com/public/basic.ics',
-    color: '#ff9966',
-  },
-];
-
-// --- State --------------------------------------------------------------
-
-const state = {
-  timeslots: DEFAULT_TIMESLOTS,
-  timeslotMap: new Map(DEFAULT_TIMESLOTS.map(s => [s.id, s])),
-  timetable: null,
-  classIds: [...CLASSES],
-  selectedDayId: null,
-  currentRoute: 'home',
-  els: {},
-  isLoading: false,
-  autoRefreshTimer: null,
-  lastSignature: null,
-  lastRefreshAt: 0,
-  installPromptEvent: null,
-  countdownTimer: null,
-  announcementsTimer: null,
-  funMessages: DEFAULT_FUN_MESSAGES,
-  currentPdfHref: null,
-  hasTimetableData: false,
-  announcements: [],
-  announcementIssues: [],
-  cal: {
-    events: {},
-    enabled: {},
-    year: new Date().getFullYear(),
-    month: new Date().getMonth(),
-    selectedDate: null,
-  },
-};
-
-// --- Utils --------------------------------------------------------------
-
-const qs = (sel, root = document) => root.querySelector(sel);
-const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-// Fachname bei '/' umbrechen → zwei Zeilen
-function formatSubject(str) {
-  if (!str) return '—';
-  return str.split('/').map(p => escapeHtml(p.trim())).join('<br>');
-}
-
-// ISO-Kalenderwoche berechnen
-function getISOWeek(date = new Date()) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-function getTodayId() {
-  return DAY_NUM_MAP[new Date().getDay()] || 'mo';
-}
-
-function isWeekday() {
-  const d = new Date().getDay();
-  return d >= 1 && d <= 5;
-}
-
-function getDateByDayOffset(base, offsetDays) {
-  const d = new Date(base);
-  d.setDate(d.getDate() + offsetDays);
-  return d;
-}
-
-function getEasterSunday(year) {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31);
-  const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
-}
-
-function getHolidayLabel(date) {
-  const year = date.getFullYear();
-  const fmt = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const fixed = {
-    '01-01': 'Neujahr',
-    '05-01': 'Tag der Arbeit',
-    '10-03': 'Tag der Deutschen Einheit',
-    '10-31': 'Reformationstag',
-    '12-25': '1. Weihnachtstag',
-    '12-26': '2. Weihnachtstag'
-  };
-
-  if (fixed[fmt]) return fixed[fmt];
-
-  const easter = getEasterSunday(year);
-  const movable = [
-    { offset: -2, label: 'Karfreitag' },
-    { offset: 1, label: 'Ostermontag' },
-    { offset: 39, label: 'Christi Himmelfahrt' },
-    { offset: 50, label: 'Pfingstmontag' }
-  ];
-
-  for (const h of movable) {
-    const d = getDateByDayOffset(easter, h.offset);
-    if (d.toDateString() === date.toDateString()) return h.label;
-  }
-
-  return '';
-}
+const state = createInitialState();
 
 function safeSetText(el, text) {
   if (el) el.textContent = text;
@@ -551,14 +351,27 @@ async function loadAnnouncements() {
   state.announcementIssues = [];
 
   try {
-    let files = await discoverAnnouncementFiles();
-    if (!files.length) {
-      const indexResp = await fetch(ANNOUNCEMENTS_INDEX_URL, { cache: 'no-cache' });
-      if (!indexResp.ok) throw new Error(`HTTP ${indexResp.status}`);
+    let files = [];
 
-      const indexData = await indexResp.json();
-      files = Array.isArray(indexData?.files) ? indexData.files : [];
-      state.announcementIssues.push('Automatische Dateierkennung nicht verfügbar – nutze index.json als Fallback.');
+    try {
+      const indexResp = await fetch(ANNOUNCEMENTS_INDEX_URL, { cache: 'no-cache' });
+      if (indexResp.ok) {
+        const indexData = await indexResp.json();
+        files = Array.isArray(indexData?.files) ? indexData.files : [];
+      }
+    } catch {
+      // index.json optional
+    }
+
+    if (!files.length) {
+      files = await discoverAnnouncementFiles();
+      if (files.length) {
+        state.announcementIssues.push('index.json nicht gefunden – nutze automatische Dateierkennung.');
+      }
+    }
+
+    if (!files.length) {
+      throw new Error('Keine Ankündigungsdateien gefunden.');
     }
 
     const loaded = await Promise.all(files.map(async (file) => {
@@ -882,19 +695,21 @@ function renderTimetable() {
       skip.add(secondId);
       const timeFrom = s.time.split('–')[0];
       const timeTo = secondSlot.time.split('–')[1];
+      const noteBadge = r?.note ? '<span class="noteBadge" aria-label="Hinweis vorhanden" title="Hinweis vorhanden">❗</span>' : '';
       return `
         <div class="tr${noteClass}${currentClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}+${escapeHtml(secondId)}">
           <div class="td tdTime"><span class="timeFrom">${escapeHtml(timeFrom)}</span><span class="small muted">${escapeHtml(timeTo)}</span></div>
-          <div class="td">${formatSubject(r?.subject)}</div>
+          <div class="td">${noteBadge}${formatSubject(r?.subject)}</div>
           ${metaCell(r?.teacher, r?.room)}
         </div>`;
     }
 
     const [tFrom, tTo] = s.time.split('–');
+    const noteBadge = r?.note ? '<span class="noteBadge" aria-label="Hinweis vorhanden" title="Hinweis vorhanden">❗</span>' : '';
     return `
       <div class="tr${noteClass}${currentClass}" role="row" aria-label="Stunde ${escapeHtml(s.id)}: ${escapeHtml(s.time)}">
         <div class="td tdTime"><span class="timeFrom">${escapeHtml(tFrom)}</span>${tTo ? `<span class="small muted">${escapeHtml(tTo)}</span>` : ''}</div>
-        <div class="td">${formatSubject(r?.subject)}</div>
+        <div class="td">${noteBadge}${formatSubject(r?.subject)}</div>
         ${metaCell(r?.teacher, r?.room)}
       </div>`;
   }).join('');
@@ -944,6 +759,7 @@ function renderTodayPreview() {
     const secondId = DOUBLE_PAIRS[r.slotId];
     const slotLabel = secondId ? `${r.slotId}/${secondId}` : r.slotId;
     const noteClass = r.note ? ' note' : '';
+    const noteBadge = r.note ? '<span class="noteBadge" aria-label="Hinweis vorhanden" title="Hinweis vorhanden">❗</span>' : '';
     const noteHtml = r.note ? `<div class="sub">${escapeHtml(r.note)}</div>` : '';
 
     const firstSlot = state.timeslotMap.get(r.slotId);
@@ -963,7 +779,7 @@ function renderTodayPreview() {
         ${timeTo ? `<div class="small muted">${escapeHtml(timeTo)}</div>` : ''}
       </div>
       <div class="subjectCol">
-        <div>${formatSubject(subject)}</div>
+        <div>${noteBadge}${formatSubject(subject)}</div>
         ${noteHtml}
       </div>
       <div class="metaCol">
@@ -1879,9 +1695,10 @@ function renderWeek() {
       const noteClass = r.note ? ' note' : '';
       const currentClass = d.id === todayId && currentPairStart === pair.first ? ' current' : '';
 
+      const noteBadge = r.note ? '<span class="noteBadge" aria-label="Hinweis vorhanden" title="Hinweis vorhanden">❗</span>' : '';
       return `
         <div class="weekCell${noteClass}${currentClass}" role="cell">
-          <div class="weekSubject">${formatSubject(r.subject)}</div>
+          <div class="weekSubject">${noteBadge}${formatSubject(r.subject)}</div>
           <div class="weekMetaRow">
             <div class="weekMeta weekMetaTeacher">${teacher}</div>
             <div class="weekMeta weekMetaRoom">${room}</div>
@@ -2016,13 +1833,16 @@ async function boot() {
     initNetworkIndicator();
     initPdfLinkGuards();
 
+    const funMessagesPromise = loadFunMessages();
+    const announcementsPromise = loadAnnouncements();
+
+    initCalendar();
     await refreshTimetableIfNeeded();
-    await loadFunMessages();
-    await loadAnnouncements();
+    await Promise.allSettled([funMessagesPromise, announcementsPromise]);
+    renderAnnouncements();
 
     initCountdown();
     initAutoRefresh();
-    initCalendar();
     initServiceWorker();
     safeSetText(state.els.year, String(new Date().getFullYear()));
     loadInstagramPreviews();
