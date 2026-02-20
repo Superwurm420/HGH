@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Schritt-für-Schritt-Anleitung zum Austauschen von Dateien und Upload auf GitHub." />
+  <title>Anleitung: Dateien austauschen – HGH</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .guideWrap{max-width:900px;margin:24px auto;padding:0 14px 36px;}
+    .guideCard{padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow)}
+    .guideCard h1{margin-top:0}
+    .guideList{display:grid;gap:10px;padding-left:20px}
+    .guideList li{line-height:1.6}
+    .guideNote{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,122,255,.09)}
+    .guideCode{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:rgba(127,127,127,.14);padding:2px 6px;border-radius:6px}
+    .guideActions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <main class="guideWrap" id="main">
+    <article class="guideCard surface">
+      <div id="guideContent" aria-live="polite">Anleitung wird geladen …</div>
+      <div class="guideActions">
+        <a class="btn" href="./index.html">Zurück zur Startseite</a>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    const guideContent = document.getElementById('guideContent');
+
+    fetch('./data/anleitung-inhalt.html', { cache: 'no-cache' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Anleitungsdatei konnte nicht geladen werden.');
+        }
+        return response.text();
+      })
+      .then((html) => {
+        guideContent.innerHTML = html;
+      })
+      .catch(() => {
+        guideContent.textContent = 'Die Anleitung konnte gerade nicht geladen werden. Bitte später erneut versuchen.';
+      });
+  </script>
+</body>
+</html>

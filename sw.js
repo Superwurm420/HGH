@@ -1,11 +1,13 @@
-/* Service Worker – offline-first for app shell (v1.4.0, optimiert) */
+/* Service Worker – offline-first for app shell (v1.4.2, optimiert) */
 
-const VERSION = 'v1.4.0';
+const VERSION = 'v1.4.2';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
   './',
   './index.html',
+  './anleitung-dateien-austauschen.html',
+  './data/anleitung-inhalt.html',
   './styles.css',
   './app.js',
   './manifest.webmanifest',
