@@ -112,6 +112,7 @@ const DEFAULT_CAL_CONFIGS = [{
 }];
 let calConfigs = [...DEFAULT_CAL_CONFIGS];
 const CALENDAR_SOURCES_URL = PATHS.content.calendarSourcesTxt;
+const CALENDAR_WIDGET_MAX_SOURCES = 2;
 const PARSER_DEBUG = new URLSearchParams(window.location.search).get('debugParser') === '1';
 
 // --- Utils --------------------------------------------------------------
@@ -1859,7 +1860,7 @@ async function loadCalendarConfigs() {
         icsUrl: normalizeGoogleCalendarUrl(urlRaw),
         color: palette[idx % palette.length],
       };
-    }).filter(Boolean);
+    }).filter(Boolean).slice(0, CALENDAR_WIDGET_MAX_SOURCES);
 
     if (parsed.length) calConfigs = parsed;
   } catch (e) {
