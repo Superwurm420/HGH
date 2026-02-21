@@ -16,12 +16,17 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 /
 ├─ index.html
 ├─ app.css
-├─ js/
+├─ src/
 │  ├─ app.js                      # App entry (ESM)
 │  ├─ config/
-│  │  └─ paths.js                  # zentrale Pfade/URLs
+│  │  └─ paths.js                 # zentrale Pfade/URLs
+│  ├─ data/
+│  │  └─ timetable-source.js      # Quelle + Fallback-Steuerung
 │  ├─ modules/
-│  │  └─ timetable-parser.js       # Stundenplan-Pipeline
+│  │  └─ timetable-parser.js      # JSON-Normalisierung
+│  ├─ parsers/
+│  │  └─ pdf/
+│  │     └─ pdf-timetable-v2.js   # PDF Parser V2 Pipeline
 │  └─ utils/
 │     ├─ dom.js
 │     ├─ storage.js
@@ -43,6 +48,9 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 │  ├─ images/
 │  ├─ plan/
 │  └─ tv-slides/
+├─ tests/
+│  ├─ fixtures/
+│  └─ pdf-parser-v2.test.mjs
 └─ _legacy/
    └─ ... (alte Tools/Workflows/Archive)
 ```
@@ -54,7 +62,7 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 
 ## Admin: Updates (idiotensicher)
 
-### A) Stundenplan (JSON)
+### A) Stundenplan (Standard/Fallback JSON)
 1. Datei ersetzen: `content/stundenplan.json`
 2. Commit + Push nach GitHub
 3. App neu laden (bei Bedarf Hard-Reload)
@@ -62,6 +70,12 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 **Hinweis (PDF-Link):**
 - Das PDF wird automatisch aus `content/stundenplan.json` gelesen (`meta.source`).
 - Das PDF muss unter `assets/plan/<meta.source>` liegen.
+
+
+### A2) PDF-Rohdaten (optional, Parser V2)
+1. Datei ersetzen: `content/stundenplan.pdf.raw.json`
+2. Commit + Push
+3. Bei Problemen greift automatisch Fallback auf `content/stundenplan.json`
 
 ### B) Kalender (ICS)
 1. Datei ersetzen: `content/kalender.ics`
@@ -83,7 +97,7 @@ Nicht mehr aktive Parser-, Test- und Build-Hilfen liegen unter `_legacy/` und we
 
 ## Refactor Notes
 
-- Pfade/URLs werden zentral über `js/config/paths.js` verwaltet.
+- Pfade/URLs werden zentral über `src/config/paths.js` verwaltet.
 - Änderungen sollen behavior-preserving sein (keine sichtbaren UI/Feature-Änderungen, außer Bugfix + Doku).
 
 ## Prompt-Standard für Agenten
