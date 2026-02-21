@@ -8,7 +8,7 @@ Admin-Quickstart (Datei ersetzen → fertig)
    - Falls Parse/Validierung fehlschlägt, nutzt die App automatisch stundenplan.json.
 
 3) Kalender:
-   - Datei ersetzen: content/kalender.ics
+   - Datei ersetzen: content/kalender-quellen.txt
 
 4) TV Laufzeitdaten:
    - assets/data/runtime/announcements.json
