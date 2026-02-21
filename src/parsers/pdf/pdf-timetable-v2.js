@@ -125,7 +125,7 @@ export function toTimetableModel({ entries, classes }, baseMeta = {}) {
 
   for (const classId of Object.keys(out)) {
     for (const dayId of ['mo', 'di', 'mi', 'do', 'fr']) {
-      out[classId][dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
+      out[classId][dayId].sort((a, b) => compareSlotIds(a.slotId, b.slotId));
     }
   }
 
@@ -135,11 +135,25 @@ export function toTimetableModel({ entries, classes }, baseMeta = {}) {
   };
 }
 
-export function parsePdfTimetableV2(raw) {
+export function compareSlotIds(a, b) {
+  const aText = clean(a);
+  const bText = clean(b);
+  const aNum = Number(aText);
+  const bNum = Number(bText);
+
+  if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+  if (Number.isFinite(aNum)) return -1;
+  if (Number.isFinite(bNum)) return 1;
+
+  return aText.localeCompare(bText, 'de', { numeric: true, sensitivity: 'base' });
+}
+
+export function parsePdfTimetableV2(raw, options = {}) {
   const issues = [];
-  const rows = extractRowsFromPdfItems(raw?.items || []);
+  const { yTolerance = 2, minEntries = 10 } = options;
+  const rows = extractRowsFromPdfItems(raw?.items || [], { yTolerance });
   const interpreted = interpretRows(rows, issues);
-  const validation = validateEntries(interpreted.entries);
+  const validation = validateEntries(interpreted.entries, { minEntries });
   issues.push(...validation.issues);
 
   return {
