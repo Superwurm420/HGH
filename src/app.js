@@ -99,12 +99,19 @@ const DEFAULT_FUN_MESSAGES = {
     noLessons: ['Für {weekdayLabel} sind keine Stunden geplant. 📅']
   }
 };
-const CAL_CONFIGS = [{
-  id: 'schulkalender',
-  label: 'Schulkalender',
-  icsUrl: './content/kalender.ics',
+const DEFAULT_CAL_CONFIGS = [{
+  id: 'jahreskalender',
+  label: 'Jahreskalender',
+  icsUrl: 'https://calendar.google.com/calendar/ical/r1d6av3let2sjbfthapb5i87sg%40group.calendar.google.com/public/basic.ics',
   color: '#58b4ff',
+}, {
+  id: 'klausurenkalender',
+  label: 'Klausurenkalender',
+  icsUrl: 'https://calendar.google.com/calendar/ical/2jbkl2auqim9pb150rnd6tpnl8%40group.calendar.google.com/public/basic.ics',
+  color: '#ffc857',
 }];
+let calConfigs = [...DEFAULT_CAL_CONFIGS];
+const CALENDAR_SOURCES_URL = PATHS.content.calendarSourcesTxt;
 const PARSER_DEBUG = new URLSearchParams(window.location.search).get('debugParser') === '1';
 
 // --- Utils --------------------------------------------------------------
@@ -1815,6 +1822,52 @@ function parseICS(text) {
   }).map(({ uid, recurrenceIdKey, ...ev }) => ev);
 }
 
+
+function normalizeGoogleCalendarUrl(url) {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (!/calendar\.google\.com$/i.test(parsed.hostname)) return url;
+    if (parsed.pathname.includes('/calendar/ical/')) return parsed.toString();
+    if (parsed.pathname.includes('/calendar/embed')) {
+      const src = parsed.searchParams.get('src');
+      if (!src) return url;
+      return `https://calendar.google.com/calendar/ical/${encodeURIComponent(src)}/public/basic.ics`;
+    }
+  } catch (_) {
+    return url;
+  }
+  return url;
+}
+
+async function loadCalendarConfigs() {
+  try {
+    const res = await fetch(`${CALENDAR_SOURCES_URL}?_=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const lines = text
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+
+    const palette = ['#58b4ff', '#ffc857', '#a67dff', '#4dd599'];
+    const parsed = lines.map((line, idx) => {
+      const [labelRaw, urlRaw] = line.split('|').map(part => part?.trim());
+      if (!labelRaw || !urlRaw) return null;
+      return {
+        id: labelRaw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `cal-${idx + 1}`,
+        label: labelRaw,
+        icsUrl: normalizeGoogleCalendarUrl(urlRaw),
+        color: palette[idx % palette.length],
+      };
+    }).filter(Boolean);
+
+    if (parsed.length) calConfigs = parsed;
+  } catch (e) {
+    console.warn('[Cal] Konfiguration konnte nicht geladen werden, nutze Standardwerte.', e);
+    calConfigs = [...DEFAULT_CAL_CONFIGS];
+  }
+}
+
 async function fetchCalendar(cfg) {
   const tryFetch = async url => {
     const res = await fetch(url, { cache: 'no-store' });
@@ -1827,11 +1880,11 @@ async function fetchCalendar(cfg) {
     const parsed = parseICS(text);
     state.cal.events[cfg.id] = parsed;
     if (!Array.isArray(parsed) || !parsed.length) {
-      state.cal.issues.push(`Kalender ohne Einträge: ${cfg.label}. Prüfe content/kalender.ics.`);
+      state.cal.issues.push(`Kalender ohne Einträge: ${cfg.label}. Prüfe content/kalender-quellen.txt.`);
     }
   } catch (e) {
     console.warn(`[Cal] ${cfg.id}:`, e);
-    state.cal.issues.push(`Kalender-Datei fehlt/defekt: ${cfg.label}. Prüfe content/kalender.ics.`);
+    state.cal.issues.push(`Kalender-Datei fehlt/defekt: ${cfg.label}. Prüfe content/kalender-quellen.txt.`);
     if (!state.cal.events[cfg.id]) state.cal.events[cfg.id] = [];
   }
 }
@@ -1839,7 +1892,7 @@ async function fetchCalendar(cfg) {
 async function loadCalendars() {
   state.cal.events = {};
   state.cal.issues = [];
-  await Promise.allSettled(CAL_CONFIGS.map(fetchCalendar));
+  await Promise.allSettled(calConfigs.map(fetchCalendar));
   renderCalendar();
 }
 
@@ -1901,7 +1954,7 @@ function renderCalendarEvents() {
   const date = new Date(y, m - 1, d);
   const events = [];
 
-  for (const cfg of CAL_CONFIGS) {
+  for (const cfg of calConfigs) {
     if (state.cal.enabled[cfg.id] === false) continue;
     for (const ev of (state.cal.events[cfg.id] || [])) {
       if (calEventCoversDate(ev, date)) {
@@ -1941,7 +1994,7 @@ function renderCalendar() {
   // Toggle-Buttons
   if (togglesEl) {
     togglesEl.innerHTML = '';
-    for (const cfg of CAL_CONFIGS) {
+    for (const cfg of calConfigs) {
       const enabled = state.cal.enabled[cfg.id] !== false;
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -1985,7 +2038,7 @@ function renderCalendar() {
   const visibleStart = new Date(cells[0].date.getFullYear(), cells[0].date.getMonth(), cells[0].date.getDate());
   const visibleEnd = new Date(cells[cells.length - 1].date.getFullYear(), cells[cells.length - 1].date.getMonth(), cells[cells.length - 1].date.getDate());
 
-  for (const cfg of CAL_CONFIGS) {
+  for (const cfg of calConfigs) {
     if (state.cal.enabled[cfg.id] === false) continue;
     for (const ev of (state.cal.events[cfg.id] || [])) {
       const { startDay, endDay } = normalizeEventDateRange(ev);
@@ -2064,11 +2117,13 @@ function renderCalendar() {
   renderCalendarEvents();
 }
 
-function initCalendar() {
+async function initCalendar() {
+  await loadCalendarConfigs();
+
   const now = new Date();
   state.cal = {
     events: {},
-    enabled: Object.fromEntries(CAL_CONFIGS.map(c => [c.id, true])),
+    enabled: Object.fromEntries(calConfigs.map(c => [c.id, true])),
     year: now.getFullYear(),
     month: now.getMonth(),
     selectedDate: null,
@@ -2301,7 +2356,7 @@ async function boot() {
     const funMessagesPromise = loadFunMessages();
     const announcementsPromise = loadAnnouncements();
 
-    initCalendar();
+    await initCalendar();
     await refreshTimetableIfNeeded();
     await Promise.allSettled([funMessagesPromise, announcementsPromise]);
     renderAnnouncements();

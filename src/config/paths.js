@@ -5,6 +5,7 @@ export const PATHS = Object.freeze({
     timetableJson: './content/stundenplan.json',
     timetablePdfRawJson: './content/stundenplan.pdf.raw.json',
     calendarIcs: './content/kalender.ics',
+    calendarSourcesTxt: './content/kalender-quellen.txt',
     adminReadme: './content/README_admin.txt',
   },
   assets: {
