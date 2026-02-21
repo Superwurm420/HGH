@@ -1,6 +1,6 @@
-/* Service Worker – offline-first for app shell (v1.7.0, optimiert) */
+/* Service Worker – offline-first for app shell (v1.7.1, optimiert) */
 
-const VERSION = 'v1.7.0';
+const VERSION = 'v1.7.1';
 const CACHE = `hgh-school-pwa-${VERSION}`;
 
 const ASSETS = [
@@ -118,15 +118,16 @@ async function handleAsset(req) {
   const cache = await caches.open(CACHE);
   const url = new URL(req.url);
 
+  const path = url.pathname;
   const isDynamicContent =
-    url.pathname === '/content/stundenplan.json' ||
-    url.pathname === '/content/stundenplan.pdf.raw.json' ||
-    url.pathname === '/content/kalender.ics' ||
-    url.pathname === '/assets/data/announcements/index.json' ||
-    url.pathname.startsWith('/assets/data/announcements/') ||
+    path.endsWith('/content/stundenplan.json') ||
+    path.endsWith('/content/stundenplan.pdf.raw.json') ||
+    path.endsWith('/content/kalender.ics') ||
+    path.endsWith('/assets/data/announcements/index.json') ||
+    path.includes('/assets/data/announcements/') ||
     // ehemals /data/*
-    url.pathname === '/assets/data/runtime/announcements.json' ||
-    url.pathname === '/assets/data/runtime/bell-times.json';
+    path.endsWith('/assets/data/runtime/announcements.json') ||
+    path.endsWith('/assets/data/runtime/bell-times.json');
 
   // Dynamic data should be network-first so newly added timetable/announcement
   // files show up immediately without waiting for a service worker version bump.
