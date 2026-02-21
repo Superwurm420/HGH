@@ -76,6 +76,7 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 1. Datei ersetzen: `content/stundenplan.pdf.raw.json`
 2. Commit + Push
 3. Bei Problemen greift automatisch Fallback auf `content/stundenplan.json`
+4. Parser akzeptiert sowohl Token-Zeilen (`class:...;day:...`) als auch lose Zeilen mit Spalten-Layout; Sondertermine landen in `meta.specialEvents`.
 
 ### B) Kalender (ICS)
 1. Datei ersetzen: `content/kalender.ics`
