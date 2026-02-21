@@ -1,9 +1,9 @@
-// Zentrale Pfad-/URL-Konfiguration (behavior-preserving)
-// Hinweis: Alle Pfade sind relativ zum Repo-Root (GitHub Pages).
+// Zentrale Pfad-/URL-Konfiguration (Single Source of Truth)
 
 export const PATHS = Object.freeze({
   content: {
     timetableJson: './content/stundenplan.json',
+    timetablePdfRawJson: './content/stundenplan.pdf.raw.json',
     calendarIcs: './content/kalender.ics',
     adminReadme: './content/README_admin.txt',
   },
@@ -20,7 +20,6 @@ export const PATHS = Object.freeze({
     },
   },
   data: {
-    // ehemals ./data/* → nach ./assets/data/runtime verschoben
     announcementsJson: './assets/data/runtime/announcements.json',
     bellTimesJson: './assets/data/runtime/bell-times.json',
   },

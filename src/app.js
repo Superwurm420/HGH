@@ -7,6 +7,7 @@ import {
 } from './modules/timetable-parser.js';
 
 import { PATHS } from './config/paths.js';
+import { loadTimetableSource } from './data/timetable-source.js';
 import { qs, qsa, safeSetText } from './utils/dom.js';
 import { storageGet, storageSet } from './utils/storage.js';
 import { escapeHtml } from './utils/text.js';
@@ -104,6 +105,7 @@ const CAL_CONFIGS = [{
   icsUrl: './content/kalender.ics',
   color: '#58b4ff',
 }];
+const PARSER_DEBUG = new URLSearchParams(window.location.search).get('debugParser') === '1';
 
 // --- Utils --------------------------------------------------------------
 // DOM/Text helpers werden aus js/utils/* importiert.
@@ -592,8 +594,12 @@ function initThemeToggle() {
 
 // --- Timetable loader ---------------------------------------------------
 
-function setTimetableIssues(issues = []) {
-  state.timetableIssues = Array.isArray(issues) ? issues : [];
+function setTimetableIssues(issues = [], debugInfo = null) {
+  const normalized = Array.isArray(issues) ? [...issues] : [];
+  if (PARSER_DEBUG && debugInfo?.notes?.length) {
+    normalized.push(`[Debug ${debugInfo.source}] ${debugInfo.notes.join(' | ')}`);
+  }
+  state.timetableIssues = normalized;
 }
 
 function renderTimetablePipelineStatus() {
@@ -666,14 +672,14 @@ async function loadTimetable({ forceNetwork = false } = {}) {
     lastError = new Error('offline');
   } else {
     try {
-      const res = await fetch('./content/stundenplan.json', { cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const sourceResult = await loadTimetableSource();
+      const data = sourceResult.data;
       const pipeline = parseAndNormalizeTimetable(data);
       const sig = getTimetableSignature(pipeline.model);
       const changed = sig !== state.lastSignature;
 
       applyTimetableData(pipeline.model);
+      setTimetableIssues(pipeline.issues, sourceResult.debug);
       state.lastSignature = sig;
       state.lastRefreshAt = Date.now();
 

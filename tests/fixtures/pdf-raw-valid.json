@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "source": "fixture.pdf"
+  },
+  "items": [
+    {
+      "str": "class:HT11;day:mo;slot:1;subject:Deutsch;teacher:MEL;room:6",
+      "x": 10,
+      "y": 10
+    },
+    {
+      "str": "class:HT11;day:mo;slot:2;subject:Deutsch;teacher:MEL;room:6",
+      "x": 10,
+      "y": 15
+    },
+    {
+      "str": "class:HT12;day:di;slot:3;subject:Englisch;teacher:WEN;room:9",
+      "x": 10,
+      "y": 20
+    },
+    {
+      "str": "class:HT12;day:di;slot:4;subject:Englisch;teacher:WEN;room:9",
+      "x": 10,
+      "y": 25
+    },
+    {
+      "str": "class:HT21;day:mi;slot:5;subject:CAD;teacher:HOFF;room:4",
+      "x": 10,
+      "y": 30
+    },
+    {
+      "str": "class:HT21;day:mi;slot:6;subject:CAD;teacher:HOFF;room:4",
+      "x": 10,
+      "y": 35
+    },
+    {
+      "str": "class:HT22;day:do;slot:8;subject:Politik;teacher:STI;room:8",
+      "x": 10,
+      "y": 40
+    },
+    {
+      "str": "class:HT22;day:do;slot:9;subject:Politik;teacher:STI;room:8",
+      "x": 10,
+      "y": 45
+    },
+    {
+      "str": "class:G11;day:fr;slot:1;subject:Sport;teacher:ABC;room:Halle",
+      "x": 10,
+      "y": 50
+    },
+    {
+      "str": "class:G21;day:fr;slot:2;subject:Sport;teacher:ABC;room:Halle",
+      "x": 10,
+      "y": 55
+    }
+  ]
+}

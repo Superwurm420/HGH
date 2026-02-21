@@ -1,0 +1,7 @@
+{
+  "meta": {"source":"broken.pdf"},
+  "items": [
+    {"str":"class:HT11;day:foo;slot:1;subject:Deutsch","x":10,"y":10},
+    {"str":"class:HT11;day:mo;slot:1;subject:Deutsch","x":10,"y":10}
+  ]
+}

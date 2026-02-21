@@ -1,6 +1,18 @@
-Admin-Update (maximal einfach)
-1) Stundenplan: Datei content/stundenplan.json ersetzen.
-2) Kalender: Datei content/kalender.ics ersetzen.
-3) Commit + Push nach GitHub.
-4) App neu laden (einmal reicht meistens).
-Wenn nichts passiert: App schließen und neu öffnen.
+Admin-Quickstart (Datei ersetzen → fertig)
+
+1) Stundenplan Standard/Fallback:
+   - Datei ersetzen: content/stundenplan.json
+
+2) PDF Parser V2 Quelle (optional, bevorzugt):
+   - Datei ersetzen: content/stundenplan.pdf.raw.json
+   - Falls Parse/Validierung fehlschlägt, nutzt die App automatisch stundenplan.json.
+
+3) Kalender:
+   - Datei ersetzen: content/kalender.ics
+
+4) TV Laufzeitdaten:
+   - assets/data/runtime/announcements.json
+   - assets/data/runtime/bell-times.json
+
+5) TV Slides:
+   - assets/tv-slides/slides.json (+ Bilddateien im gleichen Ordner)
