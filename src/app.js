@@ -193,6 +193,7 @@ function createInitialState() {
       issues: [],
     },
     tv: {
+      sessionToken: 0,
       clockTimer: null,
       refreshTimer: null,
       slideTimer: null,
@@ -292,8 +293,14 @@ function formatAnnouncementDateLabel(rawValue, endOfDayFallback = false) {
 function isAnnouncementActive(item, now = new Date()) {
   if (!item || item.visible === false) return false;
 
+  const hasStartValue = typeof item.startDate === 'string' && item.startDate.trim().length > 0;
+  const hasEndValue = typeof item.endDate === 'string' && item.endDate.trim().length > 0;
+
   const start = parseAnnouncementDate(item.startDate, false);
   const end = parseAnnouncementDate(item.endDate, true);
+
+  if (hasStartValue && !start) return false;
+  if (hasEndValue && !end) return false;
 
   if (start && now < start) return false;
   if (end && now > end) return false;
@@ -321,13 +328,31 @@ function normalizeAnnouncementItem(item, index = 0) {
   };
 }
 
+function shouldIncludeAnnouncement(item, now = new Date()) {
+  if (!item || item.visible === false || !item.text) return false;
+
+  const hasStartValue = typeof item.startDate === 'string' && item.startDate.trim().length > 0;
+  const hasEndValue = typeof item.endDate === 'string' && item.endDate.trim().length > 0;
+  const start = parseAnnouncementDate(item.startDate, false);
+  const end = parseAnnouncementDate(item.endDate, true);
+
+  if (hasStartValue && !start) return false;
+  if (hasEndValue && !end) return false;
+  if (end && now > end) return false;
+
+  return true;
+}
+
 function normalizeAnnouncements(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((item, idx) => normalizeAnnouncementItem(item, idx))
-    .filter(item => item.text && isAnnouncementActive(item))
+    .filter(item => shouldIncludeAnnouncement(item))
     .sort((a, b) => {
       if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      const aStart = parseAnnouncementDate(a.startDate, false)?.getTime() ?? Number.POSITIVE_INFINITY;
+      const bStart = parseAnnouncementDate(b.startDate, false)?.getTime() ?? Number.POSITIVE_INFINITY;
+      if (aStart !== bStart) return aStart - bStart;
       const aEnd = parseAnnouncementDate(a.endDate, true)?.getTime() ?? Number.POSITIVE_INFINITY;
       const bEnd = parseAnnouncementDate(b.endDate, true)?.getTime() ?? Number.POSITIVE_INFINITY;
       return aEnd - bEnd;
@@ -969,8 +994,14 @@ async function refreshTvData() {
 
 async function startTvMode() {
   stopTvMode();
+
+  const token = ++state.tv.sessionToken;
   await refreshTvData();
+  if (token !== state.tv.sessionToken || state.currentRoute !== 'tv') return;
+
   await loadTvSlides();
+  if (token !== state.tv.sessionToken || state.currentRoute !== 'tv') return;
+
   renderTvSlide();
 
   state.tv.clockTimer = setInterval(() => updateTvDateTime(new Date()), 1000);
@@ -979,6 +1010,8 @@ async function startTvMode() {
 }
 
 function stopTvMode() {
+  state.tv.sessionToken += 1;
+
   if (state.tv.clockTimer) clearInterval(state.tv.clockTimer);
   if (state.tv.refreshTimer) clearInterval(state.tv.refreshTimer);
   if (state.tv.slideTimer) clearInterval(state.tv.slideTimer);
