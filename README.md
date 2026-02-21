@@ -72,11 +72,6 @@ Minimal gehaltene Schul-PWA (Vanilla HTML/CSS/JS) für GitHub Pages.
 - Das PDF muss unter `assets/plan/<meta.source>` liegen.
 
 
-### A2) PDF-Rohdaten (optional, Parser V2)
-1. Datei ersetzen: `content/stundenplan.pdf.raw.json`
-2. Commit + Push
-3. Bei Problemen greift automatisch Fallback auf `content/stundenplan.json`
-4. Parser akzeptiert sowohl Token-Zeilen (`class:...;day:...`) als auch lose Zeilen mit Spalten-Layout; Sondertermine landen in `meta.specialEvents`.
 
 ### B) Kalender (Quellenliste)
 1. Datei ersetzen: `content/kalender-quellen.txt`
@@ -100,11 +95,4 @@ Nicht mehr aktive Parser-, Test- und Build-Hilfen liegen unter `_legacy/` und we
 
 - Pfade/URLs werden zentral über `src/config/paths.js` verwaltet.
 - Änderungen sollen behavior-preserving sein (keine sichtbaren UI/Feature-Änderungen, außer Bugfix + Doku).
-
-## Prompt-Standard für Agenten
-
-Für Agenten-Aufgaben im GitHub-Repo **Projekt m** gilt: Es werden standardmäßig **Ultraprompts** verwendet.
-
-- Vorlage: `ULTRAPROMPT_TEMPLATE.md`
-- Nutzung: Ziel, Stack und Constraints einsetzen und unverändert als Basis verwenden.
 
