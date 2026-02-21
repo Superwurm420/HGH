@@ -14,6 +14,7 @@ export async function loadTimetableSource() {
     const pdfRaw = await fetchJson(PATHS.content.timetablePdfRawJson);
     const parsed = parsePdfTimetableV2(pdfRaw);
     debug.notes.push(...parsed.issues);
+    debug.notes.push(`PDF-Zeilen: ${parsed.debug.rowCount}, Einträge: ${parsed.debug.interpretedCount}, Sondertermine: ${parsed.debug.specialEventCount}`);
 
     if (parsed.ok) {
       debug.source = 'pdf-v2';
