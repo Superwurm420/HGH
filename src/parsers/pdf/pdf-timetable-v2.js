@@ -125,7 +125,7 @@ export function toTimetableModel({ entries, classes }, baseMeta = {}) {
 
   for (const classId of Object.keys(out)) {
     for (const dayId of ['mo', 'di', 'mi', 'do', 'fr']) {
-      out[classId][dayId].sort((a, b) => Number(a.slotId) - Number(b.slotId));
+      out[classId][dayId].sort((a, b) => compareSlotIds(a.slotId, b.slotId));
     }
   }
 
@@ -133,6 +133,29 @@ export function toTimetableModel({ entries, classes }, baseMeta = {}) {
     meta: { ...baseMeta, parser: 'pdf-v2' },
     classes: out,
   };
+}
+
+const slotIdCollator = new Intl.Collator('de', { numeric: true, sensitivity: 'base' });
+
+function isNumericSlotId(value) {
+  return /^\d+$/.test(value);
+}
+
+function compareSlotIds(a, b) {
+  const aText = clean(a);
+  const bText = clean(b);
+
+  const aIsNumeric = isNumericSlotId(aText);
+  const bIsNumeric = isNumericSlotId(bText);
+
+  if (aIsNumeric && bIsNumeric) return Number(aText) - Number(bText);
+  if (aIsNumeric) return -1;
+  if (bIsNumeric) return 1;
+  if (!aText && !bText) return 0;
+  if (!aText) return 1;
+  if (!bText) return -1;
+
+  return slotIdCollator.compare(aText, bText);
 }
 
 export function parsePdfTimetableV2(raw) {
